@@ -1,0 +1,22 @@
+import { SubscriptionImportSources } from '@prisma/client';
+
+export class SubscriptionImportSourceEntity implements SubscriptionImportSources {
+    uuid: string;
+    name: string;
+    url: string;
+    isEnabled: boolean;
+    fetchIntervalMinutes: number;
+    configProfileInboundUuid: string | null;
+    lastFetchedAt: Date | null;
+    lastFetchStatus: string | null;
+    lastFetchError: string | null;
+    lastHostsCount: number | null;
+    cachedRawLines: string[];
+    fetchHeaders: PrismaJson.FetchHeaders | null;
+    createdAt: Date;
+    updatedAt: Date;
+
+    constructor(data: Partial<SubscriptionImportSources>) {
+        Object.assign(this, data);
+    }
+}

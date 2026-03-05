@@ -1,0 +1,1 @@
+{"version":3,"file":"endpoint-details.js","sourceRoot":"","sources":["endpoint-details.ts"],"names":[],"mappings":";;AAOA,gDAYC;AAZD,SAAgB,kBAAkB,CAC9B,aAAqB,EACrB,aAA0D,EAC1D,iBAAyB,EACzB,qBAA8B;IAE9B,OAAO;QACH,cAAc,EAAE,aAAa;QAC7B,cAAc,EAAE,aAAa;QAC7B,kBAAkB,EAAE,iBAAiB;QACrC,uBAAuB,EAAE,qBAAqB;KACjD,CAAC;AACN,CAAC"}

@@ -1,0 +1,1 @@
+{"version":3,"file":"tg-auth-settings.schema.js","sourceRoot":"","sources":["tg-auth-settings.schema.ts"],"names":[],"mappings":";;;;;;AAAA,8CAAoB;AAEP,QAAA,oBAAoB,GAAG,aAAC,CAAC,MAAM,CAAC;IACzC,OAAO,EAAE,aAAC,CAAC,OAAO,EAAE;IACpB,QAAQ,EAAE,aAAC,CAAC,QAAQ,CAAC,aAAC,CAAC,MAAM,EAAE,CAAC;IAChC,QAAQ,EAAE,aAAC,CAAC,KAAK,CAAC,aAAC,CAAC,MAAM,EAAE,CAAC;CAChC,CAAC,CAAC"}

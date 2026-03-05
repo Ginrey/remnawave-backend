@@ -1,0 +1,1 @@
+{"version":3,"file":"platform-types.constant.js","sourceRoot":"","sources":["platform-types.constant.ts"],"names":[],"mappings":";;;AAAa,QAAA,gCAAgC,GAAG;IAC5C,CAAC,EAAE,GAAG;CACA,CAAC;AAKE,QAAA,uCAAuC,GAAG;IACnD,GAAG,EAAE,KAAK;IACV,OAAO,EAAE,SAAS;IAClB,KAAK,EAAE,OAAO;IACd,KAAK,EAAE,OAAO;IACd,OAAO,EAAE,SAAS;IAClB,UAAU,EAAE,WAAW;IACvB,QAAQ,EAAE,SAAS;CACb,CAAC"}
