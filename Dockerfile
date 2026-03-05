@@ -2,7 +2,7 @@ FROM alpine:3.19 AS frontend
 WORKDIR /opt/frontend
 
 ARG BRANCH=main
-ARG FRONTEND_URL=https://github.com/Ginrey/remnawave-frontend/archive/refs/heads/main.zip
+ARG FRONTEND_URL=https://github.com/Ginrey/remnawave-frontend/releases/download/Release/remnawave-frontend.zip
 
 RUN apk add --no-cache curl unzip ca-certificates \
     && curl -L ${FRONTEND_URL} -o frontend.zip \
