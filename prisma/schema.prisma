@@ -603,6 +603,7 @@ model SubscriptionImportSources {
   lastFetchError           String?  @map("last_fetch_error")
   lastHostsCount           Int?     @map("last_hosts_count")
   cachedRawLines           String[] @map("cached_raw_lines")
+  importGroup              String?  @map("import_group") @db.VarChar(100)
   /// [FetchHeaders]
   fetchHeaders             Json?    @map("fetch_headers")
 

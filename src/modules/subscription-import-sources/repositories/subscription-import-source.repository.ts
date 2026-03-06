@@ -86,8 +86,12 @@ export class SubscriptionImportSourceRepository
     }
 
     /**
-     * Returns all cached raw proxy lines from enabled import sources
-     * that are linked to the config profile inbounds this user belongs to.
+     * Returns cached raw proxy lines for the user, applying group-based random selection.
+     *
+     * Sources that share the same non-null `importGroup` are treated as a pool:
+     * exactly ONE source is picked at random from each group, preventing clients
+     * from receiving duplicate/redundant configs. Sources with no group (null)
+     * always contribute their lines individually.
      */
     public async findRawLinesForUser(userId: bigint): Promise<string[]> {
         const sources = await this.prisma.tx.subscriptionImportSources.findMany({
@@ -105,9 +109,28 @@ export class SubscriptionImportSourceRepository
                     },
                 },
             },
-            select: { cachedRawLines: true },
+            select: { cachedRawLines: true, importGroup: true },
         });
 
-        return sources.flatMap((s) => s.cachedRawLines);
+        const groups = new Map<string, (typeof sources)>();
+        const ungrouped: (typeof sources) = [];
+
+        for (const source of sources) {
+            if (source.importGroup) {
+                const bucket = groups.get(source.importGroup) ?? [];
+                bucket.push(source);
+                groups.set(source.importGroup, bucket);
+            } else {
+                ungrouped.push(source);
+            }
+        }
+
+        const winners: (typeof sources) = [...ungrouped];
+        for (const bucket of groups.values()) {
+            const pick = bucket[Math.floor(Math.random() * bucket.length)];
+            winners.push(pick);
+        }
+
+        return winners.flatMap((s) => s.cachedRawLines);
     }
 }

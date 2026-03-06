@@ -24,6 +24,7 @@ export namespace UpdateSubscriptionImportSourceCommand {
         isEnabled: z.boolean().optional(),
         fetchIntervalMinutes: z.number().int().min(5).max(1440).optional(),
         configProfileInboundUuid: z.string().uuid().nullable().optional(),
+        importGroup: z.string().min(1).max(100).nullable().optional(),
         fetchHeaders: z.record(z.string()).nullable().optional(),
     });
 

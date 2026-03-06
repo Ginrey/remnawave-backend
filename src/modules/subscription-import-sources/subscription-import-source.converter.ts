@@ -23,6 +23,7 @@ const entityToModel = (entity: SubscriptionImportSourceEntity): SubscriptionImpo
         lastFetchError: entity.lastFetchError,
         lastHostsCount: entity.lastHostsCount,
         cachedRawLines: entity.cachedRawLines ?? [],
+        importGroup: entity.importGroup ?? null,
         fetchHeaders: entity.fetchHeaders ?? null,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,

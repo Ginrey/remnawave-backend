@@ -61,6 +61,7 @@ export class SubscriptionImportSourceService {
                 isEnabled: dto.isEnabled ?? true,
                 fetchIntervalMinutes: dto.fetchIntervalMinutes ?? 60,
                 configProfileInboundUuid: dto.configProfileInboundUuid ?? null,
+                importGroup: dto.importGroup ?? null,
                 fetchHeaders: dto.fetchHeaders ?? null,
                 lastFetchedAt: null,
                 lastFetchStatus: null,
@@ -104,6 +105,7 @@ export class SubscriptionImportSourceService {
                 ...(dto.configProfileInboundUuid !== undefined && {
                     configProfileInboundUuid: dto.configProfileInboundUuid,
                 }),
+                ...(dto.importGroup !== undefined && { importGroup: dto.importGroup }),
                 ...(dto.fetchHeaders !== undefined && { fetchHeaders: dto.fetchHeaders }),
             });
 

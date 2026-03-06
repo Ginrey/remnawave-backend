@@ -13,6 +13,7 @@ export class GetSubscriptionImportSourceResponseModel {
     lastFetchStatus: TImportFetchStatus | null;
     lastFetchError: string | null;
     lastHostsCount: number | null;
+    importGroup: string | null;
     fetchHeaders: Record<string, string> | null;
     createdAt: Date;
     updatedAt: Date;
@@ -28,6 +29,7 @@ export class GetSubscriptionImportSourceResponseModel {
         this.lastFetchStatus = (entity.lastFetchStatus as TImportFetchStatus | null) ?? null;
         this.lastFetchError = entity.lastFetchError;
         this.lastHostsCount = entity.lastHostsCount;
+        this.importGroup = entity.importGroup ?? null;
         this.fetchHeaders = (entity.fetchHeaders as Record<string, string> | null) ?? null;
         this.createdAt = entity.createdAt;
         this.updatedAt = entity.updatedAt;

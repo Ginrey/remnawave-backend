@@ -23,6 +23,7 @@ export namespace CreateSubscriptionImportSourceCommand {
         isEnabled: z.boolean().default(true),
         fetchIntervalMinutes: z.number().int().min(5).max(1440).default(60),
         configProfileInboundUuid: z.string().uuid().nullable().optional(),
+        importGroup: z.string().min(1).max(100).nullable().optional(),
         fetchHeaders: z.record(z.string()).nullable().optional(),
     });
 

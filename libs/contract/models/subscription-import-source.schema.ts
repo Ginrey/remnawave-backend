@@ -23,6 +23,7 @@ export const SubscriptionImportSourceSchema = z.object({
     lastFetchStatus: z.nativeEnum(IMPORT_FETCH_STATUS).nullable(),
     lastFetchError: z.string().nullable(),
     lastHostsCount: z.number().int().nullable(),
+    importGroup: z.string().nullable(),
     fetchHeaders: z.record(z.string()).nullable(),
     createdAt: z
         .string()

@@ -12,6 +12,7 @@ export class SubscriptionImportSourceEntity implements SubscriptionImportSources
     lastFetchError: string | null;
     lastHostsCount: number | null;
     cachedRawLines: string[];
+    importGroup: string | null;
     fetchHeaders: PrismaJson.FetchHeaders | null;
     createdAt: Date;
     updatedAt: Date;
