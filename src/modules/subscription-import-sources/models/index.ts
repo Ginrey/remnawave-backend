@@ -15,6 +15,10 @@ export class GetSubscriptionImportSourceResponseModel {
     lastHostsCount: number | null;
     importGroup: string | null;
     fetchHeaders: Record<string, string> | null;
+    lastUploadBytes: number | null;
+    lastDownloadBytes: number | null;
+    lastTotalBytes: number | null;
+    lastExpireAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 
@@ -31,6 +35,19 @@ export class GetSubscriptionImportSourceResponseModel {
         this.lastHostsCount = entity.lastHostsCount;
         this.importGroup = entity.importGroup ?? null;
         this.fetchHeaders = (entity.fetchHeaders as Record<string, string> | null) ?? null;
+        this.lastUploadBytes =
+            entity.lastUploadBytes !== null && entity.lastUploadBytes !== undefined
+                ? Number(entity.lastUploadBytes)
+                : null;
+        this.lastDownloadBytes =
+            entity.lastDownloadBytes !== null && entity.lastDownloadBytes !== undefined
+                ? Number(entity.lastDownloadBytes)
+                : null;
+        this.lastTotalBytes =
+            entity.lastTotalBytes !== null && entity.lastTotalBytes !== undefined
+                ? Number(entity.lastTotalBytes)
+                : null;
+        this.lastExpireAt = entity.lastExpireAt ?? null;
         this.createdAt = entity.createdAt;
         this.updatedAt = entity.updatedAt;
     }

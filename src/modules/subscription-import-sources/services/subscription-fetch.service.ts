@@ -48,6 +48,9 @@ export class SubscriptionFetchService {
             });
 
             const rawLines = this.extractRawProxyLines(response.data);
+            const userInfo = this.parseSubscriptionUserInfo(
+                response.headers['subscription-userinfo'] as string | undefined,
+            );
 
             if (rawLines.length === 0) {
                 this.logger.warn(
@@ -63,6 +66,10 @@ export class SubscriptionFetchService {
                 lastFetchStatus: IMPORT_FETCH_STATUS.SUCCESS,
                 lastFetchError: null,
                 lastHostsCount: rawLines.length,
+                lastUploadBytes: userInfo.upload,
+                lastDownloadBytes: userInfo.download,
+                lastTotalBytes: userInfo.total,
+                lastExpireAt: userInfo.expire !== null ? new Date(userInfo.expire * 1000) : null,
             });
 
             this.logger.log(
@@ -79,6 +86,40 @@ export class SubscriptionFetchService {
                 lastFetchError: errMsg.slice(0, 500),
             });
         }
+    }
+
+    /**
+     * Parse the `subscription-userinfo` response header.
+     * Format: "upload=0; download=1021436710582; total=0; expire=1774032913"
+     * Returns null for any field that is absent or cannot be parsed.
+     */
+    private parseSubscriptionUserInfo(header: string | undefined): {
+        upload: bigint | null;
+        download: bigint | null;
+        total: bigint | null;
+        expire: number | null;
+    } {
+        const result = { upload: null, download: null, total: null, expire: null } as {
+            upload: bigint | null;
+            download: bigint | null;
+            total: bigint | null;
+            expire: number | null;
+        };
+
+        if (!header) return result;
+
+        for (const part of header.split(';')) {
+            const [key, value] = part.trim().split('=');
+            if (!key || value === undefined) continue;
+            const k = key.trim();
+            const v = value.trim();
+            if (k === 'upload') result.upload = BigInt(v);
+            else if (k === 'download') result.download = BigInt(v);
+            else if (k === 'total') result.total = BigInt(v);
+            else if (k === 'expire') result.expire = Number(v);
+        }
+
+        return result;
     }
 
     /**

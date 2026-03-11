@@ -14,6 +14,10 @@ export class SubscriptionImportSourceEntity implements SubscriptionImportSources
     cachedRawLines: string[];
     importGroup: string | null;
     fetchHeaders: PrismaJson.FetchHeaders | null;
+    lastUploadBytes: bigint | null;
+    lastDownloadBytes: bigint | null;
+    lastTotalBytes: bigint | null;
+    lastExpireAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
 

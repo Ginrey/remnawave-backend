@@ -606,6 +606,10 @@ model SubscriptionImportSources {
   importGroup              String?  @map("import_group") @db.VarChar(100)
   /// [FetchHeaders]
   fetchHeaders             Json?    @map("fetch_headers")
+  lastUploadBytes          BigInt?  @map("last_upload_bytes")
+  lastDownloadBytes        BigInt?  @map("last_download_bytes")
+  lastTotalBytes           BigInt?  @map("last_total_bytes")
+  lastExpireAt             DateTime? @map("last_expire_at")
 
   createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
   updatedAt DateTime @default(dbgenerated("now()")) @updatedAt @map("updated_at")

@@ -25,6 +25,10 @@ const entityToModel = (entity: SubscriptionImportSourceEntity): SubscriptionImpo
         cachedRawLines: entity.cachedRawLines ?? [],
         importGroup: entity.importGroup ?? null,
         fetchHeaders: entity.fetchHeaders ?? null,
+        lastUploadBytes: entity.lastUploadBytes ?? null,
+        lastDownloadBytes: entity.lastDownloadBytes ?? null,
+        lastTotalBytes: entity.lastTotalBytes ?? null,
+        lastExpireAt: entity.lastExpireAt ?? null,
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,
     };
