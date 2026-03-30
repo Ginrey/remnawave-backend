@@ -12,6 +12,10 @@ export * from './get-user-by-uuid.dto';
 export * from './get-user-subscription-request-history.dto';
 export * from './get-users-by-tag.dto';
 export * from './reset-user-traffic.dto';
+<<<<<<< HEAD
+=======
+export * from './resolve-user.dto';
+>>>>>>> upstream/main
 export * from './revoke-user-subscription.dto';
 export * from './tags';
 export * from './update-user.dto';

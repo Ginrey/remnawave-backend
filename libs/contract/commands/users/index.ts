@@ -13,5 +13,9 @@ export * from './get-user-accessible-nodes.command';
 export * from './get-user-by-uuid.command';
 export * from './get-user-subscription-request-history.command';
 
+<<<<<<< HEAD
+=======
+export * from './resolve-user.command';
+>>>>>>> upstream/main
 export * from './tags';
 export * from './update-user.command';

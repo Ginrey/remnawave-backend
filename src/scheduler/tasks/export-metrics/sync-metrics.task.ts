@@ -10,7 +10,11 @@ import { METRIC_NAMES } from '@libs/contracts/constants';
 
 import { GetAllNodesQuery } from '@modules/nodes/queries/get-all-nodes/get-all-nodes.query';
 
+<<<<<<< HEAD
 import { INodeBandwidthMetricLabels, INodeBaseMetricLabels } from '@scheduler/metrics-providers';
+=======
+import { INodeBaseMetricLabels } from '@scheduler/metrics-providers';
+>>>>>>> upstream/main
 import { JOBS_INTERVALS } from '@scheduler/intervals';
 
 @Injectable()
@@ -29,6 +33,29 @@ export class SyncMetricsTask {
         public nodeOutboundUploadBytes: Counter<string>,
         @InjectMetric(METRIC_NAMES.NODE_OUTBOUND_DOWNLOAD_BYTES)
         public nodeOutboundDownloadBytes: Counter<string>,
+<<<<<<< HEAD
+=======
+        @InjectMetric(METRIC_NAMES.NODE_MEMORY_TOTAL_BYTES)
+        public nodeMemoryTotalBytes: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_MEMORY_FREE_BYTES)
+        public nodeMemoryFreeBytes: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_UPTIME_SECONDS)
+        public nodeUptimeSeconds: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_CPU_COUNT)
+        public nodeCpuCount: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_NETWORK_RX_BYTES_PER_SEC)
+        public nodeNetworkRxBytesPerSec: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_NETWORK_TX_BYTES_PER_SEC)
+        public nodeNetworkTxBytesPerSec: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_NETWORK_RX_BYTES_TOTAL)
+        public nodeNetworkRxBytesTotal: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_NETWORK_TX_BYTES_TOTAL)
+        public nodeNetworkTxBytesTotal: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_SYSTEM_INFO)
+        public nodeSystemInfo: Gauge<string>,
+        @InjectMetric(METRIC_NAMES.NODE_BASIC_INFO)
+        public nodeBasicInfo: Gauge<string>,
+>>>>>>> upstream/main
         private readonly queryBus: QueryBus,
     ) {}
 
@@ -50,11 +77,15 @@ export class SyncMetricsTask {
         try {
             const nodesResponse = await this.queryBus.execute(new GetAllNodesQuery());
 
+<<<<<<< HEAD
             if (
                 !nodesResponse.isOk ||
                 !nodesResponse.response ||
                 nodesResponse.response.length === 0
             ) {
+=======
+            if (!nodesResponse.isOk || !nodesResponse.response?.length) {
+>>>>>>> upstream/main
                 return;
             }
 
@@ -68,6 +99,7 @@ export class SyncMetricsTask {
                 });
             }
 
+<<<<<<< HEAD
             const [
                 { values: onlineUsersValues },
                 { values: statusValues },
@@ -107,12 +139,42 @@ export class SyncMetricsTask {
                 outboundDownloadValues,
                 nodesMap,
             );
+=======
+            const allMetrics: (Gauge<string> | Counter<string>)[] = [
+                this.nodeOnlineUsers,
+                this.nodeStatus,
+                this.nodeMemoryTotalBytes,
+                this.nodeMemoryFreeBytes,
+                this.nodeUptimeSeconds,
+                this.nodeCpuCount,
+                this.nodeNetworkRxBytesPerSec,
+                this.nodeNetworkTxBytesPerSec,
+                this.nodeNetworkRxBytesTotal,
+                this.nodeNetworkTxBytesTotal,
+                this.nodeBasicInfo,
+                this.nodeSystemInfo,
+                this.nodeInboundUploadBytes,
+                this.nodeInboundDownloadBytes,
+                this.nodeOutboundUploadBytes,
+                this.nodeOutboundDownloadBytes,
+            ];
+
+            for (const metric of allMetrics) {
+                const { values } = await metric.get();
+                for (const stat of values) {
+                    if (!nodesMap.has(stat.labels.node_uuid as string)) {
+                        metric.remove(stat.labels);
+                    }
+                }
+            }
+>>>>>>> upstream/main
         } catch (error) {
             this.logger.error(`Error in syncNodeMetrics: ${error}`);
         } finally {
             nodesMap.clear();
         }
     }
+<<<<<<< HEAD
 
     private cleanupBaseMetrics(
         metric: Gauge<string>,
@@ -156,4 +218,6 @@ export class SyncMetricsTask {
             nodeA.tags === nodeB.tags
         );
     }
+=======
+>>>>>>> upstream/main
 }

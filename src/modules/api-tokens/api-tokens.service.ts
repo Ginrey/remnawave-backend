@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+<<<<<<< HEAD
 import { Cache } from 'cache-manager';
 import { randomUUID } from 'crypto';
 
@@ -7,6 +8,15 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
 
+=======
+import { randomUUID } from 'crypto';
+
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { CommandBus } from '@nestjs/cqrs';
+
+import { RawCacheService } from '@common/raw-cache';
+>>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { ERRORS } from '@libs/contracts/constants';
 
@@ -20,7 +30,11 @@ import { ApiTokenEntity } from './entities/api-token.entity';
 export class ApiTokensService {
     private readonly logger = new Logger(ApiTokensService.name);
     constructor(
+<<<<<<< HEAD
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
 
         private readonly apiTokensRepository: ApiTokensRepository,
         private readonly commandBus: CommandBus,
@@ -60,7 +74,11 @@ export class ApiTokensService {
         try {
             const result = await this.apiTokensRepository.deleteByUUID(uuid);
 
+<<<<<<< HEAD
             await this.cacheManager.del(`api:${uuid}`);
+=======
+            await this.rawCacheService.del(`api:${uuid}`);
+>>>>>>> upstream/main
 
             return ok({ result });
         } catch (error) {

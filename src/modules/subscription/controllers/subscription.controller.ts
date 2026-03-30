@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 
+<<<<<<< HEAD
 import { Controller, Get, HttpStatus, Param, Req, Res, UseFilters } from '@nestjs/common';
+=======
+import { Controller, Get, HttpStatus, Param, Res, UseFilters } from '@nestjs/common';
+>>>>>>> upstream/main
 import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { PublicHttpExceptionFilter } from '@common/exception/public-http-exception.filter';
@@ -19,7 +23,10 @@ import { REQUEST_TEMPLATE_TYPE } from '@libs/contracts/constants';
 import { ISRRContext } from '@modules/subscription-response-rules/interfaces';
 
 import {
+<<<<<<< HEAD
     GetOutlineSubscriptionRequestDto,
+=======
+>>>>>>> upstream/main
     GetSubscriptionByShortUuidByClientTypeRequestDto,
     GetSubscriptionInfoRequestDto,
     GetSubscriptionInfoResponseDto,
@@ -139,6 +146,7 @@ export class SubscriptionController {
 
         return response.type(result.contentType).send(result.body);
     }
+<<<<<<< HEAD
 
     @ApiParam({
         name: 'shortUuid',
@@ -190,4 +198,6 @@ export class SubscriptionController {
 
         return response.set(result.headers).type(result.contentType).send(result.body);
     }
+=======
+>>>>>>> upstream/main
 }

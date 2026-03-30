@@ -1,18 +1,39 @@
 import { sql } from 'kysely';
 
+<<<<<<< HEAD
 import { DB } from 'prisma/generated/types';
 
+=======
+>>>>>>> upstream/main
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 
 import { ICrudWithStringId } from '@common/types/crud-port';
 import { TxKyselyService } from '@common/database';
+<<<<<<< HEAD
+=======
+import { paginateQuery } from '@common/helpers';
+>>>>>>> upstream/main
 import { GetAllHwidDevicesCommand } from '@libs/contracts/commands';
 
 import { HwidUserDeviceEntity } from '../entities/hwid-user-device.entity';
 import { HwidUserDevicesConverter } from '../hwid-user-devices.converter';
 
+<<<<<<< HEAD
+=======
+const HWID_FILTER_COLUMN_MAP = {
+    userUuid: sql`"user_uuid"::text`,
+    hwid: sql.ref('hwid_user_devices.hwid'),
+    platform: sql.ref('hwid_user_devices.platform'),
+    userAgent: sql.ref('hwid_user_devices.user_agent'),
+    osVersion: sql.ref('hwid_user_devices.os_version'),
+    deviceModel: sql.ref('hwid_user_devices.device_model'),
+} as const;
+
+type AllowedHwidFilterId = keyof typeof HWID_FILTER_COLUMN_MAP;
+
+>>>>>>> upstream/main
 @Injectable()
 export class HwidUserDevicesRepository implements Omit<
     ICrudWithStringId<HwidUserDeviceEntity>,
@@ -104,6 +125,7 @@ export class HwidUserDevicesRepository implements Omit<
         filterModes,
         sorting,
     }: GetAllHwidDevicesCommand.RequestQuery): Promise<[HwidUserDeviceEntity[], number]> {
+<<<<<<< HEAD
         const qb = this.qb.kysely.selectFrom('hwidUserDevices');
 
         let isFiltersEmpty = true;
@@ -203,6 +225,61 @@ export class HwidUserDevicesRepository implements Omit<
 
         const result = users.map((u) => new HwidUserDeviceEntity(u));
         return [result, Number(count)];
+=======
+        let qb = this.qb.kysely.selectFrom('hwidUserDevices').selectAll();
+
+        if (filters?.length) {
+            qb = this.applyHwidFilters(qb, filters, filterModes);
+        }
+
+        if (sorting?.length) {
+            for (const sort of sorting) {
+                qb = qb.orderBy(sql.ref(sort.id), (ob) =>
+                    (sort.desc ? ob.desc() : ob.asc()).nullsLast(),
+                ) as typeof qb;
+            }
+        } else {
+            qb = qb.orderBy('createdAt', 'desc');
+        }
+
+        const { rows, count } = await paginateQuery(qb, { offset: start, limit: size });
+
+        return [rows.map((u) => new HwidUserDeviceEntity(u)), count];
+    }
+
+    private applyHwidFilters(
+        qb: any,
+        filters: GetAllHwidDevicesCommand.RequestQuery['filters'],
+        filterModes?: GetAllHwidDevicesCommand.RequestQuery['filterModes'],
+    ) {
+        for (const filter of filters ?? []) {
+            if (!(filter.id in HWID_FILTER_COLUMN_MAP)) continue;
+
+            const column = HWID_FILTER_COLUMN_MAP[filter.id as AllowedHwidFilterId];
+            const mode = filterModes?.[filter.id] ?? 'contains';
+
+            if (filter.id === 'createdAt' || filter.id === 'expireAt') {
+                qb = qb.where(column, '=', new Date(filter.value as string));
+                continue;
+            }
+
+            switch (mode) {
+                case 'equals':
+                    qb = qb.where(column, '=', filter.value);
+                    break;
+                case 'startsWith':
+                    qb = qb.where(column, 'ilike', `${filter.value}%`);
+                    break;
+                case 'endsWith':
+                    qb = qb.where(column, 'ilike', `%${filter.value}`);
+                    break;
+                default:
+                    qb = qb.where(column, 'ilike', `%${filter.value}%`);
+            }
+        }
+
+        return qb;
+>>>>>>> upstream/main
     }
 
     public async getHwidDevicesStats(): Promise<{

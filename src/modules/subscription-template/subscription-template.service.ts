@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import type { Cache } from 'cache-manager';
 
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -6,6 +7,14 @@ import yaml from 'yaml';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
+=======
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import yaml from 'yaml';
+
+import { Injectable, Logger } from '@nestjs/common';
+
+import { RawCacheService } from '@common/raw-cache';
+>>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { CACHE_KEYS, ERRORS, TSubscriptionTemplateType } from '@libs/contracts/constants';
 import { RemnawaveInjectorSchema } from '@libs/contracts/models';
@@ -32,7 +41,11 @@ export class SubscriptionTemplateService {
 
     constructor(
         private readonly subscriptionTemplateRepository: SubscriptionTemplateRepository,
+<<<<<<< HEAD
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
     ) {}
 
     public async getAllTemplates(): Promise<TResult<GetSubscriptionTemplatesResponseModel>> {
@@ -304,7 +317,11 @@ export class SubscriptionTemplateService {
         type: TSubscriptionTemplateType,
         name: string = DEFAULT_TEMPLATE_NAME,
     ): Promise<object> {
+<<<<<<< HEAD
         const cached = await this.cacheManager.get<object>(
+=======
+        const cached = await this.rawCacheService.get<object>(
+>>>>>>> upstream/main
             CACHE_KEYS.SUBSCRIPTION_TEMPLATE(name, type),
         );
 
@@ -338,10 +355,17 @@ export class SubscriptionTemplateService {
                 break;
         }
 
+<<<<<<< HEAD
         await this.cacheManager.set(
             CACHE_KEYS.SUBSCRIPTION_TEMPLATE(name, type),
             templateContent,
             3_600_000,
+=======
+        await this.rawCacheService.set(
+            CACHE_KEYS.SUBSCRIPTION_TEMPLATE(name, type),
+            templateContent,
+            3_600,
+>>>>>>> upstream/main
         );
 
         if (!templateContent) {
@@ -359,6 +383,10 @@ export class SubscriptionTemplateService {
         type: TSubscriptionTemplateType,
         name: string = DEFAULT_TEMPLATE_NAME,
     ): Promise<void> {
+<<<<<<< HEAD
         await this.cacheManager.del(CACHE_KEYS.SUBSCRIPTION_TEMPLATE(name, type));
+=======
+        await this.rawCacheService.del(CACHE_KEYS.SUBSCRIPTION_TEMPLATE(name, type));
+>>>>>>> upstream/main
     }
 }

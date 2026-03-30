@@ -6,6 +6,10 @@ export * from './get-all-nodes.dto';
 export * from './get-all-tags.dto';
 export * from './get-one-node.dto';
 export * from './node-bulk-actions.dto';
+<<<<<<< HEAD
+=======
+export * from './node-bulk-update.dto';
+>>>>>>> upstream/main
 export * from './profile-modification.dto';
 export * from './reorder.dto';
 export * from './reset-traffic.request.dto';

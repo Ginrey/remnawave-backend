@@ -5,11 +5,19 @@ import { encodeURLSafe } from '@stablelib/base64';
 import { Request, Response } from 'express';
 import { readPackageJSON } from 'pkg-types';
 import axios, { AxiosError } from 'axios';
+<<<<<<< HEAD
 import * as si from 'systeminformation';
 import { groupBy } from 'lodash';
 import pm2 from 'pm2';
 
 import { ERRORS } from '@contract/constants';
+=======
+import { groupBy } from 'lodash';
+import dayjs from 'dayjs';
+import os from 'node:os';
+
+import { ERRORS, INTERNAL_CACHE_KEYS } from '@contract/constants';
+>>>>>>> upstream/main
 
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,15 +31,29 @@ import {
     getLastTwoWeeksRanges,
 } from '@common/utils/get-date-ranges.uti';
 import { resolveCountryEmoji } from '@common/utils/resolve-country-emoji';
+<<<<<<< HEAD
 import { calcDiff } from '@common/utils/calc-percent-diff.util';
 import { prettyBytesUtil } from '@common/utils/bytes';
+=======
+import { RuntimeMetric } from '@common/runtime-metrics/interfaces';
+import { calcDiff } from '@common/utils/calc-percent-diff.util';
+import { prettyBytesUtil } from '@common/utils/bytes';
+import { RawCacheService } from '@common/raw-cache';
+>>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 
 import { ResponseRulesMatcherService } from '@modules/subscription-response-rules/services/response-rules-matcher.service';
 import { ResponseRulesParserService } from '@modules/subscription-response-rules/services/response-rules-parser.service';
 import { GetSumLifetimeQuery } from '@modules/nodes-usage-history/queries/get-sum-lifetime';
 import { Get7DaysStatsQuery } from '@modules/nodes-usage-history/queries/get-7days-stats';
+<<<<<<< HEAD
 import { CountOnlineUsersQuery } from '@modules/nodes/queries/count-online-users';
+=======
+import { GetInitDateQuery } from '@modules/remnawave-settings/queries/get-init-date';
+import { CountOnlineUsersQuery } from '@modules/nodes/queries/count-online-users';
+import { GetUsersRecapQuery } from '@modules/users/queries/get-users-recap';
+import { GetNodesRecapQuery } from '@modules/nodes/queries/get-nodes-recap';
+>>>>>>> upstream/main
 import { IGet7DaysStats } from '@modules/nodes-usage-history/interfaces';
 import { GetAllNodesQuery } from '@modules/nodes/queries/get-all-nodes';
 
@@ -41,6 +63,10 @@ import {
     GetMetadataResponseModel,
     GetNodesStatisticsResponseModel,
     GetNodesStatsResponseModel,
+<<<<<<< HEAD
+=======
+    GetRecapResponseModel,
+>>>>>>> upstream/main
     GetRemnawaveHealthResponseModel,
     IBaseStat,
 } from './models';
@@ -52,6 +78,15 @@ import { ShortUserStats } from '../users/interfaces/user-stats.interface';
 import { GetStatsRequestQueryDto } from './dtos/get-stats.dto';
 import { DebugSrrMatcherRequestDto } from './dtos';
 
+<<<<<<< HEAD
+=======
+const TYPE_ORDER: Record<string, number> = {
+    api: 0,
+    scheduler: 1,
+    processor: 2,
+};
+
+>>>>>>> upstream/main
 @Injectable()
 export class SystemService implements OnApplicationBootstrap {
     private readonly logger = new Logger(SystemService.name);
@@ -62,6 +97,10 @@ export class SystemService implements OnApplicationBootstrap {
         private readonly configService: ConfigService,
         private readonly srrParser: ResponseRulesParserService,
         private readonly srrMatcher: ResponseRulesMatcherService,
+<<<<<<< HEAD
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
     ) {}
 
     public async onApplicationBootstrap(): Promise<void> {
@@ -96,18 +135,27 @@ export class SystemService implements OnApplicationBootstrap {
     public async getStats(): Promise<TResult<GetStatsResponseModel>> {
         try {
             const userStats = await this.getShortUserStats();
+<<<<<<< HEAD
             const onlineUsers = await this.getOnlineUsers();
+=======
+            const onlineUsers = await this.queryBus.execute(new CountOnlineUsersQuery());
+>>>>>>> upstream/main
             const nodesSumLifetime = await this.queryBus.execute(new GetSumLifetimeQuery());
 
             if (!userStats.isOk || !nodesSumLifetime.isOk || !onlineUsers.isOk) {
                 return fail(ERRORS.GET_USER_STATS_ERROR);
             }
 
+<<<<<<< HEAD
             const [cpu, mem, time] = await Promise.all([si.cpu(), si.mem(), si.time()]);
+=======
+            const cpus = os.cpus();
+>>>>>>> upstream/main
 
             return ok(
                 new GetStatsResponseModel({
                     cpu: {
+<<<<<<< HEAD
                         cores: cpu.cores,
                         physicalCores: cpu.physicalCores,
                     },
@@ -119,11 +167,25 @@ export class SystemService implements OnApplicationBootstrap {
                         available: mem.available,
                     },
                     uptime: time.uptime,
+=======
+                        cores: cpus.length,
+                    },
+                    memory: {
+                        total: os.totalmem(),
+                        free: os.freemem(),
+                        used: os.totalmem() - os.freemem(),
+                    },
+                    uptime: os.uptime(),
+>>>>>>> upstream/main
                     timestamp: Date.now(),
                     users: userStats.response.statusCounts,
                     onlineStats: userStats.response.onlineStats,
                     nodes: {
+<<<<<<< HEAD
                         totalOnline: onlineUsers.response?.usersOnline || 0,
+=======
+                        totalOnline: onlineUsers.response.usersOnline,
+>>>>>>> upstream/main
                         totalBytesLifetime: nodesSumLifetime.response.totalBytes,
                     },
                 }),
@@ -184,6 +246,7 @@ export class SystemService implements OnApplicationBootstrap {
 
     public async getRemnawaveHealth(): Promise<TResult<GetRemnawaveHealthResponseModel>> {
         try {
+<<<<<<< HEAD
             const list = await new Promise<pm2.ProcessDescription[]>((resolve, reject) => {
                 pm2.list((err, processes) => {
                     if (err) {
@@ -227,6 +290,29 @@ export class SystemService implements OnApplicationBootstrap {
                     pm2Stats: [],
                 }),
             );
+=======
+            const runtimeMetrics = await this.rawCacheService.hgetallParsed<
+                Record<string, RuntimeMetric>
+            >(INTERNAL_CACHE_KEYS.RUNTIME_METRICS);
+
+            if (!runtimeMetrics) {
+                return ok(new GetRemnawaveHealthResponseModel([]));
+            }
+
+            return ok(
+                new GetRemnawaveHealthResponseModel(
+                    Object.values(runtimeMetrics).sort((a, b) => {
+                        const typeA = TYPE_ORDER[a.instanceType] ?? 99;
+                        const typeB = TYPE_ORDER[b.instanceType] ?? 99;
+                        if (typeA !== typeB) return typeA - typeB;
+                        return Number(a.instanceId) - Number(b.instanceId);
+                    }),
+                ),
+            );
+        } catch (error) {
+            this.logger.error('Error getting system stats:', error);
+            return ok(new GetRemnawaveHealthResponseModel([]));
+>>>>>>> upstream/main
         }
     }
 
@@ -244,7 +330,11 @@ export class SystemService implements OnApplicationBootstrap {
 
             const parsed = parsePrometheusTextFormat(metricsText.data);
 
+<<<<<<< HEAD
             const nodeMetrics = await this.groupMetricsByNodesLodash(parsed);
+=======
+            const nodeMetrics = await this.groupMetricsByNodes(parsed);
+>>>>>>> upstream/main
 
             return ok(new GetNodesStatsResponseModel({ nodes: nodeMetrics }));
         } catch (error) {
@@ -335,30 +425,88 @@ export class SystemService implements OnApplicationBootstrap {
         }
     }
 
+<<<<<<< HEAD
+=======
+    public async getRecap(): Promise<TResult<GetRecapResponseModel>> {
+        try {
+            const now = dayjs().utc();
+
+            const usersRecap = await this.queryBus.execute(new GetUsersRecapQuery());
+            const nodesRecap = await this.queryBus.execute(new GetNodesRecapQuery());
+
+            const nuhLifetimeRecap = await this.queryBus.execute(new GetSumLifetimeQuery());
+            const nuhThisMonthRecap = await this.queryBus.execute(
+                new GetSumByDtRangeQuery(
+                    now.startOf('month').toDate(),
+                    now.endOf('month').toDate(),
+                ),
+            );
+            const initDate = await this.queryBus.execute(new GetInitDateQuery());
+            if (
+                !usersRecap.isOk ||
+                !nodesRecap.isOk ||
+                !nuhLifetimeRecap.isOk ||
+                !nuhThisMonthRecap.isOk
+            ) {
+                return fail(ERRORS.INTERNAL_SERVER_ERROR);
+            }
+            const { total, newUsersThisMonth } = usersRecap.response;
+
+            return ok(
+                new GetRecapResponseModel({
+                    thisMonth: {
+                        users: newUsersThisMonth,
+                        traffic: nuhThisMonthRecap.response.toString(),
+                    },
+                    total: {
+                        users: total,
+                        nodes: nodesRecap.response.total,
+                        traffic: nuhLifetimeRecap.response.totalBytes.toString(),
+                        nodesRam: nodesRecap.response.totalRam.toString(),
+                        nodesCpuCores: nodesRecap.response.totalCpuCores,
+                        distinctCountries: nodesRecap.response.distinctCountries,
+                    },
+                    version: this.rwVersion,
+                    initDate: initDate,
+                }),
+            );
+        } catch (error) {
+            this.logger.error('Error getting system recap:', error);
+            return fail(ERRORS.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+>>>>>>> upstream/main
     private async getShortUserStats(): Promise<TResult<ShortUserStats>> {
         return this.queryBus.execute<GetShortUserStatsQuery, TResult<ShortUserStats>>(
             new GetShortUserStatsQuery(),
         );
     }
 
+<<<<<<< HEAD
     private async getOnlineUsers(): Promise<TResult<{ usersOnline: number }>> {
         return this.queryBus.execute<CountOnlineUsersQuery, TResult<{ usersOnline: number }>>(
             new CountOnlineUsersQuery(),
         );
     }
 
+=======
+>>>>>>> upstream/main
     private async getLastSevenDaysNodesUsage(): Promise<TResult<IGet7DaysStats[]>> {
         return this.queryBus.execute<Get7DaysStatsQuery, TResult<IGet7DaysStats[]>>(
             new Get7DaysStatsQuery(),
         );
     }
 
+<<<<<<< HEAD
     private async getNodesUsageByDtRange(query: GetSumByDtRangeQuery): Promise<TResult<bigint>> {
         return this.queryBus.execute<GetSumByDtRangeQuery, TResult<bigint>>(
             new GetSumByDtRangeQuery(query.start, query.end),
         );
     }
 
+=======
+>>>>>>> upstream/main
     private async getUsageComparison(dateRanges: [[Date, Date], [Date, Date]]): Promise<{
         current: string;
         difference: string;
@@ -367,6 +515,7 @@ export class SystemService implements OnApplicationBootstrap {
         const [[previousStart, previousEnd], [currentStart, currentEnd]] = dateRanges;
 
         const [nodesCurrentUsage, nodesPreviousUsage] = await Promise.all([
+<<<<<<< HEAD
             this.getNodesUsageByDtRange({
                 start: currentStart,
                 end: currentEnd,
@@ -375,6 +524,10 @@ export class SystemService implements OnApplicationBootstrap {
                 start: previousStart,
                 end: previousEnd,
             }),
+=======
+            this.queryBus.execute(new GetSumByDtRangeQuery(currentStart, currentEnd)),
+            this.queryBus.execute(new GetSumByDtRangeQuery(previousStart, previousEnd)),
+>>>>>>> upstream/main
         ]);
 
         const currentUsage = nodesCurrentUsage.isOk ? nodesCurrentUsage.response : 0n;
@@ -414,12 +567,17 @@ export class SystemService implements OnApplicationBootstrap {
         return this.getUsageComparison(ranges);
     }
 
+<<<<<<< HEAD
     private async groupMetricsByNodesLodash(metrics: Metric[]): Promise<NodeMetrics[]> {
+=======
+    private async groupMetricsByNodes(metrics: Metric[]): Promise<NodeMetrics[]> {
+>>>>>>> upstream/main
         const nodes = await this.queryBus.execute(new GetAllNodesQuery());
         if (!nodes.isOk) {
             return [];
         }
 
+<<<<<<< HEAD
         const createNodeKey = (...parts: string[]) => parts.join('§');
 
         const nodesMap = new Map(
@@ -433,6 +591,9 @@ export class SystemService implements OnApplicationBootstrap {
                 return [key, node];
             }),
         );
+=======
+        const nodesMap = new Map(nodes.response.map((node) => [node.uuid, node]));
+>>>>>>> upstream/main
 
         const validMetrics = [
             'remnawave_node_online_users',
@@ -451,6 +612,7 @@ export class SystemService implements OnApplicationBootstrap {
             })),
         );
 
+<<<<<<< HEAD
         const groupedByNode = groupBy(allMetrics, (item) =>
             createNodeKey(
                 item.labels.node_uuid,
@@ -471,6 +633,14 @@ export class SystemService implements OnApplicationBootstrap {
                     node_country_emoji: countryEmoji,
                     provider_name: providerName,
                 } = firstMetric.labels;
+=======
+        const groupedByNode = groupBy(allMetrics, (item) => item.labels.node_uuid);
+
+        const nodeMetrics = Object.entries(groupedByNode)
+            .filter(([uuid]) => nodesMap.has(uuid))
+            .map(([uuid, nodeMetrics]) => {
+                const node = nodesMap.get(uuid)!;
+>>>>>>> upstream/main
 
                 const metricGroups = {
                     onlineUsers: 0,
@@ -525,10 +695,17 @@ export class SystemService implements OnApplicationBootstrap {
                 })).sort((a, b) => a.tag.localeCompare(b.tag));
 
                 return {
+<<<<<<< HEAD
                     nodeUuid,
                     nodeName,
                     countryEmoji,
                     providerName,
+=======
+                    nodeUuid: node.uuid,
+                    nodeName: node.name,
+                    countryEmoji: resolveCountryEmoji(node.countryCode),
+                    providerName: node.provider?.name || 'unknown',
+>>>>>>> upstream/main
                     usersOnline: metricGroups.onlineUsers,
                     inboundsStats,
                     outboundsStats,
@@ -537,6 +714,7 @@ export class SystemService implements OnApplicationBootstrap {
             .filter((node) => node.inboundsStats.length > 0 || node.outboundsStats.length > 0);
 
         return nodeMetrics.sort((a, b) => {
+<<<<<<< HEAD
             const nodeA = nodesMap.get(
                 createNodeKey(a.nodeUuid, a.nodeName, a.countryEmoji, a.providerName),
             );
@@ -548,6 +726,11 @@ export class SystemService implements OnApplicationBootstrap {
             const viewPositionB = nodeB?.viewPosition ?? 0;
 
             return viewPositionA - viewPositionB;
+=======
+            const nodeA = nodesMap.get(a.nodeUuid);
+            const nodeB = nodesMap.get(b.nodeUuid);
+            return (nodeA?.viewPosition ?? 0) - (nodeB?.viewPosition ?? 0);
+>>>>>>> upstream/main
         });
     }
 }

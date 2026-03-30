@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 import { InjectRedis } from '@songkeys/nestjs-redis';
 import { Redis } from 'ioredis';
+=======
+>>>>>>> upstream/main
 import ems from 'enhanced-ms';
 import { Job } from 'bullmq';
 import { t } from 'try';
@@ -12,10 +15,21 @@ import { Logger } from '@nestjs/common';
 import { GetUsersStatsCommand } from '@remnawave/node-contract';
 
 import { fromNanoToNumber } from '@common/utils/nano';
+<<<<<<< HEAD
 import { AxiosService } from '@common/axios';
 import { INTERNAL_CACHE_KEYS, INTERNAL_CACHE_KEYS_TTL } from '@libs/contracts/constants';
 
 import { UpdateNodeCommand } from '@modules/nodes/commands/update-node';
+=======
+import { RawCacheService } from '@common/raw-cache';
+import { AxiosService } from '@common/axios';
+import {
+    CACHE_KEYS,
+    CACHE_KEYS_TTL,
+    INTERNAL_CACHE_KEYS,
+    INTERNAL_CACHE_KEYS_TTL,
+} from '@libs/contracts/constants';
+>>>>>>> upstream/main
 
 import { PushFromRedisQueueService } from '@queue/push-from-redis/push-from-redis.service';
 import { UsersQueuesService } from '@queue/_users';
@@ -37,7 +51,11 @@ export class RecordUserUsageQueueProcessor extends WorkerHost {
         private readonly configService: ConfigService,
         private readonly usersQueuesService: UsersQueuesService,
         private readonly pushFromRedisQueueService: PushFromRedisQueueService,
+<<<<<<< HEAD
         @InjectRedis() private readonly redis: Redis,
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
     ) {
         super();
 
@@ -67,11 +85,18 @@ export class RecordUserUsageQueueProcessor extends WorkerHost {
                         consumptionMultiplier,
                     );
                 case false:
+<<<<<<< HEAD
                     await this.commandBus.execute(
                         new UpdateNodeCommand({
                             uuid: nodeUuid,
                             usersOnline: 0,
                         }),
+=======
+                    await this.rawCacheService.set(
+                        CACHE_KEYS.NODE_USERS_ONLINE(nodeUuid),
+                        0,
+                        CACHE_KEYS_TTL.NODE_USERS_ONLINE,
+>>>>>>> upstream/main
                     );
 
                     this.logger.error(
@@ -100,11 +125,18 @@ export class RecordUserUsageQueueProcessor extends WorkerHost {
 
         try {
             if (response.response.users.length === 0) {
+<<<<<<< HEAD
                 await this.commandBus.execute(
                     new UpdateNodeCommand({
                         uuid: nodeUuid,
                         usersOnline: 0,
                     }),
+=======
+                await this.rawCacheService.set(
+                    CACHE_KEYS.NODE_USERS_ONLINE(nodeUuid),
+                    0,
+                    CACHE_KEYS_TTL.NODE_USERS_ONLINE,
+>>>>>>> upstream/main
                 );
 
                 return;
@@ -117,7 +149,11 @@ export class RecordUserUsageQueueProcessor extends WorkerHost {
 
             const nodeRedisKey = INTERNAL_CACHE_KEYS.NODE_USER_USAGE(nodeId);
 
+<<<<<<< HEAD
             const pipeline = this.redis.pipeline();
+=======
+            const pipeline = this.rawCacheService.createPipeline();
+>>>>>>> upstream/main
 
             response.response.users.forEach((user) => {
                 const { ok } = t(() => BigInt(user.username));
@@ -141,6 +177,7 @@ export class RecordUserUsageQueueProcessor extends WorkerHost {
                 };
             });
 
+<<<<<<< HEAD
             if (userUsageIndex === 0) {
                 await this.commandBus.execute(
                     new UpdateNodeCommand({
@@ -151,15 +188,24 @@ export class RecordUserUsageQueueProcessor extends WorkerHost {
                 return;
             }
 
+=======
+>>>>>>> upstream/main
             pipeline.expire(nodeRedisKey, INTERNAL_CACHE_KEYS_TTL.NODE_USER_USAGE);
 
             await pipeline.exec();
 
+<<<<<<< HEAD
             await this.commandBus.execute(
                 new UpdateNodeCommand({
                     uuid: nodeUuid,
                     usersOnline: userUsageIndex,
                 }),
+=======
+            await this.rawCacheService.set(
+                CACHE_KEYS.NODE_USERS_ONLINE(nodeUuid),
+                userUsageIndex,
+                CACHE_KEYS_TTL.NODE_USERS_ONLINE,
+>>>>>>> upstream/main
             );
 
             await this.usersQueuesService.updateUserUsage(userUsageList.slice(0, userUsageIndex));

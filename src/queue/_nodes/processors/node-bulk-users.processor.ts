@@ -13,10 +13,22 @@ import {
     IDropUsersConnectionsPayload,
     IRemoveUsersFromNodePayload,
 } from '../interfaces';
+<<<<<<< HEAD
 import { NODES_JOB_NAMES } from '../constants/nodes-job-name.constant';
 
 @Processor(QUEUES_NAMES.NODES.BULK_USERS, {
     concurrency: 20,
+=======
+import {
+    IBlockIpsPayload,
+    IRecreateTablesPayload,
+    IUnblockIpsPayload,
+} from '../interfaces/executor.payload.interface';
+import { NODES_JOB_NAMES } from '../constants/nodes-job-name.constant';
+
+@Processor(QUEUES_NAMES.NODES.BULK_USERS, {
+    concurrency: 25,
+>>>>>>> upstream/main
 })
 export class NodeBulkUsersQueueProcessor extends WorkerHost {
     private readonly logger = new Logger(NodeBulkUsersQueueProcessor.name);
@@ -35,6 +47,16 @@ export class NodeBulkUsersQueueProcessor extends WorkerHost {
                 return await this.handleDropUsersConnections(job);
             case NODES_JOB_NAMES.DROP_IPS_CONNECTIONS:
                 return await this.handleDropIpsConnections(job);
+<<<<<<< HEAD
+=======
+            case NODES_JOB_NAMES.BLOCK_IPS:
+                return await this.handleBlockIps(job);
+            case NODES_JOB_NAMES.UNBLOCK_IPS:
+                return await this.handleUnblockIps(job);
+            case NODES_JOB_NAMES.RECREATE_TABLES:
+                return await this.handleRecreateTables(job);
+
+>>>>>>> upstream/main
             default:
                 this.logger.warn(`Job "${job.name}" is not handled.`);
                 break;
@@ -118,4 +140,61 @@ export class NodeBulkUsersQueueProcessor extends WorkerHost {
             );
         }
     }
+<<<<<<< HEAD
+=======
+
+    private async handleBlockIps(job: Job<IBlockIpsPayload>) {
+        try {
+            const { data, node } = job.data;
+            const result = await this.axios.blockIps(data, node.address, node.port);
+
+            if (!result.isOk) {
+                this.logger.error(
+                    `Failed to block ips from Node ${node.address}:${node.port}: ${result.message}`,
+                );
+            }
+
+            return result;
+        } catch (error) {
+            this.logger.error(`Error handling "${NODES_JOB_NAMES.BLOCK_IPS}" job: ${error}`);
+            return;
+        }
+    }
+
+    private async handleUnblockIps(job: Job<IUnblockIpsPayload>) {
+        try {
+            const { data, node } = job.data;
+            const result = await this.axios.unblockIps(data, node.address, node.port);
+
+            if (!result.isOk) {
+                this.logger.error(
+                    `Failed to unblock ips from Node ${node.address}:${node.port}: ${result.message}`,
+                );
+            }
+
+            return result;
+        } catch (error) {
+            this.logger.error(`Error handling "${NODES_JOB_NAMES.UNBLOCK_IPS}" job: ${error}`);
+            return;
+        }
+    }
+
+    private async handleRecreateTables(job: Job<IRecreateTablesPayload>) {
+        try {
+            const { node } = job.data;
+            const result = await this.axios.recreateTables(node.address, node.port);
+
+            if (!result.isOk) {
+                this.logger.error(
+                    `Failed to recreate tables from Node ${node.address}:${node.port}: ${result.message}`,
+                );
+            }
+
+            return result;
+        } catch (error) {
+            this.logger.error(`Error handling "${NODES_JOB_NAMES.RECREATE_TABLES}" job: ${error}`);
+            return;
+        }
+    }
+>>>>>>> upstream/main
 }

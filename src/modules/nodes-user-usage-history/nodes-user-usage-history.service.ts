@@ -10,6 +10,7 @@ import { ERRORS } from '@libs/contracts/constants';
 import { GetUserByUniqueFieldQuery } from '@modules/users/queries/get-user-by-unique-field';
 import { GetNodeByUuidQuery } from '@modules/nodes/queries/get-node-by-uuid';
 
+<<<<<<< HEAD
 import {
     IGetLegacyStatsNodesUsersUsage,
     IGetLegacyStatsUserUsage,
@@ -17,6 +18,11 @@ import {
 } from './interfaces';
 import { NodesUserUsageHistoryRepository } from './repositories/nodes-user-usage-history.repository';
 import { GetStatsNodesUsersUsageResponseModel, GetStatsUserUsageResponseModel } from './models';
+=======
+import { NodesUserUsageHistoryRepository } from './repositories/nodes-user-usage-history.repository';
+import { GetStatsNodesUsersUsageResponseModel, GetStatsUserUsageResponseModel } from './models';
+import { IGetLegacyStatsNodesUsersUsage, IGetLegacyStatsUserUsage } from './interfaces';
+>>>>>>> upstream/main
 
 @Injectable()
 export class NodesUserUsageHistoryService {
@@ -76,6 +82,7 @@ export class NodesUserUsageHistoryService {
         }
     }
 
+<<<<<<< HEAD
     public async getStatsNodesRealtimeUsage(): Promise<TResult<IGetNodesRealtimeUsage[]>> {
         try {
             const result = await this.nodeUserUsageHistoryRepository.getNodesRealtimeUsage();
@@ -87,6 +94,8 @@ export class NodesUserUsageHistoryService {
         }
     }
 
+=======
+>>>>>>> upstream/main
     public async getStatsUserUsage(
         uuid: string,
         start: string,

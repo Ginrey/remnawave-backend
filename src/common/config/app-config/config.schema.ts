@@ -43,6 +43,7 @@ export const configSchema = z
             .transform((val) => (val === '' ? 'false' : val))
             .refine((val) => val === 'true' || val === 'false', 'Must be "true" or "false".'),
         TELEGRAM_BOT_TOKEN: z.string().optional(),
+<<<<<<< HEAD
         TELEGRAM_NOTIFY_USERS_CHAT_ID: z.string().optional(),
         TELEGRAM_NOTIFY_USERS_THREAD_ID: z
             .string()
@@ -62,6 +63,24 @@ export const configSchema = z
             .optional(),
 
         FRONT_END_DOMAIN: z.string(),
+=======
+        TELEGRAM_BOT_API_ROOT: z.string().default('https://api.telegram.org'),
+        TELEGRAM_BOT_PROXY: z
+            .string()
+            .optional()
+            .refine(
+                (val) => val !== 'change_me',
+                'TELEGRAM_BOT_PROXY cannot be set to "change_me"',
+            ),
+        TELEGRAM_NOTIFY_USERS: z.string().optional(),
+        TELEGRAM_NOTIFY_NODES: z.string().optional(),
+        TELEGRAM_NOTIFY_CRM: z.string().optional(),
+        TELEGRAM_NOTIFY_SERVICE: z.string().optional(),
+        TELEGRAM_NOTIFY_TBLOCKER: z.string().optional(),
+
+        FRONT_END_DOMAIN: z.string(),
+        PANEL_DOMAIN: z.string().optional(),
+>>>>>>> upstream/main
         IS_DOCS_ENABLED: z
             .string()
             .default('false')
@@ -110,11 +129,14 @@ export const configSchema = z
             .default('false')
             .transform((val) => (val === '' ? 'false' : val))
             .refine((val) => val === 'true' || val === 'false', 'Must be "true" or "false".'),
+<<<<<<< HEAD
         IS_CROWDIN_EDITOR_ENABLED: z
             .string()
             .default('false')
             .transform((val) => (val === '' ? 'false' : val))
             .refine((val) => val === 'true' || val === 'false', 'Must be "true" or "false".'),
+=======
+>>>>>>> upstream/main
         REMNAWAVE_BRANCH: z.string().default('dev'),
 
         // COOKIE_AUTH_ENABLED: z
@@ -266,6 +288,7 @@ export const configSchema = z
                     path: ['TELEGRAM_BOT_TOKEN'],
                 });
             }
+<<<<<<< HEAD
             if (!data.TELEGRAM_NOTIFY_NODES_CHAT_ID) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -274,6 +297,8 @@ export const configSchema = z
                     path: ['TELEGRAM_NOTIFY_NODES_CHAT_ID'],
                 });
             }
+=======
+>>>>>>> upstream/main
         }
 
         // if (data.COOKIE_AUTH_ENABLED) {

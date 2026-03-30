@@ -1,19 +1,41 @@
 import { sql } from 'kysely';
 
+<<<<<<< HEAD
 import { DB } from 'prisma/generated/types';
 
+=======
+>>>>>>> upstream/main
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 
+<<<<<<< HEAD
 import { ICrudWithId } from '@common/types/crud-port';
 import { TxKyselyService } from '@common/database';
 import { getKyselyUuid } from '@common/helpers';
+=======
+import { getKyselyUuid, paginateQuery } from '@common/helpers';
+import { ICrudWithId } from '@common/types/crud-port';
+import { TxKyselyService } from '@common/database';
+>>>>>>> upstream/main
 import { GetSubscriptionRequestHistoryCommand } from '@libs/contracts/commands';
 
 import { UserSubscriptionRequestHistoryEntity } from '../entities/user-subscription-request-history.entity';
 import { UserSubscriptionRequestHistoryConverter } from '../user-subscription-request-history.converter';
 
+<<<<<<< HEAD
+=======
+const SUB_HISTORY_FILTER_COLUMN_MAP = {
+    id: sql`CAST(id AS TEXT)`,
+    requestAt: sql.ref('user_subscription_request_history.request_at'),
+    requestIp: sql.ref('user_subscription_request_history.request_ip'),
+    userUuid: sql`"user_uuid"::text`,
+    userAgent: sql.ref('user_subscription_request_history.user_agent'),
+} as const;
+
+type AllowedSubHistoryFilterId = keyof typeof SUB_HISTORY_FILTER_COLUMN_MAP;
+
+>>>>>>> upstream/main
 @Injectable()
 export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<UserSubscriptionRequestHistoryEntity> {
     constructor(
@@ -107,6 +129,7 @@ export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<Use
     }: GetSubscriptionRequestHistoryCommand.RequestQuery): Promise<
         [UserSubscriptionRequestHistoryEntity[], number]
     > {
+<<<<<<< HEAD
         const qb = this.qb.kysely.selectFrom('userSubscriptionRequestHistory');
 
         let isFiltersEmpty = true;
@@ -238,6 +261,71 @@ export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<Use
 
         const result = users.map((u) => new UserSubscriptionRequestHistoryEntity(u));
         return [result, Number(count)];
+=======
+        let qb = this.qb.kysely.selectFrom('userSubscriptionRequestHistory').selectAll();
+
+        if (filters?.length) {
+            qb = this.applySubHistoryFilters(qb, filters, filterModes);
+        }
+
+        if (sorting?.length) {
+            for (const sort of sorting) {
+                qb = qb.orderBy(sql.ref(sort.id), (ob) =>
+                    (sort.desc ? ob.desc() : ob.asc()).nullsLast(),
+                ) as typeof qb;
+            }
+        } else {
+            qb = qb.orderBy('requestAt', 'desc');
+        }
+
+        const { rows, count } = await paginateQuery(qb, { offset: start, limit: size });
+
+        return [rows.map((u) => new UserSubscriptionRequestHistoryEntity(u)), count];
+    }
+
+    private applySubHistoryFilters(
+        qb: any,
+        filters: GetSubscriptionRequestHistoryCommand.RequestQuery['filters'],
+        filterModes?: GetSubscriptionRequestHistoryCommand.RequestQuery['filterModes'],
+    ) {
+        for (const filter of filters ?? []) {
+            if (!(filter.id in SUB_HISTORY_FILTER_COLUMN_MAP)) continue;
+
+            const column = SUB_HISTORY_FILTER_COLUMN_MAP[filter.id as AllowedSubHistoryFilterId];
+            const mode = filterModes?.[filter.id] ?? 'contains';
+
+            if (filter.id === 'requestAt') {
+                qb = qb.where(column, '=', new Date(filter.value as string));
+                continue;
+            }
+
+            if (filter.id === 'id') {
+                try {
+                    BigInt(filter.value as string);
+                    qb = qb.where(column, 'like', `%${filter.value}%`);
+                } catch {
+                    qb = qb.where('id', 'is', null);
+                }
+                continue;
+            }
+
+            switch (mode) {
+                case 'equals':
+                    qb = qb.where(column, '=', filter.value);
+                    break;
+                case 'startsWith':
+                    qb = qb.where(column, 'ilike', `${filter.value}%`);
+                    break;
+                case 'endsWith':
+                    qb = qb.where(column, 'ilike', `%${filter.value}`);
+                    break;
+                default:
+                    qb = qb.where(column, 'ilike', `%${filter.value}%`);
+            }
+        }
+
+        return qb;
+>>>>>>> upstream/main
     }
 
     public async getSubscriptionRequestHistoryStats(): Promise<{

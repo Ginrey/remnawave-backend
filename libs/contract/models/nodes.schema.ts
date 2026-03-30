@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 import { ConfigProfileInboundsSchema } from './config-profile-inbounds.schema';
 import { PartialInfraProviderSchema } from './infra-provider.schema';
+<<<<<<< HEAD
+=======
+import { NodeSystemSchema } from './node-system.schema';
+>>>>>>> upstream/main
 
 export const NodesSchema = z.object({
     uuid: z.string().uuid(),
@@ -18,25 +22,34 @@ export const NodesSchema = z.object({
             .transform((str) => new Date(str)),
     ),
     lastStatusMessage: z.nullable(z.string()),
+<<<<<<< HEAD
     xrayVersion: z.nullable(z.string()),
     nodeVersion: z.nullable(z.string()),
     xrayUptime: z.string(),
+=======
+>>>>>>> upstream/main
     isTrafficTrackingActive: z.boolean(),
     trafficResetDay: z.nullable(z.number().int()),
     trafficLimitBytes: z.nullable(z.number()),
     trafficUsedBytes: z.nullable(z.number()),
     notifyPercent: z.nullable(z.number().int()),
+<<<<<<< HEAD
     usersOnline: z.nullable(z.number().int()),
 
+=======
+>>>>>>> upstream/main
     viewPosition: z.number().int(),
     countryCode: z.string(),
     consumptionMultiplier: z.number(),
     tags: z.array(z.string()),
 
+<<<<<<< HEAD
     cpuCount: z.nullable(z.number().int()),
     cpuModel: z.nullable(z.string()),
     totalRam: z.nullable(z.string()),
 
+=======
+>>>>>>> upstream/main
     createdAt: z
         .string()
         .datetime()
@@ -53,4 +66,17 @@ export const NodesSchema = z.object({
 
     providerUuid: z.nullable(z.string().uuid()),
     provider: z.nullable(PartialInfraProviderSchema),
+<<<<<<< HEAD
+=======
+    activePluginUuid: z.nullable(z.string().uuid()),
+    system: z.nullable(NodeSystemSchema),
+    versions: z.nullable(
+        z.object({
+            xray: z.string(),
+            node: z.string(),
+        }),
+    ),
+    xrayUptime: z.number(),
+    usersOnline: z.number(),
+>>>>>>> upstream/main
 });

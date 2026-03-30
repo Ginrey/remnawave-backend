@@ -7,7 +7,12 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 
 import { NotificationsConfigService } from '@common/config/common-config';
+<<<<<<< HEAD
 import { EVENTS, EVENTS_SCOPES } from '@libs/contracts/constants';
+=======
+import { RawCacheService } from '@common/raw-cache';
+import { CACHE_KEYS, EVENTS, EVENTS_SCOPES } from '@libs/contracts/constants';
+>>>>>>> upstream/main
 
 import {
     UserEvent,
@@ -16,10 +21,19 @@ import {
     NodeEvent,
     CrmEvent,
     UserHwidDeviceEvent,
+<<<<<<< HEAD
 } from '@integration-modules/notifications/interfaces';
 
 import { GetFullUserResponseModel } from '@modules/users/models';
 import { GetOneNodeResponseModel } from '@modules/nodes/models';
+=======
+    TorrentBlockerEvent,
+} from '@integration-modules/notifications/interfaces';
+
+import { INodeHotCache, INodeSystem, INodeVersions } from '@modules/nodes/interfaces';
+import { GetFullUserResponseModel } from '@modules/users/models';
+import { NodeResponseModel } from '@modules/nodes/models';
+>>>>>>> upstream/main
 
 import { WebhookLoggerQueueService } from '@queue/notifications/webhook-logger/webhook-logger.service';
 
@@ -33,6 +47,10 @@ export class WebhookEvents {
         private readonly webhookLoggerQueueService: WebhookLoggerQueueService,
         private readonly configService: ConfigService,
         private readonly notificationsConfig: NotificationsConfigService,
+<<<<<<< HEAD
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
     ) {
         this.subPublicDomain = this.configService.getOrThrow<string>('SUB_PUBLIC_DOMAIN');
         this.webhookUrls = this.configService
@@ -83,7 +101,16 @@ export class WebhookEvents {
                 scope: EVENTS_SCOPES.NODE,
                 event: event.eventName,
                 timestamp: dayjs().toISOString(),
+<<<<<<< HEAD
                 data: instanceToPlain(new GetOneNodeResponseModel(event.node)),
+=======
+                data: instanceToPlain(
+                    new NodeResponseModel(
+                        event.node,
+                        await this.getNodesSystemInfo(event.node.uuid),
+                    ),
+                ),
+>>>>>>> upstream/main
             };
 
             const { json } = serialize(payload);
@@ -214,4 +241,59 @@ export class WebhookEvents {
             this.logger.error(`Error sending webhook event: ${error}`);
         }
     }
+<<<<<<< HEAD
+=======
+
+    @OnEvent(EVENTS.CATCH_ALL_TORRENT_BLOCKER_EVENTS)
+    async onCatchAllTorrentBlockerEvents(event: TorrentBlockerEvent): Promise<void> {
+        try {
+            if (!this.notificationsConfig.isEnabled(event.eventName, 'webhook')) {
+                return;
+            }
+
+            const payload = {
+                scope: EVENTS_SCOPES.TORRENT_BLOCKER,
+                event: event.eventName,
+                timestamp: dayjs().toISOString(),
+                data: instanceToPlain({
+                    ...event.data,
+                    node: new NodeResponseModel(
+                        event.data.node,
+                        await this.getNodesSystemInfo(event.data.node.uuid),
+                    ),
+                    user: new GetFullUserResponseModel(event.data.user, this.subPublicDomain),
+                }),
+            };
+
+            const { json } = serialize(payload);
+
+            await this.webhookLoggerQueueService.sendWebhooks(
+                {
+                    payload: JSON.stringify(json),
+                    timestamp: payload.timestamp,
+                },
+                this.webhookUrls,
+            );
+        } catch (error) {
+            this.logger.error(`Error sending webhook event: ${error}`);
+        }
+    }
+
+    private async getNodesSystemInfo(uuid: string): Promise<INodeHotCache> {
+        const [info, stats, onlineUsers, xrayUptime, versions] = await Promise.all([
+            this.rawCacheService.get<INodeSystem['info']>(CACHE_KEYS.NODE_SYSTEM_INFO(uuid)),
+            this.rawCacheService.get<INodeSystem['stats']>(CACHE_KEYS.NODE_SYSTEM_STATS(uuid)),
+            this.rawCacheService.getNumber(CACHE_KEYS.NODE_USERS_ONLINE(uuid)),
+            this.rawCacheService.getNumber(CACHE_KEYS.NODE_XRAY_UPTIME(uuid)),
+            this.rawCacheService.get<INodeVersions>(CACHE_KEYS.NODE_VERSIONS(uuid)),
+        ]);
+
+        return {
+            system: info && stats ? { info, stats } : null,
+            onlineUsers,
+            versions,
+            xrayUptime,
+        };
+    }
+>>>>>>> upstream/main
 }

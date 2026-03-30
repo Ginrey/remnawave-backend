@@ -23,8 +23,15 @@ export class NodesEvents implements OnApplicationBootstrap {
         private readonly telegramQueue: TelegramBotLoggerQueueService,
         private readonly configService: ConfigService,
     ) {
+<<<<<<< HEAD
         this.chatId = this.configService.get<string>('TELEGRAM_NOTIFY_NODES_CHAT_ID');
         this.threadId = this.configService.get<string>('TELEGRAM_NOTIFY_NODES_THREAD_ID');
+=======
+        const chatId = this.configService.get<string>('TELEGRAM_NOTIFY_NODES');
+        if (chatId) {
+            [this.chatId, this.threadId] = chatId.split(':');
+        }
+>>>>>>> upstream/main
     }
 
     onApplicationBootstrap(): void {

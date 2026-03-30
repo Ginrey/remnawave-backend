@@ -6,7 +6,11 @@
 
 generator client {
   provider      = "prisma-client-js"
+<<<<<<< HEAD
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
+=======
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+>>>>>>> upstream/main
   // previewFeatures = ["queryCompiler", "driverAdapters", "views"]
 }
 
@@ -36,8 +40,11 @@ model RemnawaveSettings {
   passkeySettings  Json? @map("passkey_settings")
   /// [Oauth2Settings]
   oauth2Settings   Json? @map("oauth2_settings")
+<<<<<<< HEAD
   /// [TgAuthSettings]
   tgAuthSettings   Json? @map("tg_auth_settings")
+=======
+>>>>>>> upstream/main
   /// [PasswordAuthSettings]
   passwordSettings Json? @map("password_settings")
   /// [BrandingSettings]
@@ -54,11 +61,17 @@ model Users {
   /// @kyselyType('ACTIVE' | 'DISABLED' | 'LIMITED' | 'EXPIRED')
   status                 String    @default("ACTIVE") @map("status") @db.VarChar(10)
   trafficLimitBytes      BigInt    @default(0) @map("traffic_limit_bytes")
+<<<<<<< HEAD
   /// @kyselyType('NO_RESET' | 'DAY' | 'WEEK' | 'MONTH')
   trafficLimitStrategy   String    @default("NO_RESET") @map("traffic_limit_strategy")
   expireAt               DateTime  @map("expire_at")
   subLastUserAgent       String?   @map("sub_last_user_agent")
   subLastOpenedAt        DateTime? @map("sub_last_opened_at")
+=======
+  /// @kyselyType('NO_RESET' | 'DAY' | 'WEEK' | 'MONTH' | 'MONTH_ROLLING')
+  trafficLimitStrategy   String    @default("NO_RESET") @map("traffic_limit_strategy")
+  expireAt               DateTime  @map("expire_at")
+>>>>>>> upstream/main
   lastTrafficResetAt     DateTime? @map("last_traffic_reset_at")
   subRevokedAt           DateTime? @map("sub_revoked_at")
   trojanPassword         String    @map("trojan_password")
@@ -79,6 +92,11 @@ model Users {
   hwidUserDevices                HwidUserDevices[]
   activeInternalSquads           InternalSquadMembers[]
   userSubscriptionRequestHistory UserSubscriptionRequestHistory[]
+<<<<<<< HEAD
+=======
+  userMetas                      UserMeta[]
+  torrentBlockerReports          TorrentBlockerReports[]
+>>>>>>> upstream/main
   traffic                        UserTraffic?
 
   externalSquad ExternalSquads? @relation(fields: [externalSquadUuid], references: [uuid], onDelete: SetNull)
@@ -171,6 +189,10 @@ model Nodes {
   port    Int?   @map("port")
 
   activeConfigProfileUuid String? @map("active_config_profile_uuid") @db.Uuid
+<<<<<<< HEAD
+=======
+  activePluginUuid        String? @map("active_plugin_uuid") @db.Uuid
+>>>>>>> upstream/main
 
   isConnected  Boolean @default(false) @map("is_connected")
   isConnecting Boolean @default(false) @map("is_connecting")
@@ -178,11 +200,15 @@ model Nodes {
 
   lastStatusChange  DateTime? @map("last_status_change")
   lastStatusMessage String?   @map("last_status_message")
+<<<<<<< HEAD
   xrayVersion       String?   @map("xray_version")
   nodeVersion       String?   @map("node_version")
   xrayUptime        String    @default("0") @map("xray_uptime")
 
   usersOnline           Int?   @default(0) @map("users_online")
+=======
+
+>>>>>>> upstream/main
   consumptionMultiplier BigInt @default(1000000000) @map("consumption_multiplier")
 
   isTrafficTrackingActive Boolean @default(false) @map("is_traffic_tracking_active")
@@ -197,10 +223,13 @@ model Nodes {
   countryCode  String   @default("XX") @map("country_code")
   tags         String[] @default([]) @map("tags")
 
+<<<<<<< HEAD
   cpuCount Int?    @map("cpu_count")
   cpuModel String? @map("cpu_model")
   totalRam String? @map("total_ram")
 
+=======
+>>>>>>> upstream/main
   createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
   updatedAt DateTime @default(dbgenerated("now()")) @updatedAt @map("updated_at")
 
@@ -211,9 +240,18 @@ model Nodes {
   infraBillingNodes            InfraBillingNodes[]
   hosts                        HostsToNodes[]
   connectedUsers               UserTraffic[]
+<<<<<<< HEAD
 
   activeConfigProfile ConfigProfiles? @relation(fields: [activeConfigProfileUuid], references: [uuid], onDelete: SetNull)
   provider            InfraProviders? @relation(fields: [providerUuid], references: [uuid], onDelete: SetNull)
+=======
+  nodeMetas                    NodeMeta[]
+  torrentBlockerReports        TorrentBlockerReports[]
+
+  activeConfigProfile ConfigProfiles? @relation(fields: [activeConfigProfileUuid], references: [uuid], onDelete: SetNull)
+  provider            InfraProviders? @relation(fields: [providerUuid], references: [uuid], onDelete: SetNull)
+  activePlugin        NodePlugin?     @relation(fields: [activePluginUuid], references: [uuid], onDelete: SetNull)
+>>>>>>> upstream/main
 
   @@index([id])
   @@map("nodes")
@@ -277,6 +315,10 @@ model Hosts {
   xHttpExtraParams             Json?    @map("xhttp_extra_params")
   muxParams                    Json?    @map("mux_params")
   sockoptParams                Json?    @map("sockopt_params")
+<<<<<<< HEAD
+=======
+  finalMask                    Json?    @map("final_mask")
+>>>>>>> upstream/main
   isDisabled                   Boolean  @default(false) @map("is_disabled")
   serverDescription            String?  @map("server_description") @db.VarChar(30)
   vlessRouteId                 Int?     @map("vless_route_id")
@@ -295,9 +337,15 @@ model Hosts {
   configProfileUuid        String? @map("config_profile_uuid") @db.Uuid
   configProfileInboundUuid String? @map("config_profile_inbound_uuid") @db.Uuid
 
+<<<<<<< HEAD
   configProfileInbounds ConfigProfileInbounds?         @relation(fields: [configProfileInboundUuid], references: [uuid], onDelete: SetNull)
   configProfiles        ConfigProfiles?                @relation(fields: [configProfileUuid], references: [uuid], onDelete: SetNull)
   xrayJsonTemplate      SubscriptionTemplate?          @relation(fields: [xrayJsonTemplateUuid], references: [uuid], onDelete: SetNull)
+=======
+  configProfileInbounds ConfigProfileInbounds? @relation(fields: [configProfileInboundUuid], references: [uuid], onDelete: SetNull)
+  configProfiles        ConfigProfiles?        @relation(fields: [configProfileUuid], references: [uuid], onDelete: SetNull)
+  xrayJsonTemplate      SubscriptionTemplate?  @relation(fields: [xrayJsonTemplateUuid], references: [uuid], onDelete: SetNull)
+>>>>>>> upstream/main
 
   nodes                  HostsToNodes[]
   excludedInternalSquads InternalSquadHostExclusions[]
@@ -445,7 +493,10 @@ model ConfigProfileInbounds {
   hosts                        Hosts[]
   configProfileInboundsToNodes ConfigProfileInboundsToNodes[]
   internalSquadInbounds        InternalSquadInbounds[]
+<<<<<<< HEAD
   subscriptionImportSources    SubscriptionImportSources[]
+=======
+>>>>>>> upstream/main
 
   @@unique([tag])
   @@index([profileUuid, uuid])
@@ -591,6 +642,7 @@ model SubscriptionPageConfig {
   @@map("subscription_page_config")
 }
 
+<<<<<<< HEAD
 model SubscriptionImportSources {
   uuid                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                     String   @unique @map("name") @db.VarChar(100)
@@ -610,11 +662,58 @@ model SubscriptionImportSources {
   lastDownloadBytes        BigInt?  @map("last_download_bytes")
   lastTotalBytes           BigInt?  @map("last_total_bytes")
   lastExpireAt             DateTime? @map("last_expire_at")
+=======
+model NodePlugin {
+  uuid         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  viewPosition Int    @default(autoincrement()) @map("view_position")
+  name         String @map("name") @db.VarChar(255)
+  pluginConfig Json   @map("plugin_config")
+>>>>>>> upstream/main
 
   createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
   updatedAt DateTime @default(dbgenerated("now()")) @updatedAt @map("updated_at")
 
+<<<<<<< HEAD
   configProfileInbound ConfigProfileInbounds? @relation(fields: [configProfileInboundUuid], references: [uuid], onDelete: SetNull)
 
   @@map("subscription_import_sources")
+=======
+  nodes Nodes[]
+
+  @@map("node_plugin")
+}
+
+model UserMeta {
+  userId   BigInt @map("user_id")
+  metadata Json   @map("metadata")
+
+  user Users @relation(fields: [userId], references: [tId], onDelete: Cascade)
+
+  @@id([userId])
+  @@map("user_meta")
+}
+
+model NodeMeta {
+  nodeId   BigInt @map("node_id")
+  metadata Json   @map("metadata")
+
+  node Nodes @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@id([nodeId])
+  @@map("node_meta")
+}
+
+model TorrentBlockerReports {
+  id     BigInt @id @default(autoincrement())
+  userId BigInt @map("user_id")
+  nodeId BigInt @map("node_id")
+  report Json   @map("report")
+
+  createdAt DateTime @default(dbgenerated("now()")) @map("created_at")
+
+  user Users @relation(fields: [userId], references: [tId], onDelete: Cascade)
+  node Nodes @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@map("torrent_blocker_reports")
+>>>>>>> upstream/main
 }

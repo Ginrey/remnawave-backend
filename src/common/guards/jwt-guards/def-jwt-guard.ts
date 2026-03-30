@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Cache } from 'cache-manager';
 
 import { ExecutionContext, ForbiddenException, Inject, Injectable } from '@nestjs/common';
@@ -5,6 +6,13 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { AuthGuard } from '@nestjs/passport';
 import { QueryBus } from '@nestjs/cqrs';
 
+=======
+import { ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { QueryBus } from '@nestjs/cqrs';
+
+import { RawCacheService } from '@common/raw-cache';
+>>>>>>> upstream/main
 import { TResult } from '@common/types';
 import {
     REMNAWAVE_CLIENT_TYPE_BROWSER,
@@ -21,7 +29,11 @@ import { IJWTAuthPayload } from '@modules/auth/interfaces';
 @Injectable()
 export class JwtDefaultGuard extends AuthGuard('registeredUserJWT') {
     constructor(
+<<<<<<< HEAD
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
         private readonly queryBus: QueryBus,
     ) {
         super();
@@ -91,7 +103,11 @@ export class JwtDefaultGuard extends AuthGuard('registeredUserJWT') {
     }
 
     private async verifyApiToken(apiTokenUuid: string): Promise<boolean> {
+<<<<<<< HEAD
         const cached = await this.cacheManager.get<string>(`api:${apiTokenUuid}`);
+=======
+        const cached = await this.rawCacheService.get<string>(`api:${apiTokenUuid}`);
+>>>>>>> upstream/main
         if (cached) {
             return true;
         }
@@ -101,7 +117,11 @@ export class JwtDefaultGuard extends AuthGuard('registeredUserJWT') {
             return false;
         }
 
+<<<<<<< HEAD
         await this.cacheManager.set(`api:${apiTokenUuid}`, '1', 3_600_000);
+=======
+        await this.rawCacheService.set(`api:${apiTokenUuid}`, '1', 3600);
+>>>>>>> upstream/main
         return true;
     }
 }

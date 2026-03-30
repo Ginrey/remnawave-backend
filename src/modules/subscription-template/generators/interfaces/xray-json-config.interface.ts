@@ -1,6 +1,10 @@
 import type { TRemnawaveInjector } from '@libs/contracts/models';
 
+<<<<<<< HEAD
 import { IFormattedHost } from './formatted-hosts.interface';
+=======
+import { ResolvedProxyConfig } from '@modules/subscription-template/resolve-proxy/interfaces';
+>>>>>>> upstream/main
 
 export interface StreamSettings {
     network: string;
@@ -14,6 +18,11 @@ export interface StreamSettings {
     realitySettings?: unknown;
     grpcSettings?: unknown;
     sockopt?: unknown;
+<<<<<<< HEAD
+=======
+    kcpSettings?: unknown;
+    finalmask?: unknown;
+>>>>>>> upstream/main
 }
 
 export interface OutboundSettings {
@@ -58,8 +67,13 @@ export interface XrayJsonConfig {
 }
 
 export interface IGenerateConfigParams {
+<<<<<<< HEAD
     hosts: IFormattedHost[];
     isHapp: boolean;
+=======
+    hosts: ResolvedProxyConfig[];
+    isExtendedClient: boolean;
+>>>>>>> upstream/main
     overrideTemplateName?: string;
     ignoreHostXrayJsonTemplate?: boolean;
 }

@@ -10,8 +10,13 @@ import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { formatExecutionTime, getTime } from '@common/utils/get-elapsed-time';
+<<<<<<< HEAD
 import { TxKyselyService } from '@common/database/tx-kysely.service';
 import { getKyselyUuid } from '@common/helpers/kysely';
+=======
+import { getKyselyUuid, paginateQuery } from '@common/helpers/kysely';
+import { TxKyselyService } from '@common/database/tx-kysely.service';
+>>>>>>> upstream/main
 import { GetAllUsersCommand } from '@libs/contracts/commands';
 
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
@@ -34,6 +39,40 @@ import { BulkDeleteByStatusBuilder, BulkUpdateUserUsedTrafficBuilder } from '../
 import { UserTrafficEntity } from '../entities/user-traffic.entity';
 import { UserConverter } from '../users.converter';
 
+<<<<<<< HEAD
+=======
+const USERS_FILTER_COLUMN_MAP = {
+    id: sql.ref('users.t_id'),
+    createdAt: sql.ref('users.created_at'),
+    expireAt: sql.ref('users.expire_at'),
+    lastTrafficResetAt: sql.ref('users.last_traffic_reset_at'),
+    subRevokedAt: sql.ref('users.sub_revoked_at'),
+    telegramId: sql.ref('users.telegram_id'),
+    uuid: sql.ref('users.uuid'),
+    vlessUuid: sql.ref('users.vless_uuid'),
+    trojanPassword: sql.ref('users.trojan_password'),
+    externalSquadUuid: sql.ref('users.external_squad_uuid'),
+    username: sql.ref('users.username'),
+    status: sql.ref('users.status'),
+    shortUuid: sql.ref('users.short_uuid'),
+    description: sql.ref('users.description'),
+    email: sql.ref('users.email'),
+    tag: sql.ref('users.tag'),
+    'userTraffic.onlineAt': sql.ref('user_traffic.online_at'),
+    'userTraffic.firstConnectedAt': sql.ref('user_traffic.first_connected_at'),
+    'userTraffic.lifetimeUsedTrafficBytes': sql.ref('user_traffic.lifetime_used_traffic_bytes'),
+    usedTrafficBytes: sql.ref('user_traffic.used_traffic_bytes'),
+    hwidDeviceLimit: sql.ref('users.hwid_device_limit'),
+
+    activeInternalSquads: null,
+    nodeName: null,
+} as const;
+
+const NUMERIC_FILTER_IDS = new Set(['hwidDeviceLimit', 'tId']);
+
+type AllowedUsersFilterId = keyof typeof USERS_FILTER_COLUMN_MAP;
+
+>>>>>>> upstream/main
 @Injectable()
 export class UsersRepository {
     private readonly logger = new Logger(UsersRepository.name);
@@ -110,6 +149,7 @@ export class UsersRepository {
         });
     }
 
+<<<<<<< HEAD
     public async updateSubLastOpenedAndUserAgent(
         userUuid: string,
         subLastOpenedAt: Date,
@@ -123,6 +163,8 @@ export class UsersRepository {
             .execute();
     }
 
+=======
+>>>>>>> upstream/main
     public async updateExceededTrafficUsers(): Promise<{ tId: bigint }[]> {
         const result = await this.qb.kysely
             .updateTable('users')
@@ -176,13 +218,24 @@ export class UsersRepository {
         return result;
     }
 
+<<<<<<< HEAD
     public async getAllUsersV2({
+=======
+    private get baseUsersQb() {
+        return this.qb.kysely
+            .selectFrom('users')
+            .innerJoin('userTraffic', 'userTraffic.tId', 'users.tId');
+    }
+
+    public async getAllUsers({
+>>>>>>> upstream/main
         start,
         size,
         filters,
         filterModes,
         sorting,
     }: GetAllUsersCommand.RequestQuery): Promise<[UserEntity[], number]> {
+<<<<<<< HEAD
         const qb = this.qb.kysely
             .selectFrom('users')
             .innerJoin('userTraffic', 'userTraffic.tId', 'users.tId');
@@ -470,6 +523,153 @@ export class UsersRepository {
 
         const result = users.map((u) => new UserEntity(u));
         return [result, Number(count)];
+=======
+        let qb = this.baseUsersQb.selectAll().select((eb) => this.includeActiveInternalSquads(eb));
+
+        if (filters?.length) {
+            qb = this.applyUsersFilters(qb, filters, filterModes);
+        }
+
+        if (sorting?.length) {
+            for (const sort of sorting) {
+                const sortId = sort.id === 'id' ? 'users.tId' : sort.id;
+                qb = qb.orderBy(sql.ref(sortId), (ob) =>
+                    (sort.desc ? ob.desc() : ob.asc()).nullsLast(),
+                );
+            }
+        } else {
+            qb = qb.orderBy('users.tId', 'desc');
+        }
+
+        const { rows, count } = await paginateQuery(qb, { offset: start, limit: size });
+
+        return [rows.map((u) => new UserEntity(u)), count];
+    }
+
+    private applyUsersFilters(
+        qb: any,
+        filters: GetAllUsersCommand.RequestQuery['filters'],
+        filterModes?: GetAllUsersCommand.RequestQuery['filterModes'],
+    ) {
+        for (const filter of filters ?? []) {
+            if (!(filter.id in USERS_FILTER_COLUMN_MAP)) continue;
+            if (Array.isArray(filter.value) && filter.value.length === 0) {
+                continue;
+            }
+
+            const mode = filterModes?.[filter.id] ?? 'contains';
+
+            if (
+                ['createdAt', 'expireAt', 'lastTrafficResetAt', 'userTraffic.onlineAt'].includes(
+                    filter.id,
+                )
+            ) {
+                qb = qb.where(
+                    USERS_FILTER_COLUMN_MAP[filter.id as AllowedUsersFilterId],
+                    '=',
+                    new Date(filter.value as string),
+                );
+                continue;
+            }
+
+            if (filter.id === 'id') {
+                try {
+                    BigInt(filter.value as string);
+                    qb = qb.where(sql`CAST(users.t_id AS TEXT)`, 'like', `%${filter.value}%`);
+                } catch {}
+                continue;
+            }
+
+            if (filter.id === 'telegramId') {
+                try {
+                    BigInt(filter.value as string);
+                    qb = qb.where(sql`CAST(telegram_id AS TEXT)`, 'like', `%${filter.value}%`);
+                } catch {
+                    qb = qb.where('telegramId', 'is', null);
+                }
+                continue;
+            }
+
+            if (filter.id === 'uuid') {
+                qb = qb.where(sql`"uuid"::text`, 'ilike', `%${filter.value}%`);
+                continue;
+            }
+
+            if (filter.id === 'vlessUuid') {
+                qb = qb.where(sql`"vless_uuid"::text`, 'ilike', `%${filter.value}%`);
+                continue;
+            }
+
+            if (filter.id === 'externalSquadUuid') {
+                qb = qb.where('externalSquadUuid', '=', getKyselyUuid(filter.value as string));
+                continue;
+            }
+
+            if (filter.id === 'activeInternalSquads') {
+                qb = qb.where('users.tId', 'in', (eb: any) =>
+                    eb
+                        .selectFrom('internalSquadMembers')
+                        .select('internalSquadMembers.userId')
+                        .where(
+                            'internalSquadMembers.internalSquadUuid',
+                            '=',
+                            getKyselyUuid(filter.value as string),
+                        ),
+                );
+                continue;
+            }
+
+            if (filter.id === 'nodeName') {
+                qb = qb.where(
+                    'userTraffic.lastConnectedNodeUuid',
+                    '=',
+                    getKyselyUuid(filter.value as string),
+                );
+                continue;
+            }
+
+            const value = NUMERIC_FILTER_IDS.has(filter.id) ? Number(filter.value) : filter.value;
+
+            const col = USERS_FILTER_COLUMN_MAP[filter.id as AllowedUsersFilterId];
+            switch (mode) {
+                case 'equals':
+                    if (Array.isArray(filter.value) && filter.value.length > 0) {
+                        qb = qb.where(col, 'in', filter.value);
+                    } else {
+                        qb = qb.where(col, '=', value);
+                    }
+                    break;
+                case 'startsWith':
+                    qb = qb.where(col, 'like', `${value}%`);
+                    break;
+                case 'endsWith':
+                    qb = qb.where(col, 'like', `%${value}`);
+                    break;
+                case 'greaterThan':
+                    qb = qb.where(col, '>', value);
+                    break;
+                case 'greaterThanOrEqualTo':
+                    qb = qb.where(col, '>=', value);
+                    break;
+                case 'lessThan':
+                    qb = qb.where(col, '<', value);
+                    break;
+                case 'lessThanOrEqualTo':
+                    qb = qb.where(col, '<=', value);
+                    break;
+                case 'between': {
+                    const [from, to] = filter.value as [string, string];
+                    const castFn = NUMERIC_FILTER_IDS.has(filter.id) ? Number : (v: string) => v;
+                    qb = qb.where(col, '>=', castFn(from)).where(col, '<=', castFn(to));
+                    break;
+                }
+                default:
+                    qb = qb.where(col, 'ilike', `%${value}%`);
+            }
+        }
+
+        return qb;
+>>>>>>> upstream/main
     }
 
     public async getUsersWithPagination({
@@ -586,6 +786,10 @@ export class UsersRepository {
 
                 return eb.or(conditions);
             })
+<<<<<<< HEAD
+=======
+            .orderBy('users.tId', 'desc')
+>>>>>>> upstream/main
             .execute();
 
         return user.map((user) => new UserEntity(user));
@@ -677,13 +881,36 @@ export class UsersRepository {
         strategy: TResetPeriods,
         batchSize: number = 50_000,
     ): Promise<void> {
+<<<<<<< HEAD
         const targetIds = await this.qb.kysely
+=======
+        let targetIdsQuery = this.qb.kysely
+>>>>>>> upstream/main
             .selectFrom('users')
             .select('tId')
             .where('trafficLimitStrategy', '=', strategy)
             .where('status', '!=', USERS_STATUS.LIMITED)
+<<<<<<< HEAD
             .orderBy('tId')
             .execute();
+=======
+            .orderBy('tId');
+
+        if (strategy === 'MONTH_ROLLING') {
+            targetIdsQuery = targetIdsQuery
+                .where(sql`("created_at" + interval '1 month')::date`, '<=', sql`CURRENT_DATE`)
+                .where(
+                    sql`LEAST(
+                                EXTRACT(DAY FROM "created_at"),
+                                EXTRACT(DAY FROM date_trunc('month', CURRENT_DATE) + interval '1 month - 1 day')
+                            )`,
+                    '=',
+                    sql`EXTRACT(DAY FROM CURRENT_DATE)`,
+                );
+        }
+
+        const targetIds = await targetIdsQuery.execute();
+>>>>>>> upstream/main
 
         this.logger.log(`Found ${targetIds.length} users with strategy ${strategy} to reset`);
 
@@ -738,6 +965,7 @@ export class UsersRepository {
     }
 
     public async resetLimitedUserTraffic(strategy: TResetPeriods): Promise<{ tId: bigint }[]> {
+<<<<<<< HEAD
         const result = await this.qb.kysely
             .with('targetUsers', (db) =>
                 db
@@ -748,6 +976,31 @@ export class UsersRepository {
                     .orderBy('tId')
                     .forUpdate(),
             )
+=======
+        let targetIdsQuery = this.qb.kysely
+            .selectFrom('users')
+            .select('tId')
+            .where('trafficLimitStrategy', '=', strategy)
+            .where('status', '=', USERS_STATUS.LIMITED)
+            .orderBy('tId')
+            .forUpdate();
+
+        if (strategy === 'MONTH_ROLLING') {
+            targetIdsQuery = targetIdsQuery
+                .where(sql`("created_at" + interval '1 month')::date`, '<=', sql`CURRENT_DATE`)
+                .where(
+                    sql`LEAST(
+                            EXTRACT(DAY FROM "created_at"),
+                            EXTRACT(DAY FROM date_trunc('month', CURRENT_DATE) + interval '1 month - 1 day')
+                        )`,
+                    '=',
+                    sql`EXTRACT(DAY FROM CURRENT_DATE)`,
+                );
+        }
+
+        const result = await this.qb.kysely
+            .with('targetUsers', () => targetIdsQuery)
+>>>>>>> upstream/main
             .with('updateUsers', (db) =>
                 db
                     .updateTable('users')
@@ -763,9 +1016,13 @@ export class UsersRepository {
             .updateTable('userTraffic')
             .from('updateUsers')
             .whereRef('userTraffic.tId', '=', 'updateUsers.tId')
+<<<<<<< HEAD
             .set({
                 usedTrafficBytes: 0n,
             })
+=======
+            .set({ usedTrafficBytes: 0n })
+>>>>>>> upstream/main
             .returning('userTraffic.tId')
             .execute();
 
@@ -1031,7 +1288,17 @@ export class UsersRepository {
     }
 
     public async getAllTags(): Promise<string[]> {
+<<<<<<< HEAD
         const result = await this.qb.kysely.selectFrom('users').select('tag').distinct().execute();
+=======
+        const result = await this.qb.kysely
+            .selectFrom('users')
+            .select('tag')
+            .where('tag', 'is not', null)
+            .distinct()
+            .limit(1000)
+            .execute();
+>>>>>>> upstream/main
 
         return result.map((user) => user.tag).filter((tag) => tag !== null);
     }
@@ -1080,6 +1347,23 @@ export class UsersRepository {
         return result.map((user) => user.tId);
     }
 
+<<<<<<< HEAD
+=======
+    public async getUserIdByUuid(uuid: string): Promise<bigint | null> {
+        const result = await this.qb.kysely
+            .selectFrom('users')
+            .select('tId')
+            .where('uuid', '=', getKyselyUuid(uuid))
+            .executeTakeFirst();
+
+        if (!result) {
+            return null;
+        }
+
+        return result.tId;
+    }
+
+>>>>>>> upstream/main
     public async getIdsAndHashesByUserUuids(userUuids: string[]): Promise<
         {
             tId: bigint;
@@ -1166,8 +1450,11 @@ export class UsersRepository {
             | 'ssPassword'
             | 'subRevokedAt'
             | 'shortUuid'
+<<<<<<< HEAD
             | 'subLastOpenedAt'
             | 'subLastUserAgent'
+=======
+>>>>>>> upstream/main
             | 'updatedAt'
         >,
     ): Promise<boolean> {
@@ -1179,8 +1466,11 @@ export class UsersRepository {
                 vlessUuid: getKyselyUuid(dto.vlessUuid),
                 ssPassword: dto.ssPassword,
                 shortUuid: dto.shortUuid,
+<<<<<<< HEAD
                 subLastOpenedAt: dto.subLastOpenedAt,
                 subLastUserAgent: dto.subLastUserAgent,
+=======
+>>>>>>> upstream/main
                 updatedAt: dto.updatedAt,
             })
             .where('uuid', '=', getKyselyUuid(dto.uuid))
@@ -1427,4 +1717,26 @@ export class UsersRepository {
 
         return result.subpageConfigUuid;
     }
+<<<<<<< HEAD
+=======
+
+    public async getUsersRecap(): Promise<{ total: number; newUsersThisMonth: number }> {
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        const result = await this.qb.kysely
+            .selectFrom('users')
+            .select([
+                sql<bigint>`count(*)::int`.as('total'),
+                sql<bigint>`count(*) filter (where created_at >= ${startOfMonth})::int`.as(
+                    'newUsersThisMonth',
+                ),
+            ])
+            .executeTakeFirstOrThrow();
+
+        return {
+            total: Number(result.total),
+            newUsersThisMonth: Number(result.newUsersThisMonth),
+        };
+    }
+>>>>>>> upstream/main
 }

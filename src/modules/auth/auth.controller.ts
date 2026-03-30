@@ -16,7 +16,10 @@ import {
     GetStatusCommand,
     LoginCommand,
     RegisterCommand,
+<<<<<<< HEAD
     TelegramCallbackCommand,
+=======
+>>>>>>> upstream/main
     OAuth2AuthorizeCommand,
     OAuth2CallbackCommand,
     GetPasskeyAuthenticationOptionsCommand,
@@ -33,8 +36,11 @@ import {
     LoginResponseDto,
     RegisterRequestDto,
     RegisterResponseDto,
+<<<<<<< HEAD
     TelegramCallbackRequestDto,
     TelegramCallbackResponseDto,
+=======
+>>>>>>> upstream/main
     OAuth2AuthorizeResponseDto,
     OAuth2CallbackResponseDto,
     OAuth2CallbackRequestDto,
@@ -124,6 +130,7 @@ export class AuthController {
     }
 
     @ApiResponse({
+<<<<<<< HEAD
         type: TelegramCallbackResponseDto,
         description: 'Access token for further requests',
     })
@@ -146,6 +153,8 @@ export class AuthController {
     }
 
     @ApiResponse({
+=======
+>>>>>>> upstream/main
         type: OAuth2AuthorizeResponseDto,
         description: 'OAuth2 authorization URL',
     })

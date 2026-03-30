@@ -11,6 +11,18 @@ export const NODES_JOB_NAMES = {
     RECORD_USER_USAGE: 'recordUserUsage',
     RECORD_NODE_USAGE: 'recordNodeUsage',
     FETCH_IPS_LIST: 'fetchIpsList',
+<<<<<<< HEAD
     DROP_USERS_CONNECTIONS: 'dropUsersConnections',
     DROP_IPS_CONNECTIONS: 'dropIpsConnections',
+=======
+    FETCH_USERS_IPS_LIST: 'fetchUsersIpsList',
+    DROP_USERS_CONNECTIONS: 'dropUsersConnections',
+    DROP_IPS_CONNECTIONS: 'dropIpsConnections',
+    SYNC_NODE_PLUGINS: 'syncNodePlugins',
+    COLLECT_REPORTS: 'collectReports',
+
+    BLOCK_IPS: 'blockIps',
+    UNBLOCK_IPS: 'unblockIps',
+    RECREATE_TABLES: 'recreateTables',
+>>>>>>> upstream/main
 } as const;

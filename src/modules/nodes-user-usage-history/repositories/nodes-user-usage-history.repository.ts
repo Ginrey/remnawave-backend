@@ -10,7 +10,10 @@ import { ICrudHistoricalRecords } from '@common/types/crud-port';
 import { IGetNodesUsageByRange } from '@modules/nodes-usage-history/interfaces';
 
 import {
+<<<<<<< HEAD
     IGetNodesRealtimeUsage,
+=======
+>>>>>>> upstream/main
     IGetLegacyStatsNodesUsersUsage,
     IGetUniversalTopNode,
     IGetUniversalSeries,
@@ -19,7 +22,10 @@ import {
 } from '../interfaces';
 import { GetNodeUsersUsageByRangeBuilder } from '../builders/get-node-users-usage-by-range/get-node-users-usage-by-range.builder';
 import { BulkUpsertHistoryEntryBuilder } from '../builders/bulk-upsert-history-entry/bulk-upsert-history-entry.builder';
+<<<<<<< HEAD
 import { GetNodesRealtimeUsageBuilder } from '../builders/get-nodes-realtime-usage/get-nodes-realtime-usage.builder';
+=======
+>>>>>>> upstream/main
 import { GetUserUsageByRangeBuilder } from '../builders/get-user-usage-by-range/get-user-usage-by-range.builder';
 import { NodesUserUsageHistoryEntity } from '../entities/nodes-user-usage-history.entity';
 import { NodesUserUsageHistoryConverter } from '../nodes-user-usage-history.converter';
@@ -92,12 +98,15 @@ export class NodesUserUsageHistoryRepository implements ICrudHistoricalRecords<N
         return result;
     }
 
+<<<<<<< HEAD
     public async getNodesRealtimeUsage(): Promise<IGetNodesRealtimeUsage[]> {
         const { query } = new GetNodesRealtimeUsageBuilder();
         const result = await this.prisma.tx.$queryRaw<IGetNodesRealtimeUsage[]>(query);
         return result;
     }
 
+=======
+>>>>>>> upstream/main
     public async cleanOldUsageRecords(): Promise<number> {
         const query = Prisma.sql`
             DELETE FROM nodes_user_usage_history

@@ -73,6 +73,18 @@ export class HostsService {
                 sockoptParams = undefined;
             }
 
+<<<<<<< HEAD
+=======
+            let finalMask: null | object | undefined;
+            if (dto.finalMask !== undefined && dto.finalMask !== null) {
+                finalMask = dto.finalMask;
+            } else if (dto.finalMask === null) {
+                finalMask = null;
+            } else {
+                finalMask = undefined;
+            }
+
+>>>>>>> upstream/main
             let serverDescription: null | string | undefined;
             if (dto.serverDescription !== undefined && dto.serverDescription !== null) {
                 serverDescription = dto.serverDescription;
@@ -105,6 +117,10 @@ export class HostsService {
                 xHttpExtraParams,
                 muxParams,
                 sockoptParams,
+<<<<<<< HEAD
+=======
+                finalMask,
+>>>>>>> upstream/main
                 configProfileUuid: configProfile.response.uuid,
                 configProfileInboundUuid: configProfileInbound.uuid,
                 serverDescription,
@@ -206,6 +222,18 @@ export class HostsService {
                 serverDescription = undefined;
             }
 
+<<<<<<< HEAD
+=======
+            let finalMask: null | object | undefined;
+            if (dto.finalMask !== undefined && dto.finalMask !== null) {
+                finalMask = dto.finalMask;
+            } else if (dto.finalMask === null) {
+                finalMask = null;
+            } else {
+                finalMask = undefined;
+            }
+
+>>>>>>> upstream/main
             let configProfileUuid: string | undefined;
             let configProfileInboundUuid: string | undefined;
             if (inboundObj) {
@@ -251,6 +279,10 @@ export class HostsService {
                 configProfileUuid,
                 configProfileInboundUuid,
                 serverDescription,
+<<<<<<< HEAD
+=======
+                finalMask,
+>>>>>>> upstream/main
             });
 
             return ok(result);

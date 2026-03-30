@@ -19,6 +19,10 @@ export const HostsSchema = z.object({
     xHttpExtraParams: z.nullable(z.unknown()),
     muxParams: z.nullable(z.unknown()),
     sockoptParams: z.nullable(z.unknown()),
+<<<<<<< HEAD
+=======
+    finalMask: z.nullable(z.unknown()),
+>>>>>>> upstream/main
 
     inbound: z.object({
         configProfileUuid: z.string().uuid().nullable(),

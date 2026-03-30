@@ -58,6 +58,10 @@ export namespace UpdateHostCommand {
         xHttpExtraParams: z.optional(z.nullable(z.unknown())),
         muxParams: z.optional(z.nullable(z.unknown())),
         sockoptParams: z.optional(z.nullable(z.unknown())),
+<<<<<<< HEAD
+=======
+        finalMask: z.optional(z.nullable(z.unknown())),
+>>>>>>> upstream/main
         serverDescription: z.optional(
             z
                 .string()

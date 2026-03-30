@@ -24,14 +24,20 @@ export namespace GetStatsCommand {
         response: z.object({
             cpu: z.object({
                 cores: z.number(),
+<<<<<<< HEAD
                 physicalCores: z.number(),
+=======
+>>>>>>> upstream/main
             }),
             memory: z.object({
                 total: z.number(),
                 free: z.number(),
                 used: z.number(),
+<<<<<<< HEAD
                 active: z.number(),
                 available: z.number(),
+=======
+>>>>>>> upstream/main
             }),
             uptime: z.number(),
             timestamp: z.number(),

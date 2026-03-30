@@ -9,7 +9,10 @@ import { Roles } from '@common/decorators/roles/roles';
 import { RolesGuard } from '@common/guards/roles';
 import {
     GetLegacyStatsNodeUserUsageCommand,
+<<<<<<< HEAD
     GetStatsNodesRealtimeUsageCommand,
+=======
+>>>>>>> upstream/main
     GetStatsNodeUsersUsageCommand,
 } from '@libs/contracts/commands';
 import { BANDWIDTH_STATS_NODES_CONTROLLER, CONTROLLERS_INFO } from '@libs/contracts/api';
@@ -19,16 +22,24 @@ import {
     GetLegacyStatsNodesUsersUsageRequestDto,
     GetLegacyStatsNodesUsersUsageRequestQueryDto,
     GetLegacyStatsNodesUsersUsageResponseDto,
+<<<<<<< HEAD
     GetStatsNodesRealtimeUsageResponseDto,
+=======
+>>>>>>> upstream/main
     GetStatsNodeUsersUsageRequestDto,
     GetStatsNodeUsersUsageRequestQueryDto,
     GetStatsNodeUsersUsageResponseDto,
 } from './dtos';
+<<<<<<< HEAD
 import {
     GetLegacyStatsNodesUsersUsageResponseModel,
     GetStatsNodesRealtimeUsageResponseModel,
 } from './models';
 import { NodesUserUsageHistoryService } from './nodes-user-usage-history.service';
+=======
+import { NodesUserUsageHistoryService } from './nodes-user-usage-history.service';
+import { GetLegacyStatsNodesUsersUsageResponseModel } from './models';
+>>>>>>> upstream/main
 
 @ApiBearerAuth('Authorization')
 @ApiTags(CONTROLLERS_INFO.BANDWIDTH_STATS.tag)
@@ -77,6 +88,7 @@ export class BandwidthStatsNodesController {
     }
 
     @ApiOkResponse({
+<<<<<<< HEAD
         type: GetStatsNodesRealtimeUsageResponseDto,
         description: 'Nodes realtime usage fetched successfully',
     })
@@ -94,6 +106,8 @@ export class BandwidthStatsNodesController {
     }
 
     @ApiOkResponse({
+=======
+>>>>>>> upstream/main
         type: GetStatsNodeUsersUsageResponseDto,
         description: 'Stats node users usage fetched successfully',
     })

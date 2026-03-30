@@ -7,16 +7,31 @@ import { ERRORS } from '@libs/contracts/constants';
 import { GetUserIdsByUserUuidsQuery } from '@modules/users/queries/get-user-ids-by-user-uuids';
 import { GetUserByUniqueFieldQuery } from '@modules/users/queries/get-user-by-unique-field';
 import { FindNodesByCriteriaQuery } from '@modules/nodes/queries/find-nodes-by-criteria';
+<<<<<<< HEAD
+=======
+import { GetNodeByUuidQuery } from '@modules/nodes/queries/get-node-by-uuid';
+>>>>>>> upstream/main
 import { NodesEntity } from '@modules/nodes/entities/nodes.entity';
 
 import { NodesQueuesService } from '@queue/_nodes';
 
 import {
+<<<<<<< HEAD
+=======
+    BaseEventResponseModel,
+    FetchUsersIpsResponseModel,
+    FetchUsersIpsResultResponseModel,
+} from './models';
+import {
+>>>>>>> upstream/main
     FetchIpsResponseModel,
     FetchIpsResultResponseModel,
 } from './models/fetch-user-ips.response.model';
 import { DropConnectionsRequestDto } from './dtos';
+<<<<<<< HEAD
 import { BaseEventResponseModel } from './models';
+=======
+>>>>>>> upstream/main
 
 @Injectable()
 export class IpControlService {
@@ -137,4 +152,45 @@ export class IpControlService {
             return fail(ERRORS.INTERNAL_SERVER_ERROR);
         }
     }
+<<<<<<< HEAD
+=======
+
+    public async fetchUsersIps(nodeUuid: string): Promise<TResult<FetchUsersIpsResponseModel>> {
+        try {
+            const node = await this.queryBus.execute(new GetNodeByUuidQuery(nodeUuid));
+            if (!node.isOk) {
+                return fail(ERRORS.NODE_NOT_FOUND);
+            }
+
+            const result = await this.nodesQueuesService.queryUsersIpsList({
+                nodeUuid: nodeUuid,
+            });
+
+            if (!result) {
+                return fail(ERRORS.JOB_CREATION_FAILED);
+            }
+
+            return ok(new FetchUsersIpsResponseModel({ jobId: result.jobId }));
+        } catch (error) {
+            this.logger.error(error);
+            return fail(ERRORS.JOB_CREATION_FAILED);
+        }
+    }
+
+    public async getFetchUsersIpsResult(
+        jobId: string,
+    ): Promise<TResult<FetchUsersIpsResultResponseModel>> {
+        try {
+            const result = await this.nodesQueuesService.getUsersIpsListResult(jobId);
+            if (!result) {
+                return fail(ERRORS.JOB_RESULT_FETCH_FAILED);
+            }
+
+            return ok(new FetchUsersIpsResultResponseModel(result));
+        } catch (error) {
+            this.logger.error(error);
+            return fail(ERRORS.JOB_RESULT_FETCH_FAILED);
+        }
+    }
+>>>>>>> upstream/main
 }

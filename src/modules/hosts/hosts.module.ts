@@ -11,6 +11,9 @@ import { QUERIES } from './queries';
     imports: [CqrsModule],
     controllers: [HostsController, HostsBulkActionsController],
     providers: [HostsRepository, HostsConverter, HostsService, ...QUERIES],
+<<<<<<< HEAD
     exports: [],
+=======
+>>>>>>> upstream/main
 })
 export class HostsModule {}

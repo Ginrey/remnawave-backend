@@ -13,6 +13,12 @@
 /libs/subscription-page/build
 /libs/subscription-page/node_modules
 /libs/subscription-page/dist
+<<<<<<< HEAD
+=======
+/libs/node-plugins/build
+/libs/node-plugins/node_modules
+/libs/node-plugins/dist
+>>>>>>> upstream/main
 # Logs
 logs
 *.log

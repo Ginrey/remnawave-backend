@@ -22,10 +22,13 @@ export namespace GetStatusCommand {
                     passkey: z.object({
                         enabled: z.boolean(),
                     }),
+<<<<<<< HEAD
                     tgAuth: z.object({
                         enabled: z.boolean(),
                         botId: z.number().nullable(),
                     }),
+=======
+>>>>>>> upstream/main
                     oauth2: z.object({
                         providers: z.record(z.nativeEnum(OAUTH2_PROVIDERS), z.boolean()),
                     }),

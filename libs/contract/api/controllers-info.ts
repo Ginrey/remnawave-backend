@@ -38,6 +38,13 @@ export const CONTROLLERS_INFO = {
         tag: 'Nodes Controller',
         description: '',
     },
+<<<<<<< HEAD
+=======
+    NODE_PLUGINS: {
+        tag: 'Node Plugins Controller',
+        description: '',
+    },
+>>>>>>> upstream/main
     BANDWIDTH_STATS: {
         tag: 'Bandwidth Stats Controller',
         description: '',
@@ -84,7 +91,11 @@ export const CONTROLLERS_INFO = {
     },
     KEYGEN: {
         tag: 'Keygen Controller',
+<<<<<<< HEAD
         description: 'Generation of SSL_CERT for Remnawave Node.',
+=======
+        description: 'Generation of SECRET_KEY for Remnawave Node.',
+>>>>>>> upstream/main
     },
     SUBSCRIPTION_REQUEST_HISTORY: {
         tag: 'Subscription Request History Controller',
@@ -102,8 +113,14 @@ export const CONTROLLERS_INFO = {
         tag: 'Subscription Page Configs Controller',
         description: '',
     },
+<<<<<<< HEAD
     SUBSCRIPTION_IMPORT_SOURCES: {
         tag: 'Subscription Import Sources Controller',
         description: 'Management of external subscription import sources for fetching proxy configs.',
+=======
+    METADATA: {
+        tag: 'Metadata Controller',
+        description: 'Manage arbitrary metadata for Users and Nodes.',
+>>>>>>> upstream/main
     },
 } as const;

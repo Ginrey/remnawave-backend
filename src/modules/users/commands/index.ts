@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import { UpdateSubLastOpenedAndUserAgentHandler } from './update-sub-last-opened-and-user-agent';
+=======
+>>>>>>> upstream/main
 import { BatchResetLimitedUsersTrafficHandler } from './batch-reset-limited-users-traffic';
 import { TriggerThresholdNotificationHandler } from './trigger-threshold-notification';
 import { BulkAllExtendExpirationDateHandler } from './bulk-all-extend-expiration-date';
@@ -14,7 +17,10 @@ import { ResetUserTrafficHandler } from './reset-user-traffic';
 import { BulkSyncUsersHandler } from './bulk-sync-users';
 
 export const COMMANDS = [
+<<<<<<< HEAD
     UpdateSubLastOpenedAndUserAgentHandler,
+=======
+>>>>>>> upstream/main
     BatchResetUserTrafficHandler,
     UpdateExpiredUsersHandler,
     UpdateExceededTrafficUsersHandler,

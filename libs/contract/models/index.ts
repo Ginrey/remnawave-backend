@@ -15,8 +15,16 @@ export * from './infra-billing-node.schema';
 export * from './infra-provider.schema';
 export * from './internal-squad.schema';
 export * from './last-connected-node.schema';
+<<<<<<< HEAD
 export * from './nodes.schema';
 export * from './remnawave-settings';
+=======
+export * from './node-plugin.schema';
+export * from './node-system.schema';
+export * from './nodes.schema';
+export * from './remnawave-settings';
+export * from './resolved-proxy-config.schema';
+>>>>>>> upstream/main
 export * from './response-rules';
 export * from './snippets.schema';
 export * from './subscripion-page-config.schema';
@@ -25,8 +33,13 @@ export * from './subscription-request-history.schema';
 export * from './subscription-settings';
 export * from './subscription-settings.schema';
 export * from './subscription-template.schema';
+<<<<<<< HEAD
 export * from './subscription-import-source.schema';
 export * from './tanstack-query';
+=======
+export * from './tanstack-query';
+export * from './torrent-blocker-report.schema';
+>>>>>>> upstream/main
 export * from './users.schema';
 export * from './webhook';
 export * from './xray-json-advanced';

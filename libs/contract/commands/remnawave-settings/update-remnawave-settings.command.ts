@@ -6,7 +6,10 @@ import {
     PasskeySettingsSchema,
     PasswordAuthSettingsSchema,
     RemnawaveSettingsSchema,
+<<<<<<< HEAD
     TgAuthSettingsSchema,
+=======
+>>>>>>> upstream/main
 } from '../../models';
 import { REMNAAWAVE_SETTINGS_ROUTES, REST_API } from '../../api';
 import { getEndpointDetails } from '../../constants';
@@ -24,7 +27,10 @@ export namespace UpdateRemnawaveSettingsCommand {
     export const RequestSchema = z.object({
         passkeySettings: PasskeySettingsSchema.optional(),
         oauth2Settings: Oauth2SettingsSchema.optional(),
+<<<<<<< HEAD
         tgAuthSettings: TgAuthSettingsSchema.optional(),
+=======
+>>>>>>> upstream/main
         passwordSettings: PasswordAuthSettingsSchema.optional(),
         brandingSettings: BrandingSettingsSchema.optional(),
     });

@@ -5,6 +5,10 @@ export const SYSTEM_ROUTES = {
         SYSTEM_STATS: 'stats',
         BANDWIDTH_STATS: 'stats/bandwidth',
         NODES_STATS: 'stats/nodes',
+<<<<<<< HEAD
+=======
+        RECAP: 'stats/recap',
+>>>>>>> upstream/main
         NODES_METRICS: 'nodes/metrics',
     },
     TOOLS: {

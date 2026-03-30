@@ -34,3 +34,10 @@ export function hasContent<T>(value: T | undefined | null): value is NonNullable
     if (typeof value === 'object' && Object.keys(value).length === 0) return false;
     return true;
 }
+<<<<<<< HEAD
+=======
+
+export function isNonEmptyObject(value: unknown): value is Record<string, unknown> {
+    return value != null && typeof value === 'object' && Object.keys(value).length > 0;
+}
+>>>>>>> upstream/main

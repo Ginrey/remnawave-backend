@@ -5,12 +5,20 @@ import {
     verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import { findAuthenticatorById } from 'passkey-authenticator-aaguids';
+<<<<<<< HEAD
 import { Cache } from 'cache-manager';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { QueryBus } from '@nestjs/cqrs';
 
+=======
+
+import { Injectable, Logger } from '@nestjs/common';
+import { QueryBus } from '@nestjs/cqrs';
+
+import { RawCacheService } from '@common/raw-cache';
+>>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { ERRORS } from '@libs/contracts/constants/errors';
 import { CACHE_KEYS } from '@libs/contracts/constants';
@@ -31,7 +39,11 @@ export class PasskeyService {
     private readonly logger = new Logger(PasskeyService.name);
 
     constructor(
+<<<<<<< HEAD
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
         private readonly adminRepository: AdminRepository,
         private readonly passkeyRepository: PasskeyRepository,
         private readonly queryBus: QueryBus,
@@ -86,10 +98,17 @@ export class PasskeyService {
                 },
             });
 
+<<<<<<< HEAD
             await this.cacheManager.set(
                 CACHE_KEYS.PASSKEY_REGISTRATION_OPTIONS(uuid),
                 options.challenge,
                 300_000,
+=======
+            await this.rawCacheService.set(
+                CACHE_KEYS.PASSKEY_REGISTRATION_OPTIONS(uuid),
+                options.challenge,
+                300,
+>>>>>>> upstream/main
             );
 
             return ok(options);
@@ -118,7 +137,11 @@ export class PasskeyService {
                 return fail(ERRORS.ADMIN_NOT_FOUND);
             }
 
+<<<<<<< HEAD
             const expectedChallenge = await this.cacheManager.get<string>(
+=======
+            const expectedChallenge = await this.rawCacheService.get<string>(
+>>>>>>> upstream/main
                 CACHE_KEYS.PASSKEY_REGISTRATION_OPTIONS(admin.uuid),
             );
 
@@ -129,7 +152,11 @@ export class PasskeyService {
                 });
             }
 
+<<<<<<< HEAD
             await this.cacheManager.del(CACHE_KEYS.PASSKEY_REGISTRATION_OPTIONS(uuid));
+=======
+            await this.rawCacheService.del(CACHE_KEYS.PASSKEY_REGISTRATION_OPTIONS(uuid));
+>>>>>>> upstream/main
 
             const { passkeySettings } = await this.queryBus.execute(
                 new GetCachedRemnawaveSettingsQuery(),

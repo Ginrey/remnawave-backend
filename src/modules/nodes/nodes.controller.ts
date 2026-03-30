@@ -31,11 +31,20 @@ import {
     RestartNodeCommand,
     UpdateNodeCommand,
     BulkNodesActionsCommand,
+<<<<<<< HEAD
+=======
+    BulkNodesUpdateCommand,
+>>>>>>> upstream/main
 } from '@libs/contracts/commands';
 
 import {
     BulkNodesActionsRequestDto,
     BulkNodesActionsResponseDto,
+<<<<<<< HEAD
+=======
+    BulkNodesUpdateRequestDto,
+    BulkNodesUpdateResponseDto,
+>>>>>>> upstream/main
     CreateNodeRequestDto,
     CreateNodeResponseDto,
     DeleteNodeRequestParamDto,
@@ -60,12 +69,16 @@ import {
     UpdateNodeRequestDto,
     UpdateNodeResponseDto,
 } from './dtos';
+<<<<<<< HEAD
 import {
     CreateNodeResponseModel,
     GetAllNodesResponseModel,
     GetAllNodesTagsResponseModel,
     GetOneNodeResponseModel,
 } from './models';
+=======
+import { GetAllNodesTagsResponseModel } from './models';
+>>>>>>> upstream/main
 import { EnableNodeRequestParamDto } from './dtos';
 import { NodesService } from './nodes.service';
 
@@ -108,7 +121,11 @@ export class NodesController {
 
         const data = errorHandler(result);
         return {
+<<<<<<< HEAD
             response: new CreateNodeResponseModel(data),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -124,7 +141,11 @@ export class NodesController {
         const res = await this.nodesService.getAllNodes();
         const data = errorHandler(res);
         return {
+<<<<<<< HEAD
             response: data.map((node) => new GetAllNodesResponseModel(node)),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -141,7 +162,11 @@ export class NodesController {
         const res = await this.nodesService.getOneNode(uuid.uuid);
         const data = errorHandler(res);
         return {
+<<<<<<< HEAD
             response: new GetOneNodeResponseModel(data),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -158,7 +183,11 @@ export class NodesController {
         const res = await this.nodesService.enableNode(uuid.uuid);
         const data = errorHandler(res);
         return {
+<<<<<<< HEAD
             response: new GetOneNodeResponseModel(data),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -175,7 +204,11 @@ export class NodesController {
         const res = await this.nodesService.disableNode(uuid.uuid);
         const data = errorHandler(res);
         return {
+<<<<<<< HEAD
             response: new GetOneNodeResponseModel(data),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -209,7 +242,11 @@ export class NodesController {
         const res = await this.nodesService.updateNode(body);
         const data = errorHandler(res);
         return {
+<<<<<<< HEAD
             response: new GetOneNodeResponseModel(data),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -281,7 +318,11 @@ export class NodesController {
 
         const data = errorHandler(result);
         return {
+<<<<<<< HEAD
             response: data.map((node) => new GetAllNodesResponseModel(node)),
+=======
+            response: data,
+>>>>>>> upstream/main
         };
     }
 
@@ -324,4 +365,27 @@ export class NodesController {
             response: data,
         };
     }
+<<<<<<< HEAD
+=======
+
+    @ApiOkResponse({
+        type: BulkNodesUpdateResponseDto,
+        description: 'Event sent successfully',
+    })
+    @Endpoint({
+        command: BulkNodesUpdateCommand,
+        httpCode: HttpStatus.OK,
+        apiBody: BulkNodesUpdateRequestDto,
+    })
+    async bulkNodesUpdate(
+        @Body() body: BulkNodesUpdateRequestDto,
+    ): Promise<BulkNodesUpdateResponseDto> {
+        const result = await this.nodesService.bulkNodesUpdate(body);
+
+        const data = errorHandler(result);
+        return {
+            response: data,
+        };
+    }
+>>>>>>> upstream/main
 }

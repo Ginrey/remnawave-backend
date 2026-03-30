@@ -41,6 +41,7 @@ export const UsersSchema = z.object({
             .datetime()
             .transform((str) => new Date(str)),
     ),
+<<<<<<< HEAD
     subLastUserAgent: z.nullable(z.string()),
     subLastOpenedAt: z.nullable(
         z
@@ -48,6 +49,8 @@ export const UsersSchema = z.object({
             .datetime()
             .transform((str) => new Date(str)),
     ),
+=======
+>>>>>>> upstream/main
     lastTrafficResetAt: z.nullable(
         z
             .string()

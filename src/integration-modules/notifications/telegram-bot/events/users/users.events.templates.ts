@@ -27,21 +27,34 @@ const includeInternalSquadsInfo = (e: UserEvent) => {
 
 export const USERS_EVENTS_TEMPLATES: Record<TUserEvents, UsersEventsTemplate> = {
     [EVENTS.USER.CREATED]: (e) => `
+<<<<<<< HEAD
 ${userHeader('🆕', 'created')}
+=======
+${userHeader("<tg-emoji emoji-id='5361979468887893611'>🆕</tg-emoji>", 'created')}
+>>>>>>> upstream/main
 ${userFullInfo(e)}
 ${includeInternalSquadsInfo(e)}`,
 
     [EVENTS.USER.MODIFIED]: (e) => `
+<<<<<<< HEAD
 ${userHeader('📝', 'modified')}
+=======
+${userHeader("<tg-emoji emoji-id='5334882760735598374'>📝</tg-emoji>", 'modified')}
+>>>>>>> upstream/main
 ${userFullInfo(e)}
 ${includeInternalSquadsInfo(e)}`,
 
     [EVENTS.USER.REVOKED]: (e) => `
+<<<<<<< HEAD
 ${userHeader('🔄', 'revoked')}
+=======
+${userHeader("<tg-emoji emoji-id='5264727218734524899'>🔄</tg-emoji>", 'revoked')}
+>>>>>>> upstream/main
 ${userFullInfo(e)}
 ${includeInternalSquadsInfo(e)}`,
 
     [EVENTS.USER.DELETED]: (e) => `
+<<<<<<< HEAD
 ${userHeader('🗑️', 'deleted')}
 ${userBasicInfo(e)}`,
 
@@ -63,10 +76,34 @@ ${userBasicInfo(e)}`,
 
     [EVENTS.USER.TRAFFIC_RESET]: (e) => `
 ${userHeader('🔄', 'traffic_reset')}
+=======
+${userHeader("<tg-emoji emoji-id='5258130763148172425'>🗑️</tg-emoji>", 'deleted')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.DISABLED]: (e) => `
+${userHeader("<tg-emoji emoji-id='5210952531676504517'>❌</tg-emoji>", 'disabled')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.ENABLED]: (e) => `
+${userHeader("<tg-emoji emoji-id='5427009714745517609'>✅</tg-emoji>", 'enabled')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.LIMITED]: (e) => `
+${userHeader("<tg-emoji emoji-id='5447644880824181073'>⚠️</tg-emoji>", 'limited')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.EXPIRED]: (e) => `
+${userHeader("<tg-emoji emoji-id='5382194935057372936'>⏱️</tg-emoji>", 'expired')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.TRAFFIC_RESET]: (e) => `
+${userHeader("<tg-emoji emoji-id='5264727218734524899'>🔄</tg-emoji>", 'traffic_reset')}
+>>>>>>> upstream/main
 ${userBasicInfo(e)}
 <b>Traffic:</b> <code>${prettyBytesUtil(e.user.userTraffic.usedTrafficBytes)}</code>`,
 
     [EVENTS.USER.FIRST_CONNECTED]: (e) => `
+<<<<<<< HEAD
 ${userHeader('🆕', 'first_connected')}
 ${userBasicInfo(e)}`,
 
@@ -84,12 +121,35 @@ ${userBasicInfo(e)}`,
 
     [EVENTS.USER.EXPIRE_NOTIFY_EXPIRED_24_HOURS_AGO]: (e) => `
 ${userHeader('⏱️', 'expired_24_hours_ago')}
+=======
+${userHeader("<tg-emoji emoji-id='5379999674193172777'>🔭</tg-emoji>", 'first_connected')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.EXPIRE_NOTIFY_EXPIRES_IN_72_HOURS]: (e) => `
+${userHeader("<tg-emoji emoji-id='5382194935057372936'>⏱️</tg-emoji>", 'expires_in_72_hours')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.EXPIRE_NOTIFY_EXPIRES_IN_48_HOURS]: (e) => `
+${userHeader("<tg-emoji emoji-id='5382194935057372936'>⏱️</tg-emoji>", 'expires_in_48_hours')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.EXPIRE_NOTIFY_EXPIRES_IN_24_HOURS]: (e) => `
+${userHeader("<tg-emoji emoji-id='5382194935057372936'>⏱️</tg-emoji>", 'expires_in_24_hours')}
+${userBasicInfo(e)}`,
+
+    [EVENTS.USER.EXPIRE_NOTIFY_EXPIRED_24_HOURS_AGO]: (e) => `
+${userHeader("<tg-emoji emoji-id='5382194935057372936'>⏱️</tg-emoji>", 'expired_24_hours_ago')}
+>>>>>>> upstream/main
 ${userBasicInfo(e)}`,
 
     [EVENTS.USER.BANDWIDTH_USAGE_THRESHOLD_REACHED]: (e) => {
         if (e.skipTelegramNotification) return null;
         return `
+<<<<<<< HEAD
 ${userHeader('⚠️', 'bandwidth_usage_threshold_reached')}
+=======
+${userHeader("<tg-emoji emoji-id='5447644880824181073'>⚠️</tg-emoji>", 'bandwidth_usage_threshold_reached')}
+>>>>>>> upstream/main
 ${userBasicInfo(e)}
 <b>Traffic:</b> <code>${prettyBytesUtil(e.user.userTraffic.usedTrafficBytes)}</code>
 <b>Limit:</b> <code>${prettyBytesUtil(e.user.trafficLimitBytes)}</code>
@@ -99,7 +159,11 @@ ${userBasicInfo(e)}
     [EVENTS.USER.NOT_CONNECTED]: (e) => {
         if (e.skipTelegramNotification || !e.meta) return null;
         return `
+<<<<<<< HEAD
 ${userHeader('⏱️', `not_connected_after_${e.meta.notConnectedAfterHours}_hours`)}
+=======
+${userHeader("<tg-emoji emoji-id='5382194935057372936'>⏱️</tg-emoji>", `not_connected_after_${e.meta.notConnectedAfterHours}_hours`)}
+>>>>>>> upstream/main
 ${userBasicInfo(e)}`;
     },
 };

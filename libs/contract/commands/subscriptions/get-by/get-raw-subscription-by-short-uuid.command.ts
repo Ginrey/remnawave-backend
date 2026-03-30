@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
+<<<<<<< HEAD
 import { REST_API, SUBSCRIPTIONS_ROUTES } from '../../../api';
 import { getEndpointDetails } from '../../../constants';
 import { ExtendedUsersSchema } from '../../../models';
+=======
+import { ExtendedUsersSchema, ResolvedProxyConfigSchema } from '../../../models';
+import { REST_API, SUBSCRIPTIONS_ROUTES } from '../../../api';
+import { getEndpointDetails } from '../../../constants';
+>>>>>>> upstream/main
 
 export namespace GetRawSubscriptionByShortUuidCommand {
     export const url = REST_API.SUBSCRIPTIONS.GET_BY.SHORT_UUID_RAW;
@@ -41,6 +47,7 @@ export namespace GetRawSubscriptionByShortUuidCommand {
                 isHwidLimited: z.boolean(),
             }),
             headers: z.record(z.string(), z.string().optional()),
+<<<<<<< HEAD
             rawHosts: z.array(
                 z.object({
                     address: z.optional(z.nullable(z.string())),
@@ -120,6 +127,9 @@ export namespace GetRawSubscriptionByShortUuidCommand {
                     xrayJsonTemplate: z.optional(z.nullable(z.object({}))),
                 }),
             ),
+=======
+            resolvedProxyConfigs: z.array(ResolvedProxyConfigSchema),
+>>>>>>> upstream/main
         }),
     });
 

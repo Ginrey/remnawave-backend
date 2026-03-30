@@ -1,10 +1,14 @@
 import { XrayJsonGeneratorService } from './xray-json.generator.service';
+<<<<<<< HEAD
 import { RawHostsGeneratorService } from './raw-hosts.generator.service';
 import { OutlineGeneratorService } from './outline.generator.service';
+=======
+>>>>>>> upstream/main
 import { SingBoxGeneratorService } from './singbox.generator.service';
 import { MihomoGeneratorService } from './mihomo.generator.service';
 import { ClashGeneratorService } from './clash.generator.service';
 import { XrayGeneratorService } from './xray.generator.service';
+<<<<<<< HEAD
 import { FormatHostsService } from './format-hosts.service';
 
 export const TEMPLATE_RENDERERS = [
@@ -16,4 +20,13 @@ export const TEMPLATE_RENDERERS = [
     SingBoxGeneratorService,
     XrayJsonGeneratorService,
     RawHostsGeneratorService,
+=======
+
+export const TEMPLATE_RENDERERS = [
+    MihomoGeneratorService,
+    ClashGeneratorService,
+    XrayGeneratorService,
+    SingBoxGeneratorService,
+    XrayJsonGeneratorService,
+>>>>>>> upstream/main
 ];

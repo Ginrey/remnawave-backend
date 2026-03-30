@@ -1,11 +1,18 @@
+<<<<<<< HEAD
 import { Prisma, PrismaClient, RemnawaveSettings } from '@prisma/client';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import timezone from 'dayjs/plugin/timezone';
 import { hasher } from 'node-object-hash';
+=======
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { PrismaClient } from '@prisma/client';
+import timezone from 'dayjs/plugin/timezone';
+>>>>>>> upstream/main
 import utc from 'dayjs/plugin/utc';
 import { Redis } from 'ioredis';
 import consola from 'consola';
 import dayjs from 'dayjs';
+<<<<<<< HEAD
 import _ from 'lodash';
 
 import { generateJwtKeypair, generateMasterCerts } from '@common/utils/certs/generate-certs.util';
@@ -43,11 +50,31 @@ import {
 import { RemnawaveSettingsEntity } from '@modules/remnawave-settings/entities/remnawave-settings.entity';
 import { DEFAULT_SUBPAGE_CONFIG } from '@modules/subscription-page-configs/constants';
 import { KeygenEntity } from '@modules/keygen/entities/keygen.entity';
+=======
+
+import { getRedisConnectionOptions } from '@common/utils';
+
+import {
+    checkupExternalSquads,
+    fixOldMigrations,
+    seedDefaultConfigProfile,
+    seedDefaultInternalSquad,
+    seedKeygen,
+    seedResponseRules,
+    seedSubscriptionPageConfig,
+    seedSubscriptionSettings,
+    seedSubscriptionTemplate,
+    syncInbounds,
+    verifyAdminUser,
+    seedRemnawaveSettings,
+} from './seeders';
+>>>>>>> upstream/main
 
 dayjs.extend(utc);
 dayjs.extend(relativeTime);
 dayjs.extend(timezone);
 
+<<<<<<< HEAD
 const hash = hasher({
     trim: true,
     sort: {
@@ -187,6 +214,9 @@ export const ResponseRulesDefaultConfig = {
 
 export const PREVIOUS_RESPONSE_RULES_CONFIG_HASH =
     '0c6711a63dc2571a9b7a69a5ae00219be616ac47d38f4c6e02caff8b3c7315b4';
+=======
+const logger = consola;
+>>>>>>> upstream/main
 
 const prisma = new PrismaClient({
     datasources: {
@@ -196,6 +226,7 @@ const prisma = new PrismaClient({
     },
 });
 
+<<<<<<< HEAD
 async function fixOldMigrations() {
     const migrationsToFix = [
         {
@@ -983,20 +1014,47 @@ async function seedSubscriptionPageConfig() {
         consola.success('🔐 Subpage configs validated!');
     }
 }
+=======
+const SEED_STEPS = [
+    { name: 'Fix Old Migrations', fn: fixOldMigrations },
+    { name: 'Checkup External Squads', fn: checkupExternalSquads },
+    { name: 'Remnawave Settings', fn: seedRemnawaveSettings },
+    { name: 'Subscription Templates', fn: seedSubscriptionTemplate },
+    { name: 'Default Config Profile', fn: seedDefaultConfigProfile },
+    { name: 'Sync Inbounds', fn: syncInbounds },
+    { name: 'Default Internal Squad', fn: seedDefaultInternalSquad },
+    { name: 'Subscription Settings', fn: seedSubscriptionSettings },
+    { name: 'Keygen', fn: seedKeygen },
+    { name: 'Response Rules', fn: seedResponseRules },
+    { name: 'Subscription Page Config', fn: seedSubscriptionPageConfig },
+    { name: 'Verify Admin User', fn: verifyAdminUser },
+] as const;
+>>>>>>> upstream/main
 
 async function checkDatabaseConnection() {
     try {
         await prisma.$queryRaw`SELECT 1`;
+<<<<<<< HEAD
         consola.success('Database connected!');
         return true;
     } catch (error) {
         consola.error('Database connection error:', error);
+=======
+        logger.success('Database connected');
+        return true;
+    } catch (error) {
+        logger.error('Database connection error:', error);
+>>>>>>> upstream/main
         process.exit(1);
     }
 }
 
 async function clearRedis() {
+<<<<<<< HEAD
     consola.start('Clearing Redis...');
+=======
+    logger.start('Clearing Redis...');
+>>>>>>> upstream/main
 
     try {
         const redis = new Redis({
@@ -1014,11 +1072,18 @@ async function clearRedis() {
         await redis.flushdb();
         await redis.quit();
 
+<<<<<<< HEAD
         consola.success('Redis cleared successfully!');
     } catch (error) {
         consola.error('Redis clearing error:', error);
 
         consola.warn('Continuing without Redis clearing...');
+=======
+        logger.success('Redis cleared');
+    } catch (error) {
+        logger.error('Redis clearing error:', error);
+        logger.warn('Continuing without Redis clearing...');
+>>>>>>> upstream/main
     }
 }
 
@@ -1027,13 +1092,17 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function seedAll() {
     let isConnected = false;
 
+<<<<<<< HEAD
     // console.log('ResponseRulesDefaultConfig hash:', hash(ResponseRulesDefaultConfig));
 
+=======
+>>>>>>> upstream/main
     while (!isConnected) {
         isConnected = await checkDatabaseConnection();
 
         if (isConnected) {
             await clearRedis();
+<<<<<<< HEAD
             consola.start('Database connected. Starting seeding...');
             await fixOldMigrations();
             await checkupExternalSquads();
@@ -1049,6 +1118,23 @@ async function seedAll() {
             break;
         } else {
             consola.info('Failed to connect to database. Retrying in 5 seconds...');
+=======
+
+            const totalSteps = SEED_STEPS.length;
+
+            for (let i = 0; i < totalSteps; i++) {
+                logger.log(`▰▱`.repeat(12));
+                const step = SEED_STEPS[i];
+                const stepNumber = `[${String(i + 1).padStart(2, '0')}/${totalSteps}]`;
+                logger.start(`${stepNumber} ${step.name}`);
+                await step.fn(prisma);
+                logger.success(`${stepNumber} ${step.name}`);
+            }
+
+            break;
+        } else {
+            logger.info('Failed to connect to database. Retrying in 5 seconds...');
+>>>>>>> upstream/main
             await delay(5_000);
         }
     }
@@ -1059,7 +1145,11 @@ seedAll()
         await prisma.$disconnect();
     })
     .catch(async (e) => {
+<<<<<<< HEAD
         consola.error(e);
+=======
+        logger.error(e);
+>>>>>>> upstream/main
         await prisma.$disconnect();
         process.exit(1);
     });

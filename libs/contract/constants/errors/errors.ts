@@ -468,11 +468,14 @@ export const ERRORS = {
         message: 'Get nodes user usage by range error',
         httpCode: 500,
     },
+<<<<<<< HEAD
     GET_NODES_REALTIME_USAGE_ERROR: {
         code: 'A095',
         message: 'Get nodes realtime usage error',
         httpCode: 500,
     },
+=======
+>>>>>>> upstream/main
     CREATE_HWID_USER_DEVICE_ERROR: {
         code: 'A096',
         message: 'Create hwid user device error',
@@ -1104,6 +1107,7 @@ export const ERRORS = {
         message: 'Connected nodes not found',
         httpCode: 404,
     },
+<<<<<<< HEAD
     GET_SUBSCRIPTION_IMPORT_SOURCES_ERROR: {
         code: 'A220',
         message: 'Get subscription import sources error',
@@ -1142,6 +1146,51 @@ export const ERRORS = {
     FETCH_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
         code: 'A227',
         message: 'Fetch subscription import source error',
+=======
+    GET_ALL_NODE_PLUGINS_ERROR: {
+        code: 'A219',
+        message: 'Get all node plugins error',
+        httpCode: 500,
+    },
+    NODE_PLUGIN_NOT_FOUND: {
+        code: 'A220',
+        message: 'Node plugin not found',
+        httpCode: 404,
+    },
+    GET_NODE_PLUGIN_BY_UUID_ERROR: {
+        code: 'A221',
+        message: 'Get node plugin by UUID error',
+        httpCode: 500,
+    },
+    INVALID_NODE_PLUGIN_CONFIG: {
+        code: 'A222',
+        message: 'Invalid node plugin config',
+        httpCode: 400,
+    },
+    NODE_PLUGIN_NAME_ALREADY_EXISTS: {
+        code: 'A223',
+        message: 'Node plugin name already exists',
+        httpCode: 400,
+    },
+    UPDATE_NODE_PLUGIN_ERROR: {
+        code: 'A224',
+        message: 'Update node plugin error',
+        httpCode: 500,
+    },
+    CREATE_NODE_PLUGIN_ERROR: {
+        code: 'A225',
+        message: 'Create node plugin error',
+        httpCode: 500,
+    },
+    METADATA_NOT_FOUND: {
+        code: 'A226',
+        message: 'Metadata not found',
+        httpCode: 404,
+    },
+    GET_TORRENT_BLOCKER_REPORTS_ERROR: {
+        code: 'A227',
+        message: 'Get torrent blocker reports error',
+>>>>>>> upstream/main
         httpCode: 500,
     },
 } as const;

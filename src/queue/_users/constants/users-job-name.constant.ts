@@ -5,10 +5,17 @@ export const USERS_JOB_NAMES = {
     EXPIRE_USER_NOTIFICATIONS: 'expireUserNotifications',
     DELETE_BY_STATUS: 'deleteByStatus',
     ADD_SUBSCRIPTION_REQUEST_RECORD: 'addSubscriptionRequestRecord',
+<<<<<<< HEAD
     UPDATE_USER_SUB: 'updateUserSub',
     UPSERT_HWID_DEVICE: 'upsertHwidDevice',
     RESET_DAILY_USER_TRAFFIC: 'resetDailyUserTraffic',
     RESET_MONTHLY_USER_TRAFFIC: 'resetMonthlyUserTraffic',
+=======
+    UPSERT_HWID_DEVICE: 'upsertHwidDevice',
+    RESET_DAILY_USER_TRAFFIC: 'resetDailyUserTraffic',
+    RESET_MONTHLY_USER_TRAFFIC: 'resetMonthlyUserTraffic',
+    RESET_MONTHLY_ROLLING_USER_TRAFFIC: 'resetMonthlyRollingUserTraffic',
+>>>>>>> upstream/main
     RESET_NO_RESET_USER_TRAFFIC: 'resetNoResetUserTraffic',
     RESET_WEEKLY_USER_TRAFFIC: 'resetWeeklyUserTraffic',
     FIND_EXPIRED_USERS: 'findExpiredUsers',
@@ -16,6 +23,10 @@ export const USERS_JOB_NAMES = {
     FIND_USERS_FOR_THRESHOLD_NOTIFICATION: 'findUsersForThresholdNotification',
     FIND_NOT_CONNECTED_USERS_NOTIFICATION: 'findNotConnectedUsersNotification',
     FIRE_USER_EVENT: 'fireUserEvent',
+<<<<<<< HEAD
+=======
+    FIRE_TORRENT_BLOCKER_EVENT: 'fireTorrentBlockerEvent',
+>>>>>>> upstream/main
     UPDATE_USERS_USAGE: 'updateUsersUsage',
     BULK_UPDATE_ALL_USERS: 'bulkUpdateAllUsers',
     RESET_ALL_USER_TRAFFIC: 'resetAllUserTraffic',

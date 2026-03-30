@@ -43,6 +43,10 @@ export class HostsRepository implements ICrud<HostsEntity> {
                 xHttpExtraParams: model.xHttpExtraParams as Prisma.InputJsonValue,
                 muxParams: model.muxParams as Prisma.InputJsonValue,
                 sockoptParams: model.sockoptParams as Prisma.InputJsonValue,
+<<<<<<< HEAD
+=======
+                finalMask: model.finalMask as Prisma.InputJsonValue,
+>>>>>>> upstream/main
             },
             include: INCLUDE_RELATED,
         });
@@ -74,6 +78,10 @@ export class HostsRepository implements ICrud<HostsEntity> {
                 xHttpExtraParams: data.xHttpExtraParams as Prisma.InputJsonValue,
                 muxParams: data.muxParams as Prisma.InputJsonValue,
                 sockoptParams: data.sockoptParams as Prisma.InputJsonValue,
+<<<<<<< HEAD
+=======
+                finalMask: data.finalMask as Prisma.InputJsonValue,
+>>>>>>> upstream/main
             },
             include: INCLUDE_RELATED,
         });
@@ -90,6 +98,10 @@ export class HostsRepository implements ICrud<HostsEntity> {
             | 'nodes'
             | 'excludedInternalSquads'
             | 'excludeFromSubscriptionTypes'
+<<<<<<< HEAD
+=======
+            | 'finalMask'
+>>>>>>> upstream/main
         >,
     ): Promise<HostsEntity[]> {
         const list = await this.prisma.tx.hosts.findMany({

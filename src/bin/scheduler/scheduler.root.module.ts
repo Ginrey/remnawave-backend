@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import { createKeyv } from '@keyv/redis';
+=======
+>>>>>>> upstream/main
 import { ClsModule } from 'nestjs-cls';
 
 import { QueueModule } from 'src/queue/queue.module';
@@ -6,12 +9,20 @@ import { QueueModule } from 'src/queue/queue.module';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { Logger, Module, OnApplicationShutdown } from '@nestjs/common';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
+<<<<<<< HEAD
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { getRedisConnectionOptions } from '@common/utils/get-redis-connection-options';
+=======
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
+
+import { RuntimeMetricsModule } from '@common/runtime-metrics/runtime-metrics.module';
+import { RawCacheModule } from '@common/raw-cache/raw-cache.module';
+>>>>>>> upstream/main
 import { CommonConfigModule } from '@common/config/common-config';
 import { PrismaService } from '@common/database/prisma.service';
 import { PrismaModule } from '@common/database';
@@ -26,6 +37,10 @@ import { SchedulerModule } from '@scheduler/scheduler.module';
 
 @Module({
     imports: [
+<<<<<<< HEAD
+=======
+        RawCacheModule,
+>>>>>>> upstream/main
         AxiosModule,
         CommonConfigModule,
         PrismaModule,
@@ -55,6 +70,7 @@ import { SchedulerModule } from '@scheduler/scheduler.module';
         SchedulerModule,
         QueueModule,
         HealthModule,
+<<<<<<< HEAD
         CacheModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -82,6 +98,9 @@ import { SchedulerModule } from '@scheduler/scheduler.module';
                 };
             },
         }),
+=======
+        RuntimeMetricsModule,
+>>>>>>> upstream/main
     ],
 })
 export class SchedulerRootModule implements OnApplicationShutdown {

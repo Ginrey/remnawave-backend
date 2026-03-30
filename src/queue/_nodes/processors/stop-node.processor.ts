@@ -46,6 +46,11 @@ export class StopNodeProcessor extends WorkerHost {
 
             await this.axios.stopXray(result.response.address, result.response.port);
 
+<<<<<<< HEAD
+=======
+            // TODO: disable plugins?
+
+>>>>>>> upstream/main
             if (!isNeedToBeDeleted) {
                 await this.commandBus.execute(
                     new UpdateNodeCommand({
@@ -55,7 +60,10 @@ export class StopNodeProcessor extends WorkerHost {
                         isConnected: false,
                         isConnecting: false,
                         isDisabled: true,
+<<<<<<< HEAD
                         usersOnline: 0,
+=======
+>>>>>>> upstream/main
                     }),
                 );
             }

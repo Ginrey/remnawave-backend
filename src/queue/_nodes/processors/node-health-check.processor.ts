@@ -7,8 +7,14 @@ import { Logger } from '@nestjs/common';
 
 import { GetSystemStatsCommand } from '@remnawave/node-contract';
 
+<<<<<<< HEAD
 import { AxiosService } from '@common/axios';
 import { EVENTS } from '@libs/contracts/constants';
+=======
+import { RawCacheService } from '@common/raw-cache';
+import { AxiosService } from '@common/axios';
+import { CACHE_KEYS, CACHE_KEYS_TTL, EVENTS } from '@libs/contracts/constants';
+>>>>>>> upstream/main
 
 import { NodeEvent } from '@integration-modules/notifications/interfaces';
 
@@ -31,6 +37,10 @@ export class NodeHealthCheckQueueProcessor extends WorkerHost {
         private readonly eventEmitter: EventEmitter2,
         private readonly axios: AxiosService,
         private readonly nodesQueuesService: NodesQueuesService,
+<<<<<<< HEAD
+=======
+        private readonly rawCacheService: RawCacheService,
+>>>>>>> upstream/main
     ) {
         super();
     }
@@ -44,6 +54,7 @@ export class NodeHealthCheckQueueProcessor extends WorkerHost {
             let message = '';
 
             while (attempts < attemptsLimit) {
+<<<<<<< HEAD
                 const response = await this.axios.getSystemStats(nodeAddress, nodePort);
 
                 switch (response.isOk) {
@@ -55,6 +66,21 @@ export class NodeHealthCheckQueueProcessor extends WorkerHost {
                         );
                     case false:
                         message = response.message ?? 'Unknown error';
+=======
+                const statResult = await this.axios.getSystemStats(nodeAddress, nodePort);
+
+                switch (statResult.isOk) {
+                    case true:
+                        return await this.handleConnectedNode(
+                            nodeUuid,
+                            nodeAddress,
+                            nodePort,
+                            isConnected,
+                            statResult.response.response,
+                        );
+                    case false:
+                        message = statResult.message ?? 'Unknown error';
+>>>>>>> upstream/main
                         attempts++;
 
                         this.logger.warn(
@@ -84,6 +110,7 @@ export class NodeHealthCheckQueueProcessor extends WorkerHost {
 
     private async handleConnectedNode(
         nodeUuid: string,
+<<<<<<< HEAD
         isConnected: boolean,
         response: GetSystemStatsCommand.Response,
     ) {
@@ -107,6 +134,64 @@ export class NodeHealthCheckQueueProcessor extends WorkerHost {
         }
 
         if (!isConnected) {
+=======
+        nodeAddress: string,
+        nodePort: number | null,
+        isConnected: boolean,
+        stats: GetSystemStatsCommand.Response['response'],
+    ) {
+        if (stats.xrayInfo === null) {
+            this.logger.error(`Node ${nodeUuid} – xrayInfo is null`);
+
+            await this.commandBus.execute(
+                new UpdateNodeCommand({
+                    uuid: nodeUuid,
+                    isConnected: false,
+                    lastStatusChange: new Date(),
+                    lastStatusMessage: 'Required info is missing. Outdated version?',
+                }),
+            );
+
+            return;
+        }
+
+        await this.rawCacheService.setMany([
+            {
+                key: CACHE_KEYS.NODE_SYSTEM_STATS(nodeUuid),
+                value: stats.system.stats,
+                ttlSeconds: CACHE_KEYS_TTL.NODE_SYSTEM_STATS,
+            },
+            {
+                key: CACHE_KEYS.NODE_XRAY_UPTIME(nodeUuid),
+                value: stats.xrayInfo.uptime,
+                ttlSeconds: CACHE_KEYS_TTL.NODE_XRAY_UPTIME,
+            },
+        ]);
+
+        const reports = stats.plugins.torrentBlocker.reportsCount;
+        if (reports !== undefined && reports > 0) {
+            await this.nodesQueuesService.collectReports({
+                nodeUuid,
+                address: nodeAddress,
+                port: nodePort,
+            });
+
+            this.logger.log(`Node ${nodeUuid} has ${reports} reports, collecting reports...`);
+        }
+
+        if (!isConnected) {
+            const nodeUpdatedResponse = await this.commandBus.execute(
+                new UpdateNodeCommand({
+                    uuid: nodeUuid,
+                    isConnected: true,
+                }),
+            );
+
+            if (!nodeUpdatedResponse.isOk) {
+                return;
+            }
+
+>>>>>>> upstream/main
             await this.nodesQueuesService.startNode({ nodeUuid });
 
             this.eventEmitter.emit(
@@ -123,14 +208,26 @@ export class NodeHealthCheckQueueProcessor extends WorkerHost {
         isConnected: boolean,
         message: string | undefined,
     ) {
+<<<<<<< HEAD
+=======
+        await this.rawCacheService.delMany([
+            CACHE_KEYS.NODE_SYSTEM_INFO(nodeUuid),
+            CACHE_KEYS.NODE_USERS_ONLINE(nodeUuid),
+            CACHE_KEYS.NODE_XRAY_UPTIME(nodeUuid),
+        ]);
+
+>>>>>>> upstream/main
         const newNodeEntity = await this.commandBus.execute(
             new UpdateNodeCommand({
                 uuid: nodeUuid,
                 isConnected: false,
                 lastStatusChange: new Date(),
                 lastStatusMessage: message,
+<<<<<<< HEAD
                 usersOnline: 0,
                 xrayUptime: '0',
+=======
+>>>>>>> upstream/main
             }),
         );
 

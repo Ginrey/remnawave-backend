@@ -11,8 +11,11 @@ export class BaseUserEntity implements Users {
 
     public trafficLimitBytes: bigint;
     public trafficLimitStrategy: TResetPeriods;
+<<<<<<< HEAD
     public subLastUserAgent: string | null;
     public subLastOpenedAt: Date | null;
+=======
+>>>>>>> upstream/main
 
     public expireAt: Date;
     public subRevokedAt: Date | null;

@@ -4,10 +4,13 @@ interface IAuthentication {
     passkey: {
         enabled: boolean;
     };
+<<<<<<< HEAD
     tgAuth: {
         enabled: boolean;
         botId: number | null;
     };
+=======
+>>>>>>> upstream/main
     oauth2: {
         providers: Record<TOAuth2ProvidersKeys, boolean>;
     };

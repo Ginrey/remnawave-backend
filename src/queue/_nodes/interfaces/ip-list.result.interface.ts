@@ -8,7 +8,11 @@ export interface IGetIpsListNodeResult {
     nodeUuid: string;
     nodeName: string;
     countryCode: string;
+<<<<<<< HEAD
     ips: string[];
+=======
+    ips: { ip: string; lastSeen: Date }[];
+>>>>>>> upstream/main
 }
 
 export interface IGetIpsListResult {
@@ -22,3 +26,21 @@ export interface IGetIpsListResult {
         nodes: IGetIpsListNodeResult[];
     } | null;
 }
+<<<<<<< HEAD
+=======
+
+export interface IGetUserIpListItem {
+    userId: string;
+    ips: { ip: string; lastSeen: Date }[];
+}
+
+export interface IGetUsersIpsListResult {
+    isCompleted: boolean;
+    isFailed: boolean;
+    result: {
+        success: boolean;
+        nodeUuid: string;
+        users: IGetUserIpListItem[];
+    } | null;
+}
+>>>>>>> upstream/main

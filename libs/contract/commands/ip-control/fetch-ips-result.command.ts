@@ -38,7 +38,22 @@ export namespace FetchIpsResultCommand {
                             nodeUuid: z.string().uuid(),
                             nodeName: z.string(),
                             countryCode: z.string(),
+<<<<<<< HEAD
                             ips: z.array(z.string()),
+=======
+                            ips: z.array(
+                                z.object({
+                                    ip: z.string(),
+                                    lastSeen: z
+                                        .string()
+                                        .datetime({
+                                            local: true,
+                                            offset: true,
+                                        })
+                                        .transform((str) => new Date(str)),
+                                }),
+                            ),
+>>>>>>> upstream/main
                         }),
                     ),
                 })

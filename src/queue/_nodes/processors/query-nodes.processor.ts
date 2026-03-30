@@ -8,6 +8,10 @@ import { QueryBus } from '@nestjs/cqrs';
 import { AxiosService } from '@common/axios/axios.service';
 
 import { FindNodesByCriteriaQuery } from '@modules/nodes/queries/find-nodes-by-criteria';
+<<<<<<< HEAD
+=======
+import { GetNodeByUuidQuery } from '@modules/nodes/queries/get-node-by-uuid';
+>>>>>>> upstream/main
 import { NodesEntity } from '@modules/nodes';
 
 import { QUEUES_NAMES } from '../../queue.enum';
@@ -38,6 +42,11 @@ export class QueryNodesQueueProcessor extends WorkerHost {
         switch (job.name) {
             case NODES_JOB_NAMES.FETCH_IPS_LIST:
                 return await this.handleFetchIpsList(job);
+<<<<<<< HEAD
+=======
+            case NODES_JOB_NAMES.FETCH_USERS_IPS_LIST:
+                return await this.handleFetchUsersIpsList(job);
+>>>>>>> upstream/main
             default:
                 this.logger.warn(`Job "${job.name}" is not handled.`);
                 break;
@@ -88,11 +97,35 @@ export class QueryNodesQueueProcessor extends WorkerHost {
                         return;
                     }
 
+<<<<<<< HEAD
+=======
+                    const ips = ipsListResponse.response.response.ips;
+                    let formattedIps: { ip: string; lastSeen: Date }[] = [];
+
+                    if (ips.length > 0 && typeof ips[0] === 'string') {
+                        formattedIps = (ips as unknown as string[]).map((ip) => ({
+                            ip,
+                            lastSeen: new Date(0),
+                        }));
+                    } else {
+                        formattedIps = ips
+                            .map((ip) => ({ ip: ip.ip, lastSeen: ip.lastSeen }))
+                            .sort(
+                                (a, b) =>
+                                    new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime(),
+                            );
+                    }
+
+>>>>>>> upstream/main
                     return {
                         nodeUuid: node.uuid,
                         nodeName: node.name,
                         countryCode: node.countryCode,
+<<<<<<< HEAD
                         ips: ipsListResponse.response.response.ips,
+=======
+                        ips: formattedIps,
+>>>>>>> upstream/main
                     };
                 } catch (error) {
                     this.logger.warn(`Failed to fetch IPs from node ${node.uuid}: ${error}`);
@@ -126,4 +159,60 @@ export class QueryNodesQueueProcessor extends WorkerHost {
             };
         }
     }
+<<<<<<< HEAD
+=======
+
+    private async handleFetchUsersIpsList(job: Job<{ nodeUuid: string }>) {
+        try {
+            const nodeResult = await this.queryBus.execute(
+                new GetNodeByUuidQuery(job.data.nodeUuid),
+            );
+            if (!nodeResult.isOk) {
+                return {
+                    success: false,
+                    nodeUuid: job.data.nodeUuid,
+                    users: [],
+                };
+            }
+
+            if (!nodeResult.response.isConnected) {
+                return {
+                    success: false,
+                    nodeUuid: job.data.nodeUuid,
+                    users: [],
+                };
+            }
+
+            const result = await this.axios.getUsersIpsList(
+                nodeResult.response.address,
+                nodeResult.response.port,
+            );
+
+            if (!result.isOk) {
+                return {
+                    success: false,
+                    nodeUuid: job.data.nodeUuid,
+                    users: [],
+                };
+            }
+
+            const collator = new Intl.Collator(undefined, { numeric: true });
+
+            return {
+                success: true,
+                nodeUuid: job.data.nodeUuid,
+                users: result.response.response.users.sort((a, b) =>
+                    collator.compare(a.userId, b.userId),
+                ),
+            };
+        } catch (error) {
+            this.logger.error(`Failed to fetch users IPs list: ${error}`);
+            return {
+                success: false,
+                nodeUuid: job.data.nodeUuid,
+                users: [],
+            };
+        }
+    }
+>>>>>>> upstream/main
 }
