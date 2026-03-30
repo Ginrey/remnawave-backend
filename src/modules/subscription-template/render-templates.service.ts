@@ -5,64 +5,34 @@ import { HostWithRawInbound } from '@modules/hosts/entities/host-with-inbound-ta
 import { ExternalSquadEntity } from '@modules/external-squads/entities';
 import { UserEntity } from '@modules/users/entities';
 
-<<<<<<< HEAD
-import { XrayJsonGeneratorService } from './generators/xray-json.generator.service';
-import { RawHostsGeneratorService } from './generators/raw-hosts.generator.service';
-import { OutlineGeneratorService } from './generators/outline.generator.service';
-=======
 import { ResolveProxyConfigService } from './resolve-proxy/resolve-proxy-config.service';
 import { XrayJsonGeneratorService } from './generators/xray-json.generator.service';
->>>>>>> upstream/main
 import { SingBoxGeneratorService } from './generators/singbox.generator.service';
 import { MihomoGeneratorService } from './generators/mihomo.generator.service';
 import { ClashGeneratorService } from './generators/clash.generator.service';
 import { XrayGeneratorService } from './generators/xray.generator.service';
-<<<<<<< HEAD
-import { FormatHostsService } from './generators/format-hosts.service';
-import { SUBSCRIPTION_CONFIG_TYPES } from './constants/config-types';
-import { IGenerateSubscription } from './interfaces';
-import { IRawHost } from './generators/interfaces';
-=======
 import { SUBSCRIPTION_CONFIG_TYPES } from './constants/config-types';
 import { ResolvedProxyConfig } from './resolve-proxy/interfaces';
 import { IGenerateSubscription } from './interfaces';
->>>>>>> upstream/main
 
 @Injectable()
 export class RenderTemplatesService {
     constructor(
-<<<<<<< HEAD
-        private readonly formatHostsService: FormatHostsService,
-        private readonly mihomoGeneratorService: MihomoGeneratorService,
-        private readonly clashGeneratorService: ClashGeneratorService,
-        private readonly outlineGeneratorService: OutlineGeneratorService,
-        private readonly xrayGeneratorService: XrayGeneratorService,
-        private readonly singBoxGeneratorService: SingBoxGeneratorService,
-        private readonly xrayJsonGeneratorService: XrayJsonGeneratorService,
-        private readonly rawHostsGeneratorService: RawHostsGeneratorService,
-=======
         private readonly resolveProxyConfigService: ResolveProxyConfigService,
         private readonly mihomoGeneratorService: MihomoGeneratorService,
         private readonly clashGeneratorService: ClashGeneratorService,
         private readonly xrayGeneratorService: XrayGeneratorService,
         private readonly singBoxGeneratorService: SingBoxGeneratorService,
         private readonly xrayJsonGeneratorService: XrayJsonGeneratorService,
->>>>>>> upstream/main
     ) {}
 
     public async generateSubscription(params: IGenerateSubscription): Promise<{
         contentType: string;
         subscription: string;
     }> {
-<<<<<<< HEAD
-        const { srrContext, user, hosts, hostsOverrides, fallbackOptions, extraRawLines } = params;
-
-        const formattedHosts = await this.formatHostsService.generateFormattedHosts({
-=======
         const { srrContext, user, hosts, hostsOverrides, fallbackOptions } = params;
 
         const formattedHosts = await this.resolveProxyConfigService.resolveProxyConfig({
->>>>>>> upstream/main
             subscriptionSettings: srrContext.subscriptionSettings,
             hosts,
             user,
@@ -76,12 +46,7 @@ export class RenderTemplatesService {
                     subscription: await this.xrayGeneratorService.generateConfig(
                         formattedHosts,
                         SUBSCRIPTION_CONFIG_TYPES['XRAY_BASE64'].isBase64,
-<<<<<<< HEAD
-                        srrContext.isXrayExtSupported,
-                        extraRawLines,
-=======
                         srrContext.isExtendedClient,
->>>>>>> upstream/main
                     ),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_BASE64'].CONTENT_TYPE,
                 };
@@ -100,11 +65,7 @@ export class RenderTemplatesService {
                     subscription: await this.mihomoGeneratorService.generateConfig(
                         formattedHosts,
                         false,
-<<<<<<< HEAD
-                        srrContext.isMihomoExtSupported,
-=======
                         srrContext.isExtendedClient,
->>>>>>> upstream/main
                         srrContext.overrideTemplateName,
                     ),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['MIHOMO'].CONTENT_TYPE,
@@ -134,11 +95,7 @@ export class RenderTemplatesService {
                 return {
                     subscription: await this.xrayJsonGeneratorService.generateConfig({
                         hosts: formattedHosts,
-<<<<<<< HEAD
-                        isHapp: srrContext.isXrayExtSupported,
-=======
                         isExtendedClient: srrContext.isExtendedClient,
->>>>>>> upstream/main
                         overrideTemplateName: srrContext.overrideTemplateName,
                         ignoreHostXrayJsonTemplate: srrContext.ignoreHostXrayJsonTemplate,
                     }),
@@ -155,55 +112,14 @@ export class RenderTemplatesService {
         hosts: HostWithRawInbound[];
         hostsOverrides: ExternalSquadEntity['hostOverrides'] | undefined;
         subscriptionSettings: SubscriptionSettingsEntity;
-<<<<<<< HEAD
-    }): Promise<{
-        rawHosts: IRawHost[];
-    }> {
-        const { user, hosts, hostsOverrides, subscriptionSettings } = params;
-
-        const formattedHosts = await this.formatHostsService.generateFormattedHosts({
-=======
     }): Promise<ResolvedProxyConfig[]> {
         const { user, hosts, hostsOverrides, subscriptionSettings } = params;
 
         return await this.resolveProxyConfigService.resolveProxyConfig({
->>>>>>> upstream/main
             subscriptionSettings,
             hosts,
             user,
             hostsOverrides,
-<<<<<<< HEAD
-            returnDbHost: true,
         });
-
-        const rawHosts = await this.rawHostsGeneratorService.generateConfig(formattedHosts);
-
-        return {
-            rawHosts,
-        };
-    }
-
-    public async generateOutlineSubscription(
-        subscriptionSettings: SubscriptionSettingsEntity | null,
-        encodedTag: string,
-        user: UserEntity,
-        hosts: HostWithRawInbound[],
-    ): Promise<{
-        contentType: string;
-        subscription: string;
-    }> {
-        const formattedHosts = await this.formatHostsService.generateFormattedHosts({
-            subscriptionSettings,
-            hosts,
-            user,
-        });
-
-        return {
-            subscription: this.outlineGeneratorService.generateConfig(formattedHosts, encodedTag),
-            contentType: 'application/json',
-        };
-=======
-        });
->>>>>>> upstream/main
     }
 }

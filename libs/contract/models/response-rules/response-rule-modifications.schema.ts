@@ -90,8 +90,6 @@ export const ResponseRuleModificationsSchema = z
                         'If you set this flag to **true**, the **Serve JSON at Base Subscription** setting will be ignored (set to **false**).',
                 }),
             ),
-<<<<<<< HEAD
-=======
         additionalExtendedClientsRegex: z
             .array(z.string().min(1))
             .optional()
@@ -110,7 +108,6 @@ export const ResponseRuleModificationsSchema = z
                         '**Example:** `["^MyClient/", "^CustomApp\\\\/v2"]`',
                 }),
             ),
->>>>>>> upstream/main
     })
     .optional()
     .describe(

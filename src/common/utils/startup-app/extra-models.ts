@@ -7,10 +7,7 @@ import {
     RemnawaveWebhookServiceEvents,
     RemnawaveWebhookUserEvents,
     RemnawaveWebhookUserHwidDevicesEvents,
-<<<<<<< HEAD
-=======
     RemnawaveWebhookTorrentBlockerEvents,
->>>>>>> upstream/main
 } from '@libs/contracts/models';
 
 export class RemnawaveWebhookUserEventsDto extends createZodDto(RemnawaveWebhookUserEvents) {}
@@ -21,9 +18,6 @@ export class RemnawaveWebhookNodeEventsDto extends createZodDto(RemnawaveWebhook
 export class RemnawaveWebhookServiceEventsDto extends createZodDto(RemnawaveWebhookServiceEvents) {}
 export class RemnawaveWebhookErrorsEventsDto extends createZodDto(RemnawaveWebhookErrorsEvents) {}
 export class RemnawaveWebhookCrmEventsDto extends createZodDto(RemnawaveWebhookCrmEvents) {}
-<<<<<<< HEAD
-=======
 export class RemnawaveWebhookTorrentBlockerEventsDto extends createZodDto(
     RemnawaveWebhookTorrentBlockerEvents,
 ) {}
->>>>>>> upstream/main

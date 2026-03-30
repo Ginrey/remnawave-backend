@@ -1,8 +1,5 @@
 import { createZodDto } from 'nestjs-zod';
 
-<<<<<<< HEAD
-import { FetchIpsCommand, FetchIpsResultCommand, DropConnectionsCommand } from '@contract/commands';
-=======
 import {
     FetchIpsCommand,
     FetchIpsResultCommand,
@@ -10,7 +7,6 @@ import {
     FetchUsersIpsResultCommand,
     FetchUsersIpsCommand,
 } from '@contract/commands';
->>>>>>> upstream/main
 
 export class FetchIpsRequestDto extends createZodDto(FetchIpsCommand.RequestSchema) {}
 
@@ -25,8 +21,6 @@ export class DropConnectionsRequestDto extends createZodDto(DropConnectionsComma
 export class DropConnectionsResponseDto extends createZodDto(
     DropConnectionsCommand.ResponseSchema,
 ) {}
-<<<<<<< HEAD
-=======
 
 export class FetchUsersIpsRequestDto extends createZodDto(FetchUsersIpsCommand.RequestSchema) {}
 
@@ -39,4 +33,3 @@ export class FetchUsersIpsResultRequestDto extends createZodDto(
 export class FetchUsersIpsResultResponseDto extends createZodDto(
     FetchUsersIpsResultCommand.ResponseSchema,
 ) {}
->>>>>>> upstream/main

@@ -49,8 +49,6 @@ export class RemnawaveSettingsRepository {
 
         return new RemnawaveSettingsEntity(result);
     }
-<<<<<<< HEAD
-=======
 
     public async getInitDate(): Promise<Date> {
         const result = await this.prisma.tx.$queryRaw<{ started_at: Date }[]>`
@@ -72,5 +70,4 @@ export class RemnawaveSettingsRepository {
 
         return date;
     }
->>>>>>> upstream/main
 }

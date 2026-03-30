@@ -128,8 +128,6 @@ export const Oauth2SettingsSchema = z.object({
             authorizationUrl: null,
             allowedEmails: [],
         }),
-<<<<<<< HEAD
-=======
     telegram: z
         .object({
             enabled: z.boolean(),
@@ -161,7 +159,6 @@ export const Oauth2SettingsSchema = z.object({
             allowedIds: [],
             frontendDomain: null,
         }),
->>>>>>> upstream/main
 });
 
 export type TOauth2Settings = z.infer<typeof Oauth2SettingsSchema>;

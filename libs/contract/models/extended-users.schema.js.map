@@ -1,1 +1,0 @@
-{"version":3,"file":"extended-users.schema.js","sourceRoot":"","sources":["extended-users.schema.ts"],"names":[],"mappings":";;;AAAA,6BAAwB;AAExB,6EAAuE;AACvE,+DAA0D;AAC1D,iDAA6C;AAEhC,QAAA,mBAAmB,GAAG,0BAAW,CAAC,MAAM,CAAC;IAClD,eAAe,EAAE,OAAC,CAAC,MAAM,EAAE;IAC3B,oBAAoB,EAAE,OAAC,CAAC,KAAK,CAAC,oDAAuB,CAAC;IACtD,WAAW,EAAE,uCAAiB;CACjC,CAAC,CAAC"}

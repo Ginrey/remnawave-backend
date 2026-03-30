@@ -2,11 +2,7 @@ FROM alpine:3.19 AS frontend
 WORKDIR /opt/frontend
 
 ARG BRANCH=main
-<<<<<<< HEAD
-ARG FRONTEND_URL=https://github.com/Ginrey/remnawave-frontend/releases/download/Release/remnawave-frontend.zip
-=======
 ARG FRONTEND_URL=https://github.com/remnawave/frontend/releases/latest/download/remnawave-frontend.zip
->>>>>>> upstream/main
 
 RUN apk add --no-cache curl unzip ca-certificates \
     && curl -L ${FRONTEND_URL} -o frontend.zip \
@@ -16,22 +12,14 @@ RUN apk add --no-cache curl unzip ca-certificates \
     && curl -L https://validator.remna.dev/xray.schema.cn.json -o frontend_temp/dist/assets/xray.schema.cn.json \
     && curl -L https://validator.remna.dev/main.wasm -o frontend_temp/dist/assets/main.wasm
 
-<<<<<<< HEAD
-FROM node:24.13-alpine AS backend-build
-=======
 FROM node:24.14-trixie-slim AS backend-build
->>>>>>> upstream/main
 WORKDIR /opt/app
 
 # RUN apk add python3 python3-dev build-base pkgconfig libunwind-dev
 
-<<<<<<< HEAD
-ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x,linux-musl-arm64-openssl-3.0.x
-=======
 #ENV PRISMA_CLI_BINARY_TARGETS=linux-musl-openssl-3.0.x,linux-musl-arm64-openssl-3.0.x
 ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x,linux-arm64-openssl-3.0.x
 
->>>>>>> upstream/main
 
 COPY package*.json ./
 COPY prisma ./prisma
@@ -51,9 +39,6 @@ RUN npm cache clean --force
 
 RUN npm prune --omit=dev
 
-<<<<<<< HEAD
-FROM node:24.13-alpine
-=======
 FROM node:24.14-trixie-slim
 
 LABEL org.opencontainers.image.title="Remnawave"
@@ -64,7 +49,6 @@ LABEL org.opencontainers.image.vendor="Remnawave"
 LABEL org.opencontainers.image.licenses="AGPL-3.0"
 LABEL org.opencontainers.image.documentation="https://docs.rw"
 
->>>>>>> upstream/main
 WORKDIR /opt/app
 
 ARG BRANCH=main
@@ -81,16 +65,11 @@ ARG __RW_METADATA_BUILD_NUMBER=0
 # ENV LD_PRELOAD=/usr/lib/libjemalloc.so.2
 # libunwind
 # Install mimalloc
-<<<<<<< HEAD
-RUN apk add --no-cache mimalloc curl
-ENV LD_PRELOAD=/usr/lib/libmimalloc.so
-=======
 #RUN apk add --no-cache mimalloc2 curl
 #ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2
 
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
->>>>>>> upstream/main
 
 ENV REMNAWAVE_BRANCH=${BRANCH}
 ENV PRISMA_HIDE_UPDATE_MESSAGE=true

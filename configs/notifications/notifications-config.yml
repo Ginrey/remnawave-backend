@@ -265,8 +265,6 @@ events:
   crm.infra_billing_node_payment_overdue_7_days:
     telegram: true
     webhook: true
-<<<<<<< HEAD
-=======
 
   # ════════════════════════════════════════════════════════════════════════════
   # TORRENT BLOCKER EVENTS
@@ -276,4 +274,3 @@ events:
   torrent_blocker.report:
     telegram: true
     webhook: true
->>>>>>> upstream/main

@@ -54,8 +54,6 @@ export class ResponseRulesParserService {
                     }
                 }
             }
-<<<<<<< HEAD
-=======
 
             if (
                 rule.responseModifications &&
@@ -69,7 +67,6 @@ export class ResponseRulesParserService {
                     }
                 }
             }
->>>>>>> upstream/main
         }
     }
 }

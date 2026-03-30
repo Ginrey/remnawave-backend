@@ -1,27 +1,17 @@
 import { sql } from 'kysely';
 
-<<<<<<< HEAD
-import { DB } from 'prisma/generated/types';
-
-=======
->>>>>>> upstream/main
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
 
 import { ICrudWithStringId } from '@common/types/crud-port';
 import { TxKyselyService } from '@common/database';
-<<<<<<< HEAD
-=======
 import { paginateQuery } from '@common/helpers';
->>>>>>> upstream/main
 import { GetAllHwidDevicesCommand } from '@libs/contracts/commands';
 
 import { HwidUserDeviceEntity } from '../entities/hwid-user-device.entity';
 import { HwidUserDevicesConverter } from '../hwid-user-devices.converter';
 
-<<<<<<< HEAD
-=======
 const HWID_FILTER_COLUMN_MAP = {
     userUuid: sql`"user_uuid"::text`,
     hwid: sql.ref('hwid_user_devices.hwid'),
@@ -33,7 +23,6 @@ const HWID_FILTER_COLUMN_MAP = {
 
 type AllowedHwidFilterId = keyof typeof HWID_FILTER_COLUMN_MAP;
 
->>>>>>> upstream/main
 @Injectable()
 export class HwidUserDevicesRepository implements Omit<
     ICrudWithStringId<HwidUserDeviceEntity>,
@@ -125,107 +114,6 @@ export class HwidUserDevicesRepository implements Omit<
         filterModes,
         sorting,
     }: GetAllHwidDevicesCommand.RequestQuery): Promise<[HwidUserDeviceEntity[], number]> {
-<<<<<<< HEAD
-        const qb = this.qb.kysely.selectFrom('hwidUserDevices');
-
-        let isFiltersEmpty = true;
-
-        let whereBuilder = qb;
-
-        if (filters?.length) {
-            isFiltersEmpty = false;
-            for (const filter of filters) {
-                const mode = filterModes?.[filter.id] || 'contains';
-
-                if (['createdAt', 'expireAt'].includes(filter.id)) {
-                    whereBuilder = whereBuilder.where(
-                        filter.id as any,
-                        '=',
-                        new Date(filter.value as string),
-                    );
-                    continue;
-                }
-
-                const field = filter.id as keyof DB['hwidUserDevices'];
-
-                switch (mode) {
-                    default: // 'contains'
-                        if (field === 'userUuid') {
-                            whereBuilder = whereBuilder.where(
-                                sql`"user_uuid"::text`,
-                                'ilike',
-                                `%${filter.value}%`,
-                            );
-                        } else {
-                            whereBuilder = whereBuilder.where(field, 'ilike', `%${filter.value}%`);
-                        }
-
-                        break;
-                }
-            }
-        }
-
-        let sortBuilder = whereBuilder;
-
-        if (sorting?.length) {
-            for (const sort of sorting) {
-                sortBuilder = sortBuilder.orderBy(sql.ref(sort.id), (ob) => {
-                    const orderBy = sort.desc ? ob.desc() : ob.asc();
-                    return orderBy.nullsLast();
-                });
-            }
-        } else {
-            sortBuilder = sortBuilder.orderBy('createdAt', 'desc');
-        }
-
-        const query = sortBuilder.selectAll().offset(start).limit(size);
-
-        const { count } = await this.qb.kysely
-            .selectFrom('hwidUserDevices')
-            .select((eb) => eb.fn.countAll().as('count'))
-            .$if(!isFiltersEmpty, (qb) => {
-                let countBuilder = qb;
-                for (const filter of filters!) {
-                    const mode = filterModes?.[filter.id] || 'contains';
-
-                    if (['createdAt', 'expireAt'].includes(filter.id)) {
-                        countBuilder = countBuilder.where(
-                            filter.id as keyof DB['hwidUserDevices'],
-                            '=',
-                            new Date(filter.value as string),
-                        );
-                        continue;
-                    }
-
-                    const field = filter.id as keyof DB['hwidUserDevices'];
-
-                    switch (mode) {
-                        default:
-                            if (field === 'userUuid') {
-                                countBuilder = countBuilder.where(
-                                    sql`"user_uuid"::text`,
-                                    'ilike',
-                                    `%${filter.value}%`,
-                                );
-                            } else {
-                                countBuilder = countBuilder.where(
-                                    field,
-                                    'ilike',
-                                    `%${filter.value}%`,
-                                );
-                            }
-                            break;
-                    }
-                }
-                return countBuilder;
-            })
-            .executeTakeFirstOrThrow();
-
-        const users = await query.execute();
-
-        const result = users.map((u) => new HwidUserDeviceEntity(u));
-        return [result, Number(count)];
-=======
         let qb = this.qb.kysely.selectFrom('hwidUserDevices').selectAll();
 
         if (filters?.length) {
@@ -279,7 +167,6 @@ export class HwidUserDevicesRepository implements Omit<
         }
 
         return qb;
->>>>>>> upstream/main
     }
 
     public async getHwidDevicesStats(): Promise<{

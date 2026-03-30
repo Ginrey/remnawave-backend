@@ -1,26 +1,14 @@
-<<<<<<< HEAD
-import { InjectRedis } from '@songkeys/nestjs-redis';
 import { Job } from 'bullmq';
-import Redis from 'ioredis';
-=======
-import { Job } from 'bullmq';
->>>>>>> upstream/main
 
 import { Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { CommandBus } from '@nestjs/cqrs';
 
-<<<<<<< HEAD
-import { INTERNAL_CACHE_KEYS } from '@libs/contracts/constants';
-
-import { BulkUpsertUserHistoryEntryCommand } from '@modules/nodes-user-usage-history/commands/bulk-upsert-user-history-entry/bulk-upsert-user-history-entry.command';
-=======
 import { RawCacheService } from '@common/raw-cache';
 import { INTERNAL_CACHE_KEYS } from '@libs/contracts/constants';
 
 import { BulkUpsertUserHistoryEntryCommand } from '@modules/nodes-user-usage-history/commands/bulk-upsert-user-history-entry';
->>>>>>> upstream/main
 import { NodesUserUsageHistoryEntity } from '@modules/nodes-user-usage-history/entities';
 
 import { IRecordUserUsageFromRedisPayload } from './interfaces';
@@ -40,11 +28,7 @@ export class PushFromRedisQueueProcessor extends WorkerHost implements OnApplica
 
     constructor(
         private readonly commandBus: CommandBus,
-<<<<<<< HEAD
-        @InjectRedis() private readonly redis: Redis,
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
         private readonly configService: ConfigService,
     ) {
         super();
@@ -53,10 +37,7 @@ export class PushFromRedisQueueProcessor extends WorkerHost implements OnApplica
             'SERVICE_DISABLE_USER_USAGE_RECORDS',
         );
     }
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/main
     onApplicationBootstrap() {
         if (this.disableUserUsageRecords) {
             this.logger.warn(
@@ -86,19 +67,6 @@ export class PushFromRedisQueueProcessor extends WorkerHost implements OnApplica
                 return;
             }
 
-<<<<<<< HEAD
-            const exists = await this.redis.exists(redisKey);
-
-            if (exists === 0) {
-                return;
-            }
-
-            await this.redis.rename(redisKey, processingKey);
-
-            const results = await this.redis.hgetall(processingKey);
-
-            for await (const batch of this.batchEntries(results, redisKey)) {
-=======
             const exists = await this.rawCacheService.exists(redisKey);
 
             if (!exists) {
@@ -110,7 +78,6 @@ export class PushFromRedisQueueProcessor extends WorkerHost implements OnApplica
             const nodeId = BigInt(redisKey.split(':')[1]);
 
             for await (const batch of this.scanAndBatch(processingKey, nodeId)) {
->>>>>>> upstream/main
                 await this.commandBus.execute(new BulkUpsertUserHistoryEntryCommand(batch));
             }
 
@@ -121,37 +88,6 @@ export class PushFromRedisQueueProcessor extends WorkerHost implements OnApplica
             );
             return;
         } finally {
-<<<<<<< HEAD
-            await this.redis.del(processingKey);
-        }
-    }
-
-    private async *batchEntries(
-        data: Record<string, string>,
-        keyString: string,
-        batchSize: number = 10_000,
-    ): AsyncGenerator<NodesUserUsageHistoryEntity[]> {
-        const entries = Object.entries(data);
-        let batch: NodesUserUsageHistoryEntity[] = [];
-
-        for (const [userId, totalBytes] of entries) {
-            batch.push(
-                new NodesUserUsageHistoryEntity({
-                    nodeId: BigInt(keyString.split(':')[1]),
-                    userId: BigInt(userId),
-                    totalBytes: BigInt(totalBytes),
-                }),
-            );
-
-            if (batch.length >= batchSize) {
-                yield batch;
-                batch = [];
-            }
-        }
-
-        if (batch.length > 0) {
-            yield batch;
-=======
             await this.rawCacheService.del(processingKey);
         }
     }
@@ -179,7 +115,6 @@ export class PushFromRedisQueueProcessor extends WorkerHost implements OnApplica
             if (batch.length > 0) {
                 yield batch;
             }
->>>>>>> upstream/main
         }
     }
 }

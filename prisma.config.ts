@@ -10,8 +10,4 @@ export default {
         path: path.join('prisma', 'migrations'),
         seed: 'node dist/prisma/seed/config.seed.js',
     },
-<<<<<<< HEAD
 } satisfies PrismaConfig;
-=======
-} satisfies PrismaConfig;
->>>>>>> upstream/main

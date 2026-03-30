@@ -10,13 +10,8 @@ import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { formatExecutionTime, getTime } from '@common/utils/get-elapsed-time';
-<<<<<<< HEAD
-import { TxKyselyService } from '@common/database/tx-kysely.service';
-import { getKyselyUuid } from '@common/helpers/kysely';
-=======
 import { getKyselyUuid, paginateQuery } from '@common/helpers/kysely';
 import { TxKyselyService } from '@common/database/tx-kysely.service';
->>>>>>> upstream/main
 import { GetAllUsersCommand } from '@libs/contracts/commands';
 
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
@@ -39,8 +34,6 @@ import { BulkDeleteByStatusBuilder, BulkUpdateUserUsedTrafficBuilder } from '../
 import { UserTrafficEntity } from '../entities/user-traffic.entity';
 import { UserConverter } from '../users.converter';
 
-<<<<<<< HEAD
-=======
 const USERS_FILTER_COLUMN_MAP = {
     id: sql.ref('users.t_id'),
     createdAt: sql.ref('users.created_at'),
@@ -72,7 +65,6 @@ const NUMERIC_FILTER_IDS = new Set(['hwidDeviceLimit', 'tId']);
 
 type AllowedUsersFilterId = keyof typeof USERS_FILTER_COLUMN_MAP;
 
->>>>>>> upstream/main
 @Injectable()
 export class UsersRepository {
     private readonly logger = new Logger(UsersRepository.name);
@@ -149,22 +141,6 @@ export class UsersRepository {
         });
     }
 
-<<<<<<< HEAD
-    public async updateSubLastOpenedAndUserAgent(
-        userUuid: string,
-        subLastOpenedAt: Date,
-        subLastUserAgent: string,
-    ): Promise<void> {
-        await this.qb.kysely
-            .updateTable('users')
-            .set({ subLastOpenedAt, subLastUserAgent })
-            .where('uuid', '=', getKyselyUuid(userUuid))
-            .clearReturning()
-            .execute();
-    }
-
-=======
->>>>>>> upstream/main
     public async updateExceededTrafficUsers(): Promise<{ tId: bigint }[]> {
         const result = await this.qb.kysely
             .updateTable('users')
@@ -218,9 +194,6 @@ export class UsersRepository {
         return result;
     }
 
-<<<<<<< HEAD
-    public async getAllUsersV2({
-=======
     private get baseUsersQb() {
         return this.qb.kysely
             .selectFrom('users')
@@ -228,302 +201,12 @@ export class UsersRepository {
     }
 
     public async getAllUsers({
->>>>>>> upstream/main
         start,
         size,
         filters,
         filterModes,
         sorting,
     }: GetAllUsersCommand.RequestQuery): Promise<[UserEntity[], number]> {
-<<<<<<< HEAD
-        const qb = this.qb.kysely
-            .selectFrom('users')
-            .innerJoin('userTraffic', 'userTraffic.tId', 'users.tId');
-
-        let isFiltersEmpty = true;
-
-        let whereBuilder = qb;
-
-        if (filters?.length) {
-            isFiltersEmpty = false;
-            for (const filter of filters) {
-                const mode = filterModes?.[filter.id] || 'contains';
-
-                if (
-                    [
-                        'createdAt',
-                        'expireAt',
-                        'lastTrafficResetAt',
-                        'subLastOpenedAt',
-                        'userTraffic.onlineAt',
-                    ].includes(filter.id)
-                ) {
-                    whereBuilder = whereBuilder.where(
-                        filter.id as any,
-                        '=',
-                        new Date(filter.value as string),
-                    );
-                    continue;
-                }
-
-                if (filter.id === 'id') {
-                    try {
-                        const searchValue = filter.value as string;
-                        BigInt(searchValue);
-
-                        whereBuilder = whereBuilder.where(
-                            sql`CAST(users.t_id AS TEXT)`,
-                            'like',
-                            `%${searchValue}%`,
-                        );
-                    } catch {
-                        continue;
-                    }
-                    continue;
-                }
-
-                if (filter.id === 'telegramId') {
-                    try {
-                        const searchValue = filter.value as string;
-                        BigInt(searchValue);
-
-                        whereBuilder = whereBuilder.where(
-                            sql`CAST(telegram_id AS TEXT)`,
-                            'like',
-                            `%${searchValue}%`,
-                        );
-                    } catch {
-                        whereBuilder = whereBuilder.where('telegramId', 'is', null);
-                    }
-                    continue;
-                }
-
-                if (filter.id === 'activeInternalSquads') {
-                    whereBuilder = whereBuilder.where('users.tId', 'in', (eb) =>
-                        eb
-                            .selectFrom('internalSquadMembers')
-                            .select('internalSquadMembers.userId')
-                            .where(
-                                'internalSquadMembers.internalSquadUuid',
-                                '=',
-                                getKyselyUuid(filter.value as string),
-                            ),
-                    );
-                    continue;
-                }
-
-                if (filter.id === 'nodeName') {
-                    whereBuilder = whereBuilder.where(
-                        'userTraffic.lastConnectedNodeUuid',
-                        '=',
-                        getKyselyUuid(filter.value as string),
-                    );
-                    continue;
-                }
-
-                if (filter.id === 'uuid') {
-                    whereBuilder = whereBuilder.where(
-                        sql`"uuid"::text`,
-                        'ilike',
-                        `%${filter.value}%`,
-                    );
-                    continue;
-                }
-
-                if (filter.id === 'vlessUuid') {
-                    whereBuilder = whereBuilder.where(
-                        sql`"vless_uuid"::text`,
-                        'ilike',
-                        `%${filter.value}%`,
-                    );
-                    continue;
-                }
-
-                if (filter.id === 'externalSquadUuid') {
-                    whereBuilder = whereBuilder.where(
-                        'externalSquadUuid',
-                        '=',
-                        getKyselyUuid(filter.value as string),
-                    );
-                    continue;
-                }
-
-                const field = filter.id as keyof DB['users'];
-
-                switch (mode) {
-                    case 'startsWith':
-                        whereBuilder = whereBuilder.where(field, 'like', `${filter.value}%`);
-                        break;
-                    case 'endsWith':
-                        whereBuilder = whereBuilder.where(field, 'like', `%${filter.value}`);
-                        break;
-                    case 'equals':
-                        whereBuilder = whereBuilder.where(field, '=', filter.value as string);
-                        break;
-                    default: // 'contains'
-                        whereBuilder = whereBuilder.where(field, 'ilike', `%${filter.value}%`);
-                        break;
-                }
-            }
-        }
-
-        let sortBuilder = whereBuilder;
-
-        if (sorting?.length) {
-            for (const sort of sorting) {
-                let sorId = sort.id;
-                if (sort.id === 'id') {
-                    sorId = 'users.tId';
-                }
-                sortBuilder = sortBuilder.orderBy(sql.ref(sorId), (ob) => {
-                    const orderBy = sort.desc ? ob.desc() : ob.asc();
-                    return orderBy.nullsLast();
-                });
-            }
-        } else {
-            sortBuilder = sortBuilder.orderBy('users.tId', 'desc');
-        }
-
-        const query = sortBuilder
-            .selectAll()
-            .offset(start)
-            .limit(size)
-            .select((eb) => this.includeActiveInternalSquads(eb));
-
-        const { count } = await this.qb.kysely
-            .selectFrom('users')
-            .innerJoin('userTraffic', 'userTraffic.tId', 'users.tId')
-            .select((eb) => eb.fn.countAll().as('count'))
-            .$if(!isFiltersEmpty, (qb) => {
-                let countBuilder = qb;
-                for (const filter of filters!) {
-                    const mode = filterModes?.[filter.id] || 'contains';
-
-                    if (
-                        [
-                            'createdAt',
-                            'expireAt',
-                            'lastTrafficResetAt',
-                            'subLastOpenedAt',
-                            'userTraffic.onlineAt',
-                        ].includes(filter.id)
-                    ) {
-                        countBuilder = countBuilder.where(
-                            filter.id as keyof DB['users'],
-                            '=',
-                            new Date(filter.value as string),
-                        );
-                        continue;
-                    }
-
-                    if (filter.id === 'id') {
-                        try {
-                            const searchValue = filter.value as string;
-                            BigInt(searchValue);
-
-                            countBuilder = countBuilder.where(
-                                sql`CAST(users.t_id AS TEXT)`,
-                                'like',
-                                `%${searchValue}%`,
-                            );
-                        } catch {
-                            continue;
-                        }
-                        continue;
-                    }
-
-                    if (filter.id === 'telegramId') {
-                        try {
-                            const searchValue = filter.value as string;
-                            BigInt(searchValue);
-
-                            countBuilder = countBuilder.where(
-                                sql`CAST(telegram_id AS TEXT)`,
-                                'like',
-                                `%${searchValue}%`,
-                            );
-                        } catch {
-                            countBuilder = countBuilder.where('telegramId', 'is', null);
-                        }
-                        continue;
-                    }
-
-                    if (filter.id === 'activeInternalSquads') {
-                        countBuilder = countBuilder.where('users.tId', 'in', (eb) =>
-                            eb
-                                .selectFrom('internalSquadMembers')
-                                .select('internalSquadMembers.userId')
-                                .where(
-                                    'internalSquadMembers.internalSquadUuid',
-                                    '=',
-                                    getKyselyUuid(filter.value as string),
-                                ),
-                        );
-                        continue;
-                    }
-
-                    if (filter.id === 'nodeName') {
-                        countBuilder = countBuilder.where(
-                            'userTraffic.lastConnectedNodeUuid',
-                            '=',
-                            getKyselyUuid(filter.value as string),
-                        );
-                        continue;
-                    }
-
-                    if (filter.id === 'uuid') {
-                        countBuilder = countBuilder.where(
-                            sql`"uuid"::text`,
-                            'ilike',
-                            `%${filter.value}%`,
-                        );
-                        continue;
-                    }
-
-                    if (filter.id === 'vlessUuid') {
-                        countBuilder = countBuilder.where(
-                            sql`"vless_uuid"::text`,
-                            'ilike',
-                            `%${filter.value}%`,
-                        );
-                        continue;
-                    }
-
-                    if (filter.id === 'externalSquadUuid') {
-                        countBuilder = countBuilder.where(
-                            'externalSquadUuid',
-                            '=',
-                            getKyselyUuid(filter.value as string),
-                        );
-                        continue;
-                    }
-
-                    const field = filter.id as keyof DB['users'];
-
-                    switch (mode) {
-                        case 'startsWith':
-                            countBuilder = countBuilder.where(field, 'like', `${filter.value}%`);
-                            break;
-                        case 'endsWith':
-                            countBuilder = countBuilder.where(field, 'like', `%${filter.value}`);
-                            break;
-                        case 'equals':
-                            countBuilder = countBuilder.where(field, '=', filter.value as string);
-                            break;
-                        default:
-                            countBuilder = countBuilder.where(field, 'ilike', `%${filter.value}%`);
-                            break;
-                    }
-                }
-                return countBuilder;
-            })
-            .executeTakeFirstOrThrow();
-
-        const users = await query.execute();
-
-        const result = users.map((u) => new UserEntity(u));
-        return [result, Number(count)];
-=======
         let qb = this.baseUsersQb.selectAll().select((eb) => this.includeActiveInternalSquads(eb));
 
         if (filters?.length) {
@@ -669,7 +352,6 @@ export class UsersRepository {
         }
 
         return qb;
->>>>>>> upstream/main
     }
 
     public async getUsersWithPagination({
@@ -786,10 +468,7 @@ export class UsersRepository {
 
                 return eb.or(conditions);
             })
-<<<<<<< HEAD
-=======
             .orderBy('users.tId', 'desc')
->>>>>>> upstream/main
             .execute();
 
         return user.map((user) => new UserEntity(user));
@@ -881,19 +560,11 @@ export class UsersRepository {
         strategy: TResetPeriods,
         batchSize: number = 50_000,
     ): Promise<void> {
-<<<<<<< HEAD
-        const targetIds = await this.qb.kysely
-=======
         let targetIdsQuery = this.qb.kysely
->>>>>>> upstream/main
             .selectFrom('users')
             .select('tId')
             .where('trafficLimitStrategy', '=', strategy)
             .where('status', '!=', USERS_STATUS.LIMITED)
-<<<<<<< HEAD
-            .orderBy('tId')
-            .execute();
-=======
             .orderBy('tId');
 
         if (strategy === 'MONTH_ROLLING') {
@@ -910,7 +581,6 @@ export class UsersRepository {
         }
 
         const targetIds = await targetIdsQuery.execute();
->>>>>>> upstream/main
 
         this.logger.log(`Found ${targetIds.length} users with strategy ${strategy} to reset`);
 
@@ -965,18 +635,6 @@ export class UsersRepository {
     }
 
     public async resetLimitedUserTraffic(strategy: TResetPeriods): Promise<{ tId: bigint }[]> {
-<<<<<<< HEAD
-        const result = await this.qb.kysely
-            .with('targetUsers', (db) =>
-                db
-                    .selectFrom('users')
-                    .select('tId')
-                    .where('trafficLimitStrategy', '=', strategy)
-                    .where('status', '=', USERS_STATUS.LIMITED)
-                    .orderBy('tId')
-                    .forUpdate(),
-            )
-=======
         let targetIdsQuery = this.qb.kysely
             .selectFrom('users')
             .select('tId')
@@ -1000,7 +658,6 @@ export class UsersRepository {
 
         const result = await this.qb.kysely
             .with('targetUsers', () => targetIdsQuery)
->>>>>>> upstream/main
             .with('updateUsers', (db) =>
                 db
                     .updateTable('users')
@@ -1016,13 +673,7 @@ export class UsersRepository {
             .updateTable('userTraffic')
             .from('updateUsers')
             .whereRef('userTraffic.tId', '=', 'updateUsers.tId')
-<<<<<<< HEAD
-            .set({
-                usedTrafficBytes: 0n,
-            })
-=======
             .set({ usedTrafficBytes: 0n })
->>>>>>> upstream/main
             .returning('userTraffic.tId')
             .execute();
 
@@ -1288,9 +939,6 @@ export class UsersRepository {
     }
 
     public async getAllTags(): Promise<string[]> {
-<<<<<<< HEAD
-        const result = await this.qb.kysely.selectFrom('users').select('tag').distinct().execute();
-=======
         const result = await this.qb.kysely
             .selectFrom('users')
             .select('tag')
@@ -1298,7 +946,6 @@ export class UsersRepository {
             .distinct()
             .limit(1000)
             .execute();
->>>>>>> upstream/main
 
         return result.map((user) => user.tag).filter((tag) => tag !== null);
     }
@@ -1347,8 +994,6 @@ export class UsersRepository {
         return result.map((user) => user.tId);
     }
 
-<<<<<<< HEAD
-=======
     public async getUserIdByUuid(uuid: string): Promise<bigint | null> {
         const result = await this.qb.kysely
             .selectFrom('users')
@@ -1363,7 +1008,6 @@ export class UsersRepository {
         return result.tId;
     }
 
->>>>>>> upstream/main
     public async getIdsAndHashesByUserUuids(userUuids: string[]): Promise<
         {
             tId: bigint;
@@ -1450,11 +1094,6 @@ export class UsersRepository {
             | 'ssPassword'
             | 'subRevokedAt'
             | 'shortUuid'
-<<<<<<< HEAD
-            | 'subLastOpenedAt'
-            | 'subLastUserAgent'
-=======
->>>>>>> upstream/main
             | 'updatedAt'
         >,
     ): Promise<boolean> {
@@ -1466,11 +1105,6 @@ export class UsersRepository {
                 vlessUuid: getKyselyUuid(dto.vlessUuid),
                 ssPassword: dto.ssPassword,
                 shortUuid: dto.shortUuid,
-<<<<<<< HEAD
-                subLastOpenedAt: dto.subLastOpenedAt,
-                subLastUserAgent: dto.subLastUserAgent,
-=======
->>>>>>> upstream/main
                 updatedAt: dto.updatedAt,
             })
             .where('uuid', '=', getKyselyUuid(dto.uuid))
@@ -1717,8 +1351,6 @@ export class UsersRepository {
 
         return result.subpageConfigUuid;
     }
-<<<<<<< HEAD
-=======
 
     public async getUsersRecap(): Promise<{ total: number; newUsersThisMonth: number }> {
         const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -1738,5 +1370,4 @@ export class UsersRepository {
             newUsersThisMonth: Number(result.newUsersThisMonth),
         };
     }
->>>>>>> upstream/main
 }

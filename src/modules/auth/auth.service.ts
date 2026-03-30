@@ -5,18 +5,6 @@ import {
     verifyAuthenticationResponse,
 } from '@simplewebauthn/server';
 import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
-<<<<<<< HEAD
-import { TelegramOAuth2 } from '@exact-team/telegram-oauth2';
-import { catchError, firstValueFrom } from 'rxjs';
-import { promisify } from 'node:util';
-import { Cache } from 'cache-manager';
-import { AxiosError } from 'axios';
-import * as arctic from 'arctic';
-
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-=======
 import { catchError, firstValueFrom } from 'rxjs';
 import { promisify } from 'node:util';
 import { AxiosError } from 'axios';
@@ -24,16 +12,12 @@ import * as arctic from 'arctic';
 
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Injectable, Logger } from '@nestjs/common';
->>>>>>> upstream/main
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { JwtService } from '@nestjs/jwt';
 
-<<<<<<< HEAD
-=======
 import { RawCacheService } from '@common/raw-cache';
->>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import {
     CACHE_KEYS,
@@ -58,19 +42,12 @@ import { GetFirstAdminQuery } from '@modules/admin/queries/get-first-admin';
 import { CreateAdminCommand } from '@modules/admin/commands/create-admin';
 import { AdminEntity } from '@modules/admin/entities/admin.entity';
 
-<<<<<<< HEAD
-import { TelegramCallbackRequestDto, VerifyPasskeyAuthenticationRequestDto } from './dtos';
-import { OAuth2AuthorizeResponseModel } from './model/oauth2-authorize.response.model';
-import { OAuth2CallbackResponseModel } from './model/oauth2-callback.response.model';
-import { GetStatusResponseModel } from './model/get-status.response.model';
-=======
 import {
     OAuth2AuthorizeResponseModel,
     OAuth2CallbackResponseModel,
     GetStatusResponseModel,
 } from './model';
 import { VerifyPasskeyAuthenticationRequestDto } from './dtos';
->>>>>>> upstream/main
 import { ILogin, IRegister } from './interfaces';
 
 const scryptAsync = promisify(scrypt);
@@ -84,11 +61,7 @@ export class AuthService {
     private readonly jwtLifetime: number;
 
     constructor(
-<<<<<<< HEAD
-        @Inject(CACHE_MANAGER) private cacheManager: Cache,
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly queryBus: QueryBus,
@@ -258,13 +231,6 @@ export class AuthService {
             const adminCount = await this.getAdminCount();
 
             if (!adminCount.isOk) {
-<<<<<<< HEAD
-                return fail(ERRORS.GET_AUTH_STATUS_ERROR);
-            }
-
-            if (adminCount.response === undefined) {
-                return fail(ERRORS.GET_AUTH_STATUS_ERROR);
-=======
                 this.logger.error('Failed to fetch admin list.');
                 return ok(
                     new GetStatusResponseModel({
@@ -285,7 +251,6 @@ export class AuthService {
                         branding: remnawaveSettings.brandingSettings,
                     }),
                 );
->>>>>>> upstream/main
             }
 
             if (adminCount.response === 0) {
@@ -299,8 +264,6 @@ export class AuthService {
                 );
             }
 
-<<<<<<< HEAD
-=======
             if (adminCount.response > 1) {
                 this.logger.warn(
                     'Multiple admins found. This should not be possible. Restart Remnawave to clear unknown admins.',
@@ -315,7 +278,6 @@ export class AuthService {
                 );
             }
 
->>>>>>> upstream/main
             return ok(
                 new GetStatusResponseModel({
                     isLoginAllowed: true,
@@ -324,15 +286,6 @@ export class AuthService {
                         passkey: {
                             enabled: remnawaveSettings.passkeySettings.enabled,
                         },
-<<<<<<< HEAD
-                        tgAuth: {
-                            enabled: remnawaveSettings.tgAuthSettings.enabled,
-                            botId: remnawaveSettings.tgAuthSettings.botToken
-                                ? Number(remnawaveSettings.tgAuthSettings.botToken.split(':')[0])
-                                : null,
-                        },
-=======
->>>>>>> upstream/main
                         oauth2: {
                             providers: {
                                 [OAUTH2_PROVIDERS.GITHUB]:
@@ -345,11 +298,8 @@ export class AuthService {
                                     remnawaveSettings.oauth2Settings.keycloak.enabled,
                                 [OAUTH2_PROVIDERS.GENERIC]:
                                     remnawaveSettings.oauth2Settings.generic.enabled,
-<<<<<<< HEAD
-=======
                                 [OAUTH2_PROVIDERS.TELEGRAM]:
                                     remnawaveSettings.oauth2Settings.telegram.enabled,
->>>>>>> upstream/main
                             },
                         },
                         password: {
@@ -365,123 +315,6 @@ export class AuthService {
         }
     }
 
-<<<<<<< HEAD
-    public async telegramCallback(
-        dto: TelegramCallbackRequestDto,
-        ip: string,
-        userAgent: string,
-    ): Promise<
-        TResult<{
-            accessToken: string;
-        }>
-    > {
-        try {
-            const { id, username, first_name } = dto;
-
-            const statusResponse = await this.getStatus();
-
-            if (!statusResponse.isOk) {
-                return fail(ERRORS.GET_AUTH_STATUS_ERROR);
-            }
-
-            if (!statusResponse.response.isLoginAllowed) {
-                await this.emitFailedLoginAttempt(
-                    username ? `@${username}` : first_name,
-                    `Telegram ID: ${id}`,
-                    ip,
-                    userAgent,
-                    'Login is not allowed.',
-                );
-                return fail(ERRORS.FORBIDDEN);
-            }
-
-            const remnawaveSettings = await this.queryBus.execute(
-                new GetCachedRemnawaveSettingsQuery(),
-            );
-
-            if (!remnawaveSettings.tgAuthSettings.enabled) {
-                await this.emitFailedLoginAttempt(
-                    username ? `@${username}` : first_name,
-                    `Telegram ID: ${id}`,
-                    ip,
-                    userAgent,
-                    'Telegram authentication is not enabled.',
-                );
-                return fail(ERRORS.FORBIDDEN);
-            }
-
-            if (!remnawaveSettings.tgAuthSettings.adminIds.includes(id.toString())) {
-                await this.emitFailedLoginAttempt(
-                    username ? `@${username}` : first_name,
-                    `Telegram ID: ${id}`,
-                    ip,
-                    userAgent,
-                    'UserID is not in the allowed list.',
-                );
-                return fail(ERRORS.FORBIDDEN);
-            }
-
-            const isHashValid = new TelegramOAuth2({
-                botToken: remnawaveSettings.tgAuthSettings.botToken!,
-                validUntil: 15,
-            }).handleTelegramOAuthCallback({
-                auth_date: dto.auth_date,
-                first_name: dto.first_name,
-                hash: dto.hash,
-                id: id,
-                last_name: dto.last_name,
-                username: dto.username,
-                photo_url: dto.photo_url,
-            });
-
-            if (!isHashValid.isSuccess) {
-                await this.emitFailedLoginAttempt(
-                    username ? `@${username}` : first_name,
-                    `Telegram ID: ${id}`,
-                    ip,
-                    userAgent,
-                );
-                return fail(ERRORS.FORBIDDEN);
-            }
-
-            const firstAdmin = await this.getFirstAdmin();
-
-            if (!firstAdmin.isOk) {
-                await this.emitFailedLoginAttempt(
-                    username ? `@${username}` : first_name,
-                    `Telegram ID: ${id}`,
-                    ip,
-                    userAgent,
-                    'Superadmin is not found.',
-                );
-                return fail(ERRORS.FORBIDDEN);
-            }
-
-            const accessToken = this.jwtService.sign(
-                {
-                    username: firstAdmin.response.username,
-                    uuid: firstAdmin.response.uuid,
-                    role: ROLE.ADMIN,
-                },
-                { expiresIn: `${this.jwtLifetime}h` },
-            );
-
-            await this.emitLoginSuccess(
-                `${username ? `@${username}` : first_name}, ID: ${id}`,
-                ip,
-                userAgent,
-                'Logged via Telegram OAuth.',
-            );
-
-            return ok({ accessToken });
-        } catch (error) {
-            this.logger.error(error);
-            return fail(ERRORS.LOGIN_ERROR);
-        }
-    }
-
-=======
->>>>>>> upstream/main
     public async oauth2Authorize(
         provider: TOAuth2ProvidersKeys,
     ): Promise<TResult<OAuth2AuthorizeResponseModel>> {
@@ -552,11 +385,7 @@ export class AuthService {
                     );
 
                     stateKey = `oauth2:${OAUTH2_PROVIDERS.KEYCLOAK}`;
-<<<<<<< HEAD
-                    await this.cacheManager.set(`${stateKey}:codeVerifier`, codeVerifier, 600_000);
-=======
                     await this.rawCacheService.set(`${stateKey}:codeVerifier`, codeVerifier, 600);
->>>>>>> upstream/main
 
                     break;
                 case OAUTH2_PROVIDERS.GENERIC:
@@ -586,23 +415,14 @@ export class AuthService {
                             );
                             stateKey = `oauth2:${OAUTH2_PROVIDERS.GENERIC}`;
 
-<<<<<<< HEAD
-                            await this.cacheManager.set(
-                                `${stateKey}:codeVerifier`,
-                                codeVerifier,
-                                600_000,
-=======
                             await this.rawCacheService.set(
                                 `${stateKey}:codeVerifier`,
                                 codeVerifier,
                                 600,
->>>>>>> upstream/main
                             );
                             break;
                     }
                     break;
-<<<<<<< HEAD
-=======
                 case OAUTH2_PROVIDERS.TELEGRAM: {
                     const tgCodeVerifier = arctic.generateCodeVerifier();
                     const tgClient = this.getTelegramOAuth2Client(remnawaveSettings);
@@ -619,16 +439,11 @@ export class AuthService {
                     await this.rawCacheService.set(`${stateKey}:codeVerifier`, tgCodeVerifier, 600);
                     break;
                 }
->>>>>>> upstream/main
                 default:
                     return fail(ERRORS.OAUTH2_PROVIDER_NOT_FOUND);
             }
 
-<<<<<<< HEAD
-            await this.cacheManager.set(stateKey, state, 600_000);
-=======
             await this.rawCacheService.set(stateKey, state, 600);
->>>>>>> upstream/main
 
             return ok(
                 new OAuth2AuthorizeResponseModel({
@@ -735,15 +550,6 @@ export class AuthService {
         const stateKey = `oauth2:${provider}`;
 
         const [stateFromCache, codeVerifier] = await Promise.all([
-<<<<<<< HEAD
-            this.cacheManager.get<string>(stateKey),
-            this.cacheManager.get<string>(`${stateKey}:codeVerifier`),
-        ]);
-
-        await Promise.all([
-            this.cacheManager.del(stateKey),
-            this.cacheManager.del(`${stateKey}:codeVerifier`),
-=======
             this.rawCacheService.get<string>(stateKey),
             this.rawCacheService.get<string>(`${stateKey}:codeVerifier`),
         ]);
@@ -751,7 +557,6 @@ export class AuthService {
         await Promise.all([
             this.rawCacheService.del(stateKey),
             this.rawCacheService.del(`${stateKey}:codeVerifier`),
->>>>>>> upstream/main
         ]);
 
         if (stateFromCache !== state) {
@@ -773,12 +578,8 @@ export class AuthService {
             ((provider === OAUTH2_PROVIDERS.GENERIC &&
                 settings.oauth2Settings.generic.withPkce &&
                 settings.oauth2Settings.generic.enabled) ||
-<<<<<<< HEAD
-                provider === OAUTH2_PROVIDERS.KEYCLOAK) &&
-=======
                 provider === OAUTH2_PROVIDERS.KEYCLOAK ||
                 provider === OAUTH2_PROVIDERS.TELEGRAM) &&
->>>>>>> upstream/main
             !codeVerifier
         ) {
             await this.emitFailedLoginAttempt(
@@ -814,11 +615,7 @@ export class AuthService {
                 '–',
                 ip,
                 userAgent,
-<<<<<<< HEAD
-                `${provider} email not in allowed list and no remnawaveAccess claim}.`,
-=======
                 `${provider} email not in allowed list and no remnawaveAccess claim.`,
->>>>>>> upstream/main
             );
             return FAIL;
         }
@@ -829,11 +626,7 @@ export class AuthService {
     private async exchangeCodeForEmail(
         provider: TOAuth2ProvidersKeys,
         code: string,
-<<<<<<< HEAD
-        codeVerifier: string | undefined,
-=======
         codeVerifier: string | null,
->>>>>>> upstream/main
         settings: RemnawaveSettingsEntity,
     ): Promise<{ email: string | null; hasCustomClaim?: boolean; error?: string }> {
         try {
@@ -848,12 +641,8 @@ export class AuthService {
                     return await this.fetchKeycloakEmail(code, codeVerifier!, settings);
                 case OAUTH2_PROVIDERS.GENERIC:
                     return await this.fetchGenericEmail(code, codeVerifier, settings);
-<<<<<<< HEAD
-
-=======
                 case OAUTH2_PROVIDERS.TELEGRAM:
                     return await this.fetchTelegramId(code, codeVerifier!, settings);
->>>>>>> upstream/main
                 default:
                     return { email: null, error: 'Unknown provider' };
             }
@@ -873,10 +662,7 @@ export class AuthService {
             [OAUTH2_PROVIDERS.POCKETID]: settings.oauth2Settings.pocketid.allowedEmails,
             [OAUTH2_PROVIDERS.KEYCLOAK]: settings.oauth2Settings.keycloak.allowedEmails,
             [OAUTH2_PROVIDERS.GENERIC]: settings.oauth2Settings.generic.allowedEmails,
-<<<<<<< HEAD
-=======
             [OAUTH2_PROVIDERS.TELEGRAM]: settings.oauth2Settings.telegram.allowedIds,
->>>>>>> upstream/main
         };
         return map[provider] ?? [];
     }
@@ -972,11 +758,7 @@ export class AuthService {
 
     private async fetchGenericEmail(
         code: string,
-<<<<<<< HEAD
-        codeVerifier: string | undefined,
-=======
         codeVerifier: string | null,
->>>>>>> upstream/main
         settings: RemnawaveSettingsEntity,
     ): Promise<{ email: string | null; hasCustomClaim?: boolean; error?: string }> {
         if (settings.oauth2Settings.generic.withPkce && !codeVerifier) {
@@ -1146,17 +928,10 @@ export class AuthService {
                 userVerification: 'required',
             });
 
-<<<<<<< HEAD
-            await this.cacheManager.set(
-                CACHE_KEYS.PASSKEY_AUTHENTICATION_OPTIONS(admin.response.uuid),
-                options.challenge,
-                60_000, // 1 minute
-=======
             await this.rawCacheService.set(
                 CACHE_KEYS.PASSKEY_AUTHENTICATION_OPTIONS(admin.response.uuid),
                 options.challenge,
                 60, // 1 minute
->>>>>>> upstream/main
             );
 
             return ok(options);
@@ -1213,11 +988,7 @@ export class AuthService {
                 return fail(ERRORS.FORBIDDEN);
             }
 
-<<<<<<< HEAD
-            const expectedChallenge = await this.cacheManager.get<string>(
-=======
             const expectedChallenge = await this.rawCacheService.get<string>(
->>>>>>> upstream/main
                 CACHE_KEYS.PASSKEY_AUTHENTICATION_OPTIONS(admin.response.uuid),
             );
 
@@ -1261,11 +1032,7 @@ export class AuthService {
                 requireUserVerification: true,
             });
 
-<<<<<<< HEAD
-            await this.cacheManager.del(
-=======
             await this.rawCacheService.del(
->>>>>>> upstream/main
                 CACHE_KEYS.PASSKEY_AUTHENTICATION_OPTIONS(admin.response.uuid),
             );
 
@@ -1340,8 +1107,6 @@ export class AuthService {
             return new arctic.OAuth2Client(clientId, clientSecret, redirectUrl);
         }
     }
-<<<<<<< HEAD
-=======
 
     private getTelegramOAuth2Client(settings: RemnawaveSettingsEntity): arctic.OAuth2Client {
         const { clientId, clientSecret, frontendDomain } = settings.oauth2Settings.telegram;
@@ -1391,5 +1156,4 @@ export class AuthService {
             error: undefined,
         };
     }
->>>>>>> upstream/main
 }

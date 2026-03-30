@@ -15,10 +15,7 @@ const ALL_EVENTS = [
     ...Object.values(EVENTS.SERVICE),
     ...Object.values(EVENTS.ERRORS),
     ...Object.values(EVENTS.CRM),
-<<<<<<< HEAD
-=======
     ...Object.values(EVENTS.TORRENT_BLOCKER),
->>>>>>> upstream/main
 ] as const;
 
 const eventConfigSchema = z.object({

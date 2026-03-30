@@ -6,10 +6,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 
 import { AbstractQueueService } from '../../queue.service';
 import { TelegramBotLoggerJobNames } from './enums';
-<<<<<<< HEAD
-=======
 import { IMessageEventPayload } from './interfaces';
->>>>>>> upstream/main
 import { QUEUES_NAMES } from '../../queue.enum';
 
 @Injectable()
@@ -40,15 +37,7 @@ export class TelegramBotLoggerQueueService
         await this.queue.setGlobalConcurrency(200);
     }
 
-<<<<<<< HEAD
-    public async addJobToSendTelegramMessage(payload: {
-        message: string;
-        chatId: string;
-        threadId: string | undefined;
-    }) {
-=======
     public async addJobToSendTelegramMessage(payload: IMessageEventPayload) {
->>>>>>> upstream/main
         return this.addJob(TelegramBotLoggerJobNames.sendTelegramMessage, payload);
     }
 

@@ -12,14 +12,7 @@ import {
 } from '@libs/contracts/constants';
 
 import { GetCachedSubscriptionSettingsQuery } from '@modules/subscription-settings/queries/get-cached-subscrtipion-settings';
-<<<<<<< HEAD
-import {
-    isMihomoExtendedClient,
-    isXrayExtendedClient,
-} from '@modules/subscription-template/constants';
-=======
 import { isExtendedClient } from '@modules/subscription-template/constants';
->>>>>>> upstream/main
 
 import { ResponseRulesMatcherService } from '../services/response-rules-matcher.service';
 import { ISRRContext } from '../interfaces';
@@ -27,11 +20,8 @@ import { ISRRContext } from '../interfaces';
 @Injectable()
 export class ResponseRulesMiddleware implements NestMiddleware {
     private readonly logger = new Logger(ResponseRulesMiddleware.name);
-<<<<<<< HEAD
-=======
     private readonly regexCache = new Map<string, RegExp>();
 
->>>>>>> upstream/main
     constructor(
         private readonly queryBus: QueryBus,
         private readonly matcher: ResponseRulesMatcherService,
@@ -90,15 +80,10 @@ export class ResponseRulesMiddleware implements NestMiddleware {
             const ssrContext: ISRRContext = {
                 userAgent,
                 hwidHeaders: extractHwidHeaders(req),
-<<<<<<< HEAD
-                isXrayExtSupported: isXrayExtendedClient(userAgent),
-                isMihomoExtSupported: isMihomoExtendedClient(userAgent),
-=======
                 isExtendedClient: this.resolveExtendedClients(
                     userAgent,
                     result.matchedRule?.responseModifications?.additionalExtendedClientsRegex,
                 ),
->>>>>>> upstream/main
                 matchedResponseType: result.responseType,
                 ip: req.clientIp,
                 subscriptionSettings: settingsEntity,
@@ -162,8 +147,6 @@ export class ResponseRulesMiddleware implements NestMiddleware {
             next(error);
         }
     }
-<<<<<<< HEAD
-=======
 
     private resolveExtendedClients(
         userAgent: string,
@@ -188,5 +171,4 @@ export class ResponseRulesMiddleware implements NestMiddleware {
 
         return false;
     }
->>>>>>> upstream/main
 }

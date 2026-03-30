@@ -1,24 +1,12 @@
 import { Job } from 'bullmq';
 
-<<<<<<< HEAD
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { EventBus, QueryBus } from '@nestjs/cqrs';
-=======
 import { CommandBus, EventBus, QueryBus } from '@nestjs/cqrs';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { EventEmitter2 } from '@nestjs/event-emitter';
->>>>>>> upstream/main
 import { Logger } from '@nestjs/common';
 
 import { EVENTS } from '@libs/contracts/constants/events/events';
 
-<<<<<<< HEAD
-import { UserEvent } from '@integration-modules/notifications/interfaces';
-
-import { GetUserByUniqueFieldQuery } from '@modules/users/queries/get-user-by-unique-field';
-import { RemoveUserFromNodeEvent } from '@modules/nodes/events/remove-user-from-node';
-=======
 import { TorrentBlockerEvent, UserEvent } from '@integration-modules/notifications/interfaces';
 
 import { CreateTorrentReportCommand } from '@modules/node-plugins/commands/create-torrent-report';
@@ -26,18 +14,12 @@ import { GetUserByUniqueFieldQuery } from '@modules/users/queries/get-user-by-un
 import { RemoveUserFromNodeEvent } from '@modules/nodes/events/remove-user-from-node';
 import { BaseTorrentBlockerReportEntity } from '@modules/node-plugins/entities';
 import { GetNodeByUuidQuery } from '@modules/nodes/queries/get-node-by-uuid';
->>>>>>> upstream/main
 import { AddUserToNodeEvent } from '@modules/nodes/events/add-user-to-node';
 
 import { QUEUES_NAMES } from '@queue/queue.enum';
 
-<<<<<<< HEAD
-import { USERS_JOB_NAMES } from '../constants/users-job-name.constant';
-import { IFireUserEventJobData } from '../interfaces';
-=======
 import { IFireTorrentBlockerEventJobData, IFireUserEventJobData } from '../interfaces';
 import { USERS_JOB_NAMES } from '../constants/users-job-name.constant';
->>>>>>> upstream/main
 
 @Processor(QUEUES_NAMES.USERS.USER_EVENTS, {
     concurrency: 50,
@@ -47,10 +29,7 @@ export class UserEventsQueueProcessor extends WorkerHost {
 
     constructor(
         private readonly queryBus: QueryBus,
-<<<<<<< HEAD
-=======
         private readonly commandBus: CommandBus,
->>>>>>> upstream/main
         private readonly eventBus: EventBus,
         private readonly eventEmitter: EventEmitter2,
     ) {
@@ -61,11 +40,8 @@ export class UserEventsQueueProcessor extends WorkerHost {
         switch (job.name) {
             case USERS_JOB_NAMES.FIRE_USER_EVENT:
                 return await this.handleFireUserEvent(job);
-<<<<<<< HEAD
-=======
             case USERS_JOB_NAMES.FIRE_TORRENT_BLOCKER_EVENT:
                 return await this.handleFireTorrentBlockerEvent(job);
->>>>>>> upstream/main
             default:
                 this.logger.warn(`Job "${job.name}" is not handled.`);
                 break;
@@ -167,8 +143,6 @@ export class UserEventsQueueProcessor extends WorkerHost {
             this.logger.error(`Error handling "${USERS_JOB_NAMES.FIRE_USER_EVENT}" job: ${error}`);
         }
     }
-<<<<<<< HEAD
-=======
 
     private async handleFireTorrentBlockerEvent(job: Job<IFireTorrentBlockerEventJobData>) {
         try {
@@ -233,5 +207,4 @@ export class UserEventsQueueProcessor extends WorkerHost {
             this.logger.error(`Error handling "${USERS_JOB_NAMES.FIRE_USER_EVENT}" job: ${error}`);
         }
     }
->>>>>>> upstream/main
 }

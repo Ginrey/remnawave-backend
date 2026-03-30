@@ -10,33 +10,23 @@ import { CommandBus } from '@nestjs/cqrs';
 import {
     AddUserCommand,
     AddUsersCommand,
-<<<<<<< HEAD
-=======
     BlockIpsCommand,
     CollectReportsCommand,
->>>>>>> upstream/main
     DropIpsCommand,
     DropUsersConnectionsCommand,
     GetCombinedStatsCommand,
     GetNodeHealthCheckCommand,
     GetSystemStatsCommand,
     GetUserIpListCommand,
-<<<<<<< HEAD
-    GetUsersStatsCommand,
-=======
     GetUsersIpListCommand,
     GetUsersStatsCommand,
     RecreateTablesCommand,
->>>>>>> upstream/main
     RemoveUserCommand,
     RemoveUsersCommand,
     StartXrayCommand,
     StopXrayCommand,
-<<<<<<< HEAD
-=======
     SyncCommand,
     UnblockIpsCommand,
->>>>>>> upstream/main
 } from '@remnawave/node-contract';
 
 import { formatExecutionTime, getTime } from '@common/utils/get-elapsed-time';
@@ -276,8 +266,6 @@ export class AxiosService {
         }
     }
 
-<<<<<<< HEAD
-=======
     public async getUsersIpsList(
         url: string,
         port: null | number,
@@ -309,7 +297,6 @@ export class AxiosService {
         }
     }
 
->>>>>>> upstream/main
     public async getSystemStats(
         url: string,
         port: null | number,
@@ -588,8 +575,6 @@ export class AxiosService {
         }
     }
 
-<<<<<<< HEAD
-=======
     public async syncNodePlugins(
         data: SyncCommand.Request,
         address: string,
@@ -756,7 +741,6 @@ export class AxiosService {
         }
     }
 
->>>>>>> upstream/main
     private async compressData(data: any): Promise<Buffer> {
         return await compress(Buffer.from(JSON.stringify(data)), 1);
     }

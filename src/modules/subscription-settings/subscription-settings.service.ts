@@ -1,14 +1,6 @@
-<<<<<<< HEAD
-import { Cache } from 'cache-manager';
-
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-
-=======
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RawCacheService } from '@common/raw-cache';
->>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { CACHE_KEYS, ERRORS } from '@libs/contracts/constants';
 
@@ -21,11 +13,7 @@ export class SubscriptionSettingsService {
     private readonly logger = new Logger(SubscriptionSettingsService.name);
 
     constructor(
-<<<<<<< HEAD
-        @Inject(CACHE_MANAGER) private cacheManager: Cache,
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
         private readonly subscriptionSettingsRepository: SubscriptionSettingsRepository,
     ) {}
 
@@ -58,11 +46,7 @@ export class SubscriptionSettingsService {
                 ...dto,
             });
 
-<<<<<<< HEAD
-            await this.cacheManager.del(CACHE_KEYS.SUBSCRIPTION_SETTINGS);
-=======
             await this.rawCacheService.del(CACHE_KEYS.SUBSCRIPTION_SETTINGS);
->>>>>>> upstream/main
 
             return ok(updatedSettings);
         } catch (error) {

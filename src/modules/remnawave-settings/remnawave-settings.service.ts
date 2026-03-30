@@ -1,18 +1,8 @@
-<<<<<<< HEAD
-import type { Cache } from 'cache-manager';
-
-import isEmail from 'validator/lib/isEmail';
-
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-
-=======
 import isEmail from 'validator/lib/isEmail';
 
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RawCacheService } from '@common/raw-cache';
->>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { CACHE_KEYS, ERRORS } from '@libs/contracts/constants';
 
@@ -25,11 +15,7 @@ export class RemnawaveSettingsService {
     private readonly logger = new Logger(RemnawaveSettingsService.name);
     constructor(
         private readonly remnawaveSettingsRepository: RemnawaveSettingsRepository,
-<<<<<<< HEAD
-        @Inject(CACHE_MANAGER) private cacheManager: Cache,
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
     ) {}
 
     public async getSettingsFromController(): Promise<TResult<RemnawaveSettingsEntity>> {
@@ -66,11 +52,7 @@ export class RemnawaveSettingsService {
                 ...body,
             });
 
-<<<<<<< HEAD
-            await this.cacheManager.del(CACHE_KEYS.REMNAWAVE_SETTINGS);
-=======
             await this.rawCacheService.del(CACHE_KEYS.REMNAWAVE_SETTINGS);
->>>>>>> upstream/main
 
             return await this.getSettingsFromController();
         } catch (error) {
@@ -106,11 +88,7 @@ export class RemnawaveSettingsService {
                 !settings.oauth2Settings.pocketid.enabled &&
                 !settings.oauth2Settings.yandex.enabled &&
                 !settings.oauth2Settings.keycloak.enabled &&
-<<<<<<< HEAD
-                !settings.tgAuthSettings.enabled &&
-=======
                 !settings.oauth2Settings.telegram.enabled &&
->>>>>>> upstream/main
                 !settings.passwordSettings.enabled &&
                 !settings.oauth2Settings.generic.enabled
             ) {
@@ -176,28 +154,6 @@ export class RemnawaveSettingsService {
                 }
             }
 
-<<<<<<< HEAD
-            // Test 5: Check up Telegram authentication
-            if (settings.tgAuthSettings.enabled && !settings.tgAuthSettings.botToken) {
-                return {
-                    valid: false,
-                    error: '[Telegram] Bot token must be set in order to use Telegram authentication.',
-                };
-            }
-
-            // Test 6: If Telegram Auth enabled, check Bot Token is valid
-            if (settings.tgAuthSettings.enabled && settings.tgAuthSettings.botToken) {
-                const botTokenParts = settings.tgAuthSettings.botToken.split(':');
-                if (botTokenParts.length !== 2) {
-                    return {
-                        valid: false,
-                        error: '[Telegram] Bot token must be in the format "12334:EYXJ...".',
-                    };
-                }
-            }
-
-=======
->>>>>>> upstream/main
             // Test 7: Oauth2 Emails array must be an array of valid emails
             for (const provider of oauth2Providers) {
                 if (provider.enabled && provider.allowedEmails.length > 0) {
@@ -233,17 +189,6 @@ export class RemnawaveSettingsService {
                 }
             }
 
-<<<<<<< HEAD
-            // Test 9: Telegram Admin IDs must be not empty
-            if (settings.tgAuthSettings.enabled && settings.tgAuthSettings.adminIds.length === 0) {
-                return {
-                    valid: false,
-                    error: `[Telegram] Admin IDs must be set in order to use Telegram authentication.`,
-                };
-            }
-
-=======
->>>>>>> upstream/main
             // Test 10: Generic OAuth2 with PKCE must have authorization URL and token URL
             if (settings.oauth2Settings.generic.enabled) {
                 if (
@@ -258,8 +203,6 @@ export class RemnawaveSettingsService {
                 }
             }
 
-<<<<<<< HEAD
-=======
             // Test 11: Telegram OAuth2 must have client ID, client secret and frontend domain
             if (settings.oauth2Settings.telegram.enabled) {
                 if (
@@ -281,7 +224,6 @@ export class RemnawaveSettingsService {
                 }
             }
 
->>>>>>> upstream/main
             return {
                 valid: true,
             };

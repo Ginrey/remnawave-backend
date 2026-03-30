@@ -1,29 +1,14 @@
-<<<<<<< HEAD
-import type { Cache } from 'cache-manager';
-
-=======
->>>>>>> upstream/main
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { customAlphabet } from 'nanoid';
 import dayjs from 'dayjs';
 
-<<<<<<< HEAD
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { EventBus, QueryBus } from '@nestjs/cqrs';
-import { ConfigService } from '@nestjs/config';
-
-import { wrapBigInt, wrapBigIntNullable } from '@common/utils';
-=======
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Injectable, Logger } from '@nestjs/common';
 import { EventBus, QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 
 import { mapDefined, wrapBigInt, wrapBigIntNullable } from '@common/utils';
->>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { ERRORS, USERS_STATUS, EVENTS } from '@libs/contracts/constants';
 import { GetAllUsersCommand } from '@libs/contracts/commands';
@@ -46,10 +31,7 @@ import {
     BulkAllResponseModel,
     GetUserAccessibleNodesResponseModel,
     GetUserSubscriptionRequestHistoryResponseModel,
-<<<<<<< HEAD
-=======
     ResolveUserResponseModel,
->>>>>>> upstream/main
 } from './models';
 import {
     CreateUserRequestDto,
@@ -58,10 +40,7 @@ import {
     BulkUpdateUsersRequestDto,
     BulkAllUpdateUsersRequestDto,
     RevokeUserSubscriptionBodyDto,
-<<<<<<< HEAD
-=======
     ResolveUserRequestBodyDto,
->>>>>>> upstream/main
 } from './dtos';
 import { IGetUserByUnique, IGetUsersByTelegramIdOrEmail, IUpdateUserDto } from './interfaces';
 import { UsersRepository } from './repositories/users.repository';
@@ -80,11 +59,6 @@ export class UsersService {
         private readonly configService: ConfigService,
         private readonly usersQueuesService: UsersQueuesService,
         private readonly nodesQueuesService: NodesQueuesService,
-<<<<<<< HEAD
-
-        @Inject(CACHE_MANAGER) private cacheManager: Cache,
-=======
->>>>>>> upstream/main
     ) {
         this.shortUuidLength = this.configService.getOrThrow<number>('SHORT_UUID_LENGTH');
     }
@@ -284,11 +258,7 @@ export class UsersService {
         }>
     > {
         try {
-<<<<<<< HEAD
-            const [users, total] = await this.userRepository.getAllUsersV2(dto);
-=======
             const [users, total] = await this.userRepository.getAllUsers(dto);
->>>>>>> upstream/main
 
             return ok({ users, total });
         } catch (error) {
@@ -359,11 +329,6 @@ export class UsersService {
                 vlessUuid: this.createUuid(),
                 ssPassword: this.createPassword(),
                 subRevokedAt: new Date(),
-<<<<<<< HEAD
-                subLastOpenedAt: null,
-                subLastUserAgent: null,
-=======
->>>>>>> upstream/main
                 updatedAt: new Date(),
             });
 
@@ -792,8 +757,6 @@ export class UsersService {
         }
     }
 
-<<<<<<< HEAD
-=======
     public async resolveUser(
         dto: ResolveUserRequestBodyDto,
     ): Promise<TResult<ResolveUserResponseModel>> {
@@ -824,7 +787,6 @@ export class UsersService {
         }
     }
 
->>>>>>> upstream/main
     private createUuid(): string {
         return randomUUID();
     }

@@ -215,22 +215,6 @@ export class NodesRepository implements ICrud<NodesEntity> {
         return true;
     }
 
-<<<<<<< HEAD
-    public async countOnlineUsers(): Promise<number> {
-        const result = await this.prisma.tx.nodes.aggregate({
-            where: {
-                isConnected: true,
-            },
-            _sum: {
-                usersOnline: true,
-            },
-        });
-
-        return result._sum.usersOnline || 0;
-    }
-
-=======
->>>>>>> upstream/main
     public async removeInboundsFromNode(nodeUuid: string): Promise<boolean> {
         const result = await this.qb.kysely
             .deleteFrom('configProfileInboundsToNodes')
@@ -319,8 +303,6 @@ export class NodesRepository implements ICrud<NodesEntity> {
 
         return result.map((value) => value.tag);
     }
-<<<<<<< HEAD
-=======
 
     public async getNodeUuidsByPluginUuid(pluginUuid: string): Promise<string[]> {
         const result = await this.qb.kysely
@@ -358,5 +340,4 @@ export class NodesRepository implements ICrud<NodesEntity> {
 
         return result.id;
     }
->>>>>>> upstream/main
 }

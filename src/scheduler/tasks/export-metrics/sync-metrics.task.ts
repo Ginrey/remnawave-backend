@@ -10,11 +10,7 @@ import { METRIC_NAMES } from '@libs/contracts/constants';
 
 import { GetAllNodesQuery } from '@modules/nodes/queries/get-all-nodes/get-all-nodes.query';
 
-<<<<<<< HEAD
-import { INodeBandwidthMetricLabels, INodeBaseMetricLabels } from '@scheduler/metrics-providers';
-=======
 import { INodeBaseMetricLabels } from '@scheduler/metrics-providers';
->>>>>>> upstream/main
 import { JOBS_INTERVALS } from '@scheduler/intervals';
 
 @Injectable()
@@ -33,8 +29,6 @@ export class SyncMetricsTask {
         public nodeOutboundUploadBytes: Counter<string>,
         @InjectMetric(METRIC_NAMES.NODE_OUTBOUND_DOWNLOAD_BYTES)
         public nodeOutboundDownloadBytes: Counter<string>,
-<<<<<<< HEAD
-=======
         @InjectMetric(METRIC_NAMES.NODE_MEMORY_TOTAL_BYTES)
         public nodeMemoryTotalBytes: Gauge<string>,
         @InjectMetric(METRIC_NAMES.NODE_MEMORY_FREE_BYTES)
@@ -55,7 +49,6 @@ export class SyncMetricsTask {
         public nodeSystemInfo: Gauge<string>,
         @InjectMetric(METRIC_NAMES.NODE_BASIC_INFO)
         public nodeBasicInfo: Gauge<string>,
->>>>>>> upstream/main
         private readonly queryBus: QueryBus,
     ) {}
 
@@ -77,15 +70,7 @@ export class SyncMetricsTask {
         try {
             const nodesResponse = await this.queryBus.execute(new GetAllNodesQuery());
 
-<<<<<<< HEAD
-            if (
-                !nodesResponse.isOk ||
-                !nodesResponse.response ||
-                nodesResponse.response.length === 0
-            ) {
-=======
             if (!nodesResponse.isOk || !nodesResponse.response?.length) {
->>>>>>> upstream/main
                 return;
             }
 
@@ -99,47 +84,6 @@ export class SyncMetricsTask {
                 });
             }
 
-<<<<<<< HEAD
-            const [
-                { values: onlineUsersValues },
-                { values: statusValues },
-                { values: inboundUploadValues },
-                { values: inboundDownloadValues },
-                { values: outboundUploadValues },
-                { values: outboundDownloadValues },
-            ] = await Promise.all([
-                this.nodeOnlineUsers.get(),
-                this.nodeStatus.get(),
-                this.nodeInboundUploadBytes.get(),
-                this.nodeInboundDownloadBytes.get(),
-                this.nodeOutboundUploadBytes.get(),
-                this.nodeOutboundDownloadBytes.get(),
-            ]);
-
-            this.cleanupBaseMetrics(this.nodeOnlineUsers, onlineUsersValues, nodesMap);
-            this.cleanupBaseMetrics(this.nodeStatus, statusValues, nodesMap);
-
-            this.cleanupBandwidthMetrics(
-                this.nodeInboundUploadBytes,
-                inboundUploadValues,
-                nodesMap,
-            );
-            this.cleanupBandwidthMetrics(
-                this.nodeInboundDownloadBytes,
-                inboundDownloadValues,
-                nodesMap,
-            );
-            this.cleanupBandwidthMetrics(
-                this.nodeOutboundUploadBytes,
-                outboundUploadValues,
-                nodesMap,
-            );
-            this.cleanupBandwidthMetrics(
-                this.nodeOutboundDownloadBytes,
-                outboundDownloadValues,
-                nodesMap,
-            );
-=======
             const allMetrics: (Gauge<string> | Counter<string>)[] = [
                 this.nodeOnlineUsers,
                 this.nodeStatus,
@@ -167,57 +111,10 @@ export class SyncMetricsTask {
                     }
                 }
             }
->>>>>>> upstream/main
         } catch (error) {
             this.logger.error(`Error in syncNodeMetrics: ${error}`);
         } finally {
             nodesMap.clear();
         }
     }
-<<<<<<< HEAD
-
-    private cleanupBaseMetrics(
-        metric: Gauge<string>,
-        values: any[],
-        nodesMap: Map<string, INodeBaseMetricLabels>,
-    ) {
-        for (const stat of values) {
-            const labels = stat.labels as INodeBaseMetricLabels;
-            const existingNode = nodesMap.get(labels.node_uuid);
-
-            if (!existingNode || !this.compareMetricLabels(existingNode, labels)) {
-                metric.remove(stat.labels);
-            }
-        }
-    }
-
-    private cleanupBandwidthMetrics(
-        metric: Counter<string>,
-        values: any[],
-        nodesMap: Map<string, INodeBaseMetricLabels>,
-    ) {
-        for (const stat of values) {
-            const labels = stat.labels as INodeBandwidthMetricLabels;
-            const existingNode = nodesMap.get(labels.node_uuid);
-
-            if (!existingNode || !this.compareMetricLabels(existingNode, labels)) {
-                metric.remove(stat.labels);
-            }
-        }
-    }
-
-    private compareMetricLabels(
-        nodeA: INodeBaseMetricLabels,
-        nodeB: INodeBaseMetricLabels | INodeBandwidthMetricLabels,
-    ): boolean {
-        return (
-            nodeA.node_uuid === nodeB.node_uuid &&
-            nodeA.node_name === nodeB.node_name &&
-            nodeA.node_country_emoji === nodeB.node_country_emoji &&
-            nodeA.provider_name === nodeB.provider_name &&
-            nodeA.tags === nodeB.tags
-        );
-    }
-=======
->>>>>>> upstream/main
 }

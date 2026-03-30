@@ -74,10 +74,7 @@ export namespace CreateNodeCommand {
                 )
                 .max(10, 'Maximum 10 tags'),
         ),
-<<<<<<< HEAD
-=======
         activePluginUuid: z.optional(z.nullable(z.string().uuid())),
->>>>>>> upstream/main
     });
 
     export type Request = z.infer<typeof RequestSchema>;

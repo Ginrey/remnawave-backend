@@ -20,10 +20,7 @@ import { NodesQueuesService } from '@queue/_nodes';
 
 import {
     BulkNodesActionsRequestDto,
-<<<<<<< HEAD
-=======
     BulkNodesUpdateRequestDto,
->>>>>>> upstream/main
     CreateNodeRequestDto,
     ProfileModificationRequestDto,
     ReorderNodeRequestDto,
@@ -32,15 +29,10 @@ import {
 import {
     BaseEventResponseModel,
     DeleteNodeResponseModel,
-<<<<<<< HEAD
-    RestartNodeResponseModel,
-} from './models';
-=======
     NodeResponseModel,
     RestartNodeResponseModel,
 } from './models';
 import { NodesSystemCacheService } from './nodes-system-cache.service';
->>>>>>> upstream/main
 import { NodesRepository } from './repositories/nodes.repository';
 import { NodesEntity } from './entities';
 
@@ -54,16 +46,10 @@ export class NodesService {
         private readonly nodesQueuesService: NodesQueuesService,
         private readonly queryBus: QueryBus,
         private readonly commandBus: CommandBus,
-<<<<<<< HEAD
-    ) {}
-
-    public async createNode(body: CreateNodeRequestDto): Promise<TResult<NodesEntity>> {
-=======
         private readonly nodesSystemCacheService: NodesSystemCacheService,
     ) {}
 
     public async createNode(body: CreateNodeRequestDto): Promise<TResult<NodeResponseModel>> {
->>>>>>> upstream/main
         try {
             const { configProfile, ...nodeData } = body;
 
@@ -116,16 +102,10 @@ export class NodesService {
 
             this.eventEmitter.emit(EVENTS.NODE.CREATED, new NodeEvent(node, EVENTS.NODE.CREATED));
 
-<<<<<<< HEAD
-            return ok(result);
-        } catch (error) {
-            this.logger.error(error);
-=======
             return ok(
                 new NodeResponseModel(node, await this.nodesSystemCacheService.getOne(node.uuid)),
             );
         } catch (error) {
->>>>>>> upstream/main
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
                 error.code === 'P2002' &&
@@ -140,20 +120,11 @@ export class NodesService {
                     return fail(ERRORS.NODE_ADDRESS_ALREADY_EXISTS);
                 }
             }
-<<<<<<< HEAD
-
-=======
             this.logger.error(error);
->>>>>>> upstream/main
             return fail(ERRORS.CREATE_NODE_ERROR);
         }
     }
 
-<<<<<<< HEAD
-    public async getAllNodes(): Promise<TResult<NodesEntity[]>> {
-        try {
-            return ok(await this.nodesRepository.findByCriteria({}));
-=======
     public async getAllNodes(): Promise<TResult<NodeResponseModel[]>> {
         try {
             const nodes = await this.nodesRepository.findByCriteria({});
@@ -174,7 +145,6 @@ export class NodesService {
                         ),
                 ),
             );
->>>>>>> upstream/main
         } catch (error) {
             this.logger.error(error);
             return fail(ERRORS.GET_ALL_NODES_ERROR);
@@ -255,24 +225,16 @@ export class NodesService {
         }
     }
 
-<<<<<<< HEAD
-    public async getOneNode(uuid: string): Promise<TResult<NodesEntity>> {
-=======
     public async getOneNode(uuid: string): Promise<TResult<NodeResponseModel>> {
->>>>>>> upstream/main
         try {
             const node = await this.nodesRepository.findByUUID(uuid);
             if (!node) {
                 return fail(ERRORS.NODE_NOT_FOUND);
             }
 
-<<<<<<< HEAD
-            return ok(node);
-=======
             return ok(
                 new NodeResponseModel(node, await this.nodesSystemCacheService.getOne(node.uuid)),
             );
->>>>>>> upstream/main
         } catch (error) {
             this.logger.error(error);
             return fail(ERRORS.GET_ONE_NODE_ERROR);
@@ -293,11 +255,8 @@ export class NodesService {
 
             this.eventEmitter.emit(EVENTS.NODE.DELETED, new NodeEvent(node, EVENTS.NODE.DELETED));
 
-<<<<<<< HEAD
-=======
             await this.nodesSystemCacheService.delete(node.uuid);
 
->>>>>>> upstream/main
             return ok(new DeleteNodeResponseModel({ isDeleted: true }));
         } catch (error) {
             this.logger.error(error);
@@ -305,11 +264,7 @@ export class NodesService {
         }
     }
 
-<<<<<<< HEAD
-    public async updateNode(body: UpdateNodeRequestDto): Promise<TResult<NodesEntity>> {
-=======
     public async updateNode(body: UpdateNodeRequestDto): Promise<TResult<NodeResponseModel>> {
->>>>>>> upstream/main
         try {
             const { configProfile, ...nodeData } = body;
 
@@ -367,16 +322,6 @@ export class NodesService {
                 new NodeEvent(result, EVENTS.NODE.MODIFIED),
             );
 
-<<<<<<< HEAD
-            return ok(result);
-        } catch (error) {
-            this.logger.error(error);
-            return fail(ERRORS.ENABLE_NODE_ERROR);
-        }
-    }
-
-    public async enableNode(uuid: string): Promise<TResult<NodesEntity>> {
-=======
             return ok(
                 new NodeResponseModel(
                     result,
@@ -404,18 +349,14 @@ export class NodesService {
     }
 
     public async enableNode(uuid: string): Promise<TResult<NodeResponseModel>> {
->>>>>>> upstream/main
         try {
             const node = await this.nodesRepository.findByUUID(uuid);
             if (!node) {
                 return fail(ERRORS.NODE_NOT_FOUND);
             }
 
-<<<<<<< HEAD
-=======
             await this.nodesSystemCacheService.delete(node.uuid);
 
->>>>>>> upstream/main
             if (!node.activeConfigProfileUuid || node.activeInbounds.length === 0) {
                 const result = await this.nodesRepository.update({
                     uuid: node.uuid,
@@ -425,26 +366,18 @@ export class NodesService {
                     isConnected: false,
                     lastStatusMessage: null,
                     lastStatusChange: new Date(),
-<<<<<<< HEAD
-                    usersOnline: 0,
-=======
->>>>>>> upstream/main
                 });
 
                 if (!result) {
                     return fail(ERRORS.ENABLE_NODE_ERROR);
                 }
 
-<<<<<<< HEAD
-                return ok(result);
-=======
                 return ok(
                     new NodeResponseModel(
                         result,
                         await this.nodesSystemCacheService.getOne(result.uuid),
                     ),
                 );
->>>>>>> upstream/main
             }
 
             const result = await this.nodesRepository.update({
@@ -462,27 +395,19 @@ export class NodesService {
 
             this.eventEmitter.emit(EVENTS.NODE.ENABLED, new NodeEvent(result, EVENTS.NODE.ENABLED));
 
-<<<<<<< HEAD
-            return ok(result);
-=======
             return ok(
                 new NodeResponseModel(
                     result,
                     await this.nodesSystemCacheService.getOne(result.uuid),
                 ),
             );
->>>>>>> upstream/main
         } catch (error) {
             this.logger.error(error);
             return fail(ERRORS.ENABLE_NODE_ERROR);
         }
     }
 
-<<<<<<< HEAD
-    public async disableNode(uuid: string): Promise<TResult<NodesEntity>> {
-=======
     public async disableNode(uuid: string): Promise<TResult<NodeResponseModel>> {
->>>>>>> upstream/main
         try {
             const node = await this.nodesRepository.findByUUID(uuid);
             if (!node) {
@@ -496,11 +421,8 @@ export class NodesService {
                 });
             }
 
-<<<<<<< HEAD
-=======
             await this.nodesSystemCacheService.delete(node.uuid);
 
->>>>>>> upstream/main
             const result = await this.nodesRepository.update({
                 uuid: node.uuid,
                 isDisabled: true,
@@ -508,10 +430,6 @@ export class NodesService {
                 isConnected: false,
                 lastStatusMessage: null,
                 lastStatusChange: new Date(),
-<<<<<<< HEAD
-                usersOnline: 0,
-=======
->>>>>>> upstream/main
             });
 
             if (!result) {
@@ -528,29 +446,18 @@ export class NodesService {
                 new NodeEvent(result, EVENTS.NODE.DISABLED),
             );
 
-<<<<<<< HEAD
-            return ok(result);
-=======
             return ok(
                 new NodeResponseModel(
                     result,
                     await this.nodesSystemCacheService.getOne(result.uuid),
                 ),
             );
->>>>>>> upstream/main
         } catch (error) {
             this.logger.error(error);
             return fail(ERRORS.ENABLE_NODE_ERROR);
         }
     }
 
-<<<<<<< HEAD
-    public async reorderNodes(dto: ReorderNodeRequestDto): Promise<TResult<NodesEntity[]>> {
-        try {
-            await this.nodesRepository.reorderMany(dto.nodes);
-
-            return ok(await this.nodesRepository.findByCriteria({}));
-=======
     public async reorderNodes(dto: ReorderNodeRequestDto): Promise<TResult<NodeResponseModel[]>> {
         try {
             await this.nodesRepository.reorderMany(dto.nodes);
@@ -571,7 +478,6 @@ export class NodesService {
                         ),
                 ),
             );
->>>>>>> upstream/main
         } catch (error) {
             this.logger.error(error);
             return fail(ERRORS.REORDER_NODES_ERROR);
@@ -612,13 +518,10 @@ export class NodesService {
                 return fail(ERRORS.CONFIG_PROFILE_INBOUND_NOT_FOUND_IN_SPECIFIED_PROFILE);
             }
 
-<<<<<<< HEAD
-=======
             await this.nodesRepository.updateMany(uuids, {
                 activeConfigProfileUuid: configProfile.activeConfigProfileUuid,
             });
 
->>>>>>> upstream/main
             await this.nodesRepository.removeInboundsFromNodes(uuids);
 
             await this.nodesRepository.addInboundsToNodes(uuids, configProfile.activeInbounds);
@@ -664,8 +567,6 @@ export class NodesService {
             return fail(ERRORS.INTERNAL_SERVER_ERROR);
         }
     }
-<<<<<<< HEAD
-=======
 
     public async bulkNodesUpdate(
         body: BulkNodesUpdateRequestDto,
@@ -695,5 +596,4 @@ export class NodesService {
             return fail(ERRORS.INTERNAL_SERVER_ERROR);
         }
     }
->>>>>>> upstream/main
 }

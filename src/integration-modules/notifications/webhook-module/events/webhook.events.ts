@@ -7,12 +7,8 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 
 import { NotificationsConfigService } from '@common/config/common-config';
-<<<<<<< HEAD
-import { EVENTS, EVENTS_SCOPES } from '@libs/contracts/constants';
-=======
 import { RawCacheService } from '@common/raw-cache';
 import { CACHE_KEYS, EVENTS, EVENTS_SCOPES } from '@libs/contracts/constants';
->>>>>>> upstream/main
 
 import {
     UserEvent,
@@ -21,19 +17,12 @@ import {
     NodeEvent,
     CrmEvent,
     UserHwidDeviceEvent,
-<<<<<<< HEAD
-} from '@integration-modules/notifications/interfaces';
-
-import { GetFullUserResponseModel } from '@modules/users/models';
-import { GetOneNodeResponseModel } from '@modules/nodes/models';
-=======
     TorrentBlockerEvent,
 } from '@integration-modules/notifications/interfaces';
 
 import { INodeHotCache, INodeSystem, INodeVersions } from '@modules/nodes/interfaces';
 import { GetFullUserResponseModel } from '@modules/users/models';
 import { NodeResponseModel } from '@modules/nodes/models';
->>>>>>> upstream/main
 
 import { WebhookLoggerQueueService } from '@queue/notifications/webhook-logger/webhook-logger.service';
 
@@ -47,10 +36,7 @@ export class WebhookEvents {
         private readonly webhookLoggerQueueService: WebhookLoggerQueueService,
         private readonly configService: ConfigService,
         private readonly notificationsConfig: NotificationsConfigService,
-<<<<<<< HEAD
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
     ) {
         this.subPublicDomain = this.configService.getOrThrow<string>('SUB_PUBLIC_DOMAIN');
         this.webhookUrls = this.configService
@@ -101,16 +87,12 @@ export class WebhookEvents {
                 scope: EVENTS_SCOPES.NODE,
                 event: event.eventName,
                 timestamp: dayjs().toISOString(),
-<<<<<<< HEAD
-                data: instanceToPlain(new GetOneNodeResponseModel(event.node)),
-=======
                 data: instanceToPlain(
                     new NodeResponseModel(
                         event.node,
                         await this.getNodesSystemInfo(event.node.uuid),
                     ),
                 ),
->>>>>>> upstream/main
             };
 
             const { json } = serialize(payload);
@@ -241,8 +223,6 @@ export class WebhookEvents {
             this.logger.error(`Error sending webhook event: ${error}`);
         }
     }
-<<<<<<< HEAD
-=======
 
     @OnEvent(EVENTS.CATCH_ALL_TORRENT_BLOCKER_EVENTS)
     async onCatchAllTorrentBlockerEvents(event: TorrentBlockerEvent): Promise<void> {
@@ -295,5 +275,4 @@ export class WebhookEvents {
             xrayUptime,
         };
     }
->>>>>>> upstream/main
 }

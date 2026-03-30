@@ -1,25 +1,8 @@
-<<<<<<< HEAD
-import { RedisModule, RedisModuleOptions } from '@songkeys/nestjs-redis';
-import { createKeyv } from '@keyv/redis';
-=======
->>>>>>> upstream/main
 import { ClsModule } from 'nestjs-cls';
 
 import { QueueModule } from 'src/queue/queue.module';
 
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-<<<<<<< HEAD
-import { ConditionalModule, ConfigModule, ConfigService } from '@nestjs/config';
-import { Logger, OnApplicationShutdown, Module } from '@nestjs/common';
-import { ClsPluginTransactional } from '@nestjs-cls/transactional';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { CacheModule } from '@nestjs/cache-manager';
-
-import { CommonConfigModule } from '@common/config/common-config';
-import { PrismaService } from '@common/database/prisma.service';
-import { RedisProducerModule } from '@common/microservices';
-import { getRedisConnectionOptions } from '@common/utils';
-=======
 import { Logger, OnApplicationShutdown, Module } from '@nestjs/common';
 import { ClsPluginTransactional } from '@nestjs-cls/transactional';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -30,7 +13,6 @@ import { RawCacheModule } from '@common/raw-cache/raw-cache.module';
 import { CommonConfigModule } from '@common/config/common-config';
 import { PrismaService } from '@common/database/prisma.service';
 import { RedisProducerModule } from '@common/microservices';
->>>>>>> upstream/main
 import { isProcessor } from '@common/utils/startup-app';
 import { PrismaModule } from '@common/database';
 import { AxiosModule } from '@common/axios';
@@ -39,10 +21,7 @@ import { RemnawaveModules } from '@modules/remnawave-backend.modules';
 
 @Module({
     imports: [
-<<<<<<< HEAD
-=======
         RawCacheModule,
->>>>>>> upstream/main
         AxiosModule,
         CommonConfigModule,
         PrismaModule,
@@ -66,64 +45,10 @@ import { RemnawaveModules } from '@modules/remnawave-backend.modules';
             wildcard: true,
             delimiter: '.',
         }),
-<<<<<<< HEAD
-
-        RedisModule.forRootAsync({
-            imports: [ConfigModule],
-            useFactory: async (configService: ConfigService): Promise<RedisModuleOptions> => {
-                return {
-                    config: {
-                        ...getRedisConnectionOptions(
-                            configService.get<string>('REDIS_SOCKET'),
-                            configService.get<string>('REDIS_HOST'),
-                            configService.get<number>('REDIS_PORT'),
-                            'ioredis',
-                        ),
-                        db: configService.getOrThrow<number>('REDIS_DB'),
-                        password: configService.get<string | undefined>('REDIS_PASSWORD'),
-                        keyPrefix: 'ioraw:',
-                    },
-                } satisfies RedisModuleOptions;
-            },
-            inject: [ConfigService],
-        }),
-
-        RemnawaveModules,
-        QueueModule,
-        CacheModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            isGlobal: true,
-            useFactory: async (configService: ConfigService) => {
-                return {
-                    stores: [
-                        createKeyv(
-                            {
-                                ...getRedisConnectionOptions(
-                                    configService.get<string>('REDIS_SOCKET'),
-                                    configService.get<string>('REDIS_HOST'),
-                                    configService.get<number>('REDIS_PORT'),
-                                    'node-redis',
-                                ),
-                                database: configService.getOrThrow<number>('REDIS_DB'),
-                                password: configService.get<string | undefined>('REDIS_PASSWORD'),
-                            },
-                            {
-                                namespace: 'rmnwv',
-                                keyPrefixSeparator: ':',
-                            },
-                        ),
-                    ],
-                };
-            },
-        }),
-        ConditionalModule.registerWhen(RedisProducerModule, () => isProcessor()),
-=======
         RemnawaveModules,
         QueueModule,
         ConditionalModule.registerWhen(RedisProducerModule, () => isProcessor()),
         RuntimeMetricsModule,
->>>>>>> upstream/main
     ],
     controllers: [],
 })

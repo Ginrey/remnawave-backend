@@ -31,10 +31,7 @@ import {
     GetMetadataCommand,
     GetNodesMetricsCommand,
     GetNodesStatisticsCommand,
-<<<<<<< HEAD
-=======
     GetRecapCommand,
->>>>>>> upstream/main
     GetRemnawaveHealthCommand,
     GetStatsCommand,
     TestSrrMatcherCommand,
@@ -55,10 +52,7 @@ import {
     DebugSrrMatcherRequestDto,
     DebugSrrMatcherResponseDto,
     GetMetadataResponseDto,
-<<<<<<< HEAD
-=======
     GetRecapResponseDto,
->>>>>>> upstream/main
 } from './dtos';
 import { EncryptHappCryptoLinkResponseModel } from './models';
 import { SystemService } from './system.service';
@@ -236,8 +230,6 @@ export class SystemController {
     ): Promise<Response> {
         return await this.systemService.debugSrrMatcher(request, response, body);
     }
-<<<<<<< HEAD
-=======
 
     @ApiResponse({
         status: 200,
@@ -256,5 +248,4 @@ export class SystemController {
             response: data,
         };
     }
->>>>>>> upstream/main
 }

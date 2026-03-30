@@ -1,8 +1,5 @@
 import { Job } from 'bullmq';
-<<<<<<< HEAD
-=======
 import semver from 'semver';
->>>>>>> upstream/main
 import pMap from 'p-map';
 
 import { Processor, WorkerHost } from '@nestjs/bullmq';
@@ -10,13 +7,6 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { Logger, Scope } from '@nestjs/common';
 
 import { AxiosService } from '@common/axios/axios.service';
-<<<<<<< HEAD
-
-import { GetPreparedConfigWithUsersQuery } from '@modules/users/queries/get-prepared-config-with-users/get-prepared-config-with-users.query';
-import { FindNodesByCriteriaQuery } from '@modules/nodes/queries/find-nodes-by-criteria';
-import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
-import { UpdateNodeCommand } from '@modules/nodes/commands/update-node';
-=======
 import { RawCacheService } from '@common/raw-cache';
 import { CACHE_KEYS, CACHE_KEYS_TTL } from '@libs/contracts/constants';
 
@@ -26,7 +16,6 @@ import { GetAllPluginsQuery } from '@modules/node-plugins/queries/get-all-plugin
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
 import { UpdateNodeCommand } from '@modules/nodes/commands/update-node';
 import { NodePluginEntity } from '@modules/node-plugins/entities';
->>>>>>> upstream/main
 import { NodesEntity } from '@modules/nodes';
 
 import { NodesQueuesService } from '@queue/_nodes';
@@ -52,10 +41,7 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
         private readonly nodesQueuesService: NodesQueuesService,
         private readonly queryBus: QueryBus,
         private readonly commandBus: CommandBus,
-<<<<<<< HEAD
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
     ) {
         super();
         this.CONCURRENCY = 20;
@@ -97,15 +83,12 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
             const activeNodeTags = new Map<string, string[]>();
 
             for (const node of nodes) {
-<<<<<<< HEAD
-=======
                 await this.rawCacheService.delMany([
                     CACHE_KEYS.NODE_SYSTEM_STATS(node.uuid),
                     CACHE_KEYS.NODE_USERS_ONLINE(node.uuid),
                     CACHE_KEYS.NODE_XRAY_UPTIME(node.uuid),
                 ]);
 
->>>>>>> upstream/main
                 if (node.activeInbounds.length === 0) {
                     this.logger.warn(
                         `No active inbounds found for node ${node.uuid} with profile ${payload.profileUuid}, disabling and clearing profile from node...`,
@@ -120,10 +103,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                             isConnected: false,
                             lastStatusMessage: null,
                             lastStatusChange: new Date(),
-<<<<<<< HEAD
-                            usersOnline: 0,
-=======
->>>>>>> upstream/main
                         }),
                     );
 
@@ -164,8 +143,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                 return;
             }
 
-<<<<<<< HEAD
-=======
             const pluginsResult = await this.queryBus.execute(new GetAllPluginsQuery(true));
 
             if (!pluginsResult.isOk) {
@@ -177,7 +154,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                 pluginsResult.response.map((plugin) => [plugin.uuid, plugin]),
             );
 
->>>>>>> upstream/main
             const startTime = Date.now();
 
             const config = await this.queryBus.execute(
@@ -200,10 +176,7 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                     throw new Error('Failed to get active node inbounds tags');
                 }
 
-<<<<<<< HEAD
-=======
                 let pluginsSupported = true;
->>>>>>> upstream/main
                 const xrayStatusResponse = await this.axios.getNodeHealth(node.address, node.port);
 
                 if (!xrayStatusResponse.isOk) {
@@ -214,10 +187,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                             lastStatusChange: new Date(),
                             isConnected: false,
                             isConnecting: false,
-<<<<<<< HEAD
-                            usersOnline: 0,
-=======
->>>>>>> upstream/main
                         }),
                     );
 
@@ -240,10 +209,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                             lastStatusChange: new Date(),
                             isConnected: false,
                             isConnecting: false,
-<<<<<<< HEAD
-                            usersOnline: 0,
-=======
->>>>>>> upstream/main
                         }),
                     );
 
@@ -251,8 +216,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                         `Node ${node.uuid} – unknown node version. Please upgrade Remnawave Node to the latest version.`,
                     );
                     return;
-<<<<<<< HEAD
-=======
                 } else if (semver.lt(xrayStatusResponse.response.nodeVersion, '2.7.0')) {
                     pluginsSupported = false;
 
@@ -307,7 +270,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                         );
                         return;
                     }
->>>>>>> upstream/main
                 }
 
                 const filteredInboundsHashes = config.response.hashesPayload.inbounds.filter(
@@ -318,15 +280,9 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                     {
                         xrayConfig: {
                             ...config.response.config,
-<<<<<<< HEAD
-                            inbounds: config.response.config.inbounds.filter(
-                                (inbound) =>
-                                    activeNodeInboundsTags.has(inbound.tag) ||
-=======
                             inbounds: config.response.config.inbounds!.filter(
                                 (inbound) =>
                                     activeNodeInboundsTags.has(inbound.tag!) ||
->>>>>>> upstream/main
                                     this.isUnsecureInbound(inbound.protocol),
                             ),
                         } as unknown as Record<string, unknown>,
@@ -351,10 +307,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                                 lastStatusChange: new Date(),
                                 isConnected: false,
                                 isConnecting: false,
-<<<<<<< HEAD
-                                usersOnline: 0,
-=======
->>>>>>> upstream/main
                             }),
                         );
 
@@ -362,13 +314,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                     case true:
                         const nodeResponse = startXrayResponse.response.response;
 
-<<<<<<< HEAD
-                        await this.commandBus.execute(
-                            new UpdateNodeCommand({
-                                uuid: node.uuid,
-                                xrayVersion: nodeResponse.version,
-                                nodeVersion: nodeResponse.nodeInformation?.version || null,
-=======
                         await this.rawCacheService.setMany([
                             {
                                 key: CACHE_KEYS.NODE_SYSTEM_STATS(node.uuid),
@@ -394,18 +339,10 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
                         await this.commandBus.execute(
                             new UpdateNodeCommand({
                                 uuid: node.uuid,
->>>>>>> upstream/main
                                 isConnected: nodeResponse.isStarted,
                                 lastStatusMessage: nodeResponse.error ?? null,
                                 lastStatusChange: new Date(),
                                 isConnecting: false,
-<<<<<<< HEAD
-                                usersOnline: 0,
-                                cpuCount: nodeResponse.systemInformation?.cpuCores ?? null,
-                                cpuModel: nodeResponse.systemInformation?.cpuModel ?? null,
-                                totalRam: nodeResponse.systemInformation?.memoryTotal ?? null,
-=======
->>>>>>> upstream/main
                             }),
                         );
 
@@ -429,10 +366,6 @@ export class StartAllNodesByProfileQueueProcessor extends WorkerHost {
     }
 
     private isUnsecureInbound(protocol: string): boolean {
-<<<<<<< HEAD
-        return ['dokodemo-door', 'http', 'mixed', 'wireguard'].includes(protocol);
-=======
         return ['dokodemo-door', 'http', 'mixed', 'tunnel', 'wireguard'].includes(protocol);
->>>>>>> upstream/main
     }
 }

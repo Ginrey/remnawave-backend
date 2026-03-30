@@ -59,14 +59,8 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
-<<<<<<< HEAD
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN_GH_DEPLOY }}
-        with:
-=======
         with:
           token: ${{ secrets.TOKEN_GH_DEPLOY }}
->>>>>>> upstream/main
           repository: remnawave/panel
           tag_name: ${{ github.ref_name }}
           target_commitish: ${{ steps.commit.outputs.sha }}

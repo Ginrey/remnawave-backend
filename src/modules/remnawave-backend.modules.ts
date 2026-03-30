@@ -3,10 +3,7 @@ import { Module } from '@nestjs/common';
 
 import { isRestApi, isScheduler } from '@common/utils/startup-app';
 
-<<<<<<< HEAD
 import { SubscriptionImportSourceModule } from './subscription-import-sources/subscription-import-source.module';
-=======
->>>>>>> upstream/main
 import { UserSubscriptionRequestHistoryModule } from './user-subscription-request-history/user-subscription-request-history.module';
 import { SubscriptionResponseRulesModule } from './subscription-response-rules/subscription-response-rules.module';
 import { NodesTrafficUsageHistoryModule } from './nodes-traffic-usage-history/nodes-traffic-usage-history.module';
@@ -25,20 +22,14 @@ import { InfraBillingModule } from './infra-billing/infra-billing.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { ApiTokensModule } from './api-tokens/api-tokens.module';
 import { IpControlModule } from './ip-control/ip-control.module';
-<<<<<<< HEAD
-=======
 import { MetadataModule } from './metadata/metadata.module';
->>>>>>> upstream/main
 import { KeygenModule } from './keygen/keygen.module';
 import { SystemModule } from './system/system.module';
 import { HostsModule } from './hosts/hosts.module';
 import { NodesModule } from './nodes/nodes.module';
 import { UsersModule } from './users/users.module';
 import { AdminModule } from './admin/admin.module';
-<<<<<<< HEAD
-=======
 import { NodePluginModule } from './node-plugins';
->>>>>>> upstream/main
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -56,10 +47,7 @@ import { AuthModule } from './auth/auth.module';
         ExternalSquadModule,
         KeygenModule,
         NodesModule,
-<<<<<<< HEAD
-=======
         NodePluginModule,
->>>>>>> upstream/main
         NodesTrafficUsageHistoryModule,
         HostsModule,
         NodesUserUsageHistoryModule,
@@ -72,11 +60,8 @@ import { AuthModule } from './auth/auth.module';
         ConditionalModule.registerWhen(SubscriptionSettingsModule, () => isRestApi()),
         ConditionalModule.registerWhen(RemnawaveServiceModule, () => isScheduler()),
         ConditionalModule.registerWhen(IpControlModule, () => isRestApi()),
-<<<<<<< HEAD
-        ConditionalModule.registerWhen(SubscriptionImportSourceModule, () => isRestApi()),
-=======
         ConditionalModule.registerWhen(MetadataModule, () => isRestApi()),
->>>>>>> upstream/main
+        ConditionalModule.registerWhen(SubscriptionImportSourceModule, () => isRestApi()),
     ],
 })
 export class RemnawaveModules {}

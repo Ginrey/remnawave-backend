@@ -13,12 +13,6 @@ import {
     IDropUsersConnectionsPayload,
     IRemoveUsersFromNodePayload,
 } from '../interfaces';
-<<<<<<< HEAD
-import { NODES_JOB_NAMES } from '../constants/nodes-job-name.constant';
-
-@Processor(QUEUES_NAMES.NODES.BULK_USERS, {
-    concurrency: 20,
-=======
 import {
     IBlockIpsPayload,
     IRecreateTablesPayload,
@@ -28,7 +22,6 @@ import { NODES_JOB_NAMES } from '../constants/nodes-job-name.constant';
 
 @Processor(QUEUES_NAMES.NODES.BULK_USERS, {
     concurrency: 25,
->>>>>>> upstream/main
 })
 export class NodeBulkUsersQueueProcessor extends WorkerHost {
     private readonly logger = new Logger(NodeBulkUsersQueueProcessor.name);
@@ -47,8 +40,6 @@ export class NodeBulkUsersQueueProcessor extends WorkerHost {
                 return await this.handleDropUsersConnections(job);
             case NODES_JOB_NAMES.DROP_IPS_CONNECTIONS:
                 return await this.handleDropIpsConnections(job);
-<<<<<<< HEAD
-=======
             case NODES_JOB_NAMES.BLOCK_IPS:
                 return await this.handleBlockIps(job);
             case NODES_JOB_NAMES.UNBLOCK_IPS:
@@ -56,7 +47,6 @@ export class NodeBulkUsersQueueProcessor extends WorkerHost {
             case NODES_JOB_NAMES.RECREATE_TABLES:
                 return await this.handleRecreateTables(job);
 
->>>>>>> upstream/main
             default:
                 this.logger.warn(`Job "${job.name}" is not handled.`);
                 break;
@@ -140,8 +130,6 @@ export class NodeBulkUsersQueueProcessor extends WorkerHost {
             );
         }
     }
-<<<<<<< HEAD
-=======
 
     private async handleBlockIps(job: Job<IBlockIpsPayload>) {
         try {
@@ -196,5 +184,4 @@ export class NodeBulkUsersQueueProcessor extends WorkerHost {
             return;
         }
     }
->>>>>>> upstream/main
 }

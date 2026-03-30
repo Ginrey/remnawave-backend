@@ -5,15 +5,10 @@ import { Logger } from '@nestjs/common';
 import { AddUsersCommand as AddUsersToNodeCommandSdk } from '@remnawave/node-contract';
 
 import { getVlessFlowFromDbInbound } from '@common/utils/flow/get-vless-flow';
-<<<<<<< HEAD
-
-import { GetUsersWithResolvedInboundsQuery } from '@modules/users/queries/get-users-with-resolved-inbounds';
-=======
 import { isSS2022Method } from '@common/helpers/xray-config/ss-cipher';
 
 import { GetUsersWithResolvedInboundsQuery } from '@modules/users/queries/get-users-with-resolved-inbounds';
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
->>>>>>> upstream/main
 
 import { NodesQueuesService } from '@queue/_nodes';
 
@@ -79,21 +74,6 @@ export class AddUsersToNodeHandler implements IEventHandler<AddUsersToNodeEvent>
                             ssPassword,
                         },
                         inboundData: filteredInbounds.map((inbound) => {
-<<<<<<< HEAD
-                            switch (inbound.type) {
-                                case 'trojan':
-                                    return { type: inbound.type, tag: inbound.tag };
-                                case 'vless':
-                                    return {
-                                        type: inbound.type,
-                                        tag: inbound.tag,
-                                        flow: getVlessFlowFromDbInbound(inbound),
-                                    };
-                                case 'shadowsocks':
-                                    return { type: inbound.type, tag: inbound.tag };
-                                default:
-                                    throw new Error(`Unsupported inbound type: ${inbound.type}`);
-=======
                             const inboundType = this.resolveInboundType(inbound);
 
                             switch (inboundType) {
@@ -116,7 +96,6 @@ export class AddUsersToNodeHandler implements IEventHandler<AddUsersToNodeEvent>
                                     return { type: inboundType, tag: inbound.tag };
                                 default:
                                     throw new Error(`Unsupported inbound type: ${inboundType}`);
->>>>>>> upstream/main
                             }
                         }),
                     });
@@ -150,8 +129,6 @@ export class AddUsersToNodeHandler implements IEventHandler<AddUsersToNodeEvent>
             this.logger.error(`Error in Event AddUsersToNodeHandler: ${error}`);
         }
     }
-<<<<<<< HEAD
-=======
 
     private resolveInboundType(inbound: ConfigProfileInboundEntity): string {
         if (inbound.type === 'shadowsocks' && isSS2022Method(inbound.rawInbound)) {
@@ -159,5 +136,4 @@ export class AddUsersToNodeHandler implements IEventHandler<AddUsersToNodeEvent>
         }
         return inbound.type;
     }
->>>>>>> upstream/main
 }

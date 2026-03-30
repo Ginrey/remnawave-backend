@@ -2,55 +2,17 @@ import { EVENTS, TServiceEvents, TErrorsEvents } from '@libs/contracts/constants
 
 import { ServiceEvent, CustomErrorEvent } from '@integration-modules/notifications/interfaces';
 
-<<<<<<< HEAD
-export type ServiceEventsTemplate = (event: ServiceEvent) => string | null;
-=======
 import { IInlineKeyboard } from '@queue/notifications/telegram-bot-logger/interfaces/inline-keyboard.interface';
 
 export type ServiceEventsTemplate = (event: ServiceEvent) => {
     message: string;
     keyboard?: IInlineKeyboard[];
 } | null;
->>>>>>> upstream/main
 export type ErrorsEventsTemplate = (event: CustomErrorEvent) => string | null;
 
 const separator = '➖➖➖➖➖➖➖➖➖';
 
 export const SERVICE_EVENTS_TEMPLATES: Record<TServiceEvents, ServiceEventsTemplate> = {
-<<<<<<< HEAD
-    [EVENTS.SERVICE.PANEL_STARTED]: (e) => `
-🌊 <b>#panel_started</b>
-${separator}
-✅ Remnawave v${e.data.panelVersion} is up and running.
-
-🦋 Join community: @remnawave
-📚 Documentation: https://docs.rw
-
-⭐ <a href="https://github.com/remnawave/panel">Leave a star on GitHub</a>`,
-
-    [EVENTS.SERVICE.LOGIN_ATTEMPT_FAILED]: (e) => `
-🔑 ❌ <b>#login_attempt_failed</b>
-${separator}
-<b>👥</b> <code>${e.data.loginAttempt?.username}</code>
-<b>🔑 Password:</b> <code>${e.data.loginAttempt?.password}</code>
-<b>🌐 IP:</b> <code>${e.data.loginAttempt?.ip}</code>
-<b>💻 User agent:</b> <code>${e.data.loginAttempt?.userAgent}</code>
-<b>💬 Description:</b> <code>${e.data.loginAttempt?.description}</code>`,
-
-    [EVENTS.SERVICE.LOGIN_ATTEMPT_SUCCESS]: (e) => `
-🔑 ✅ <b>#login_attempt_success</b>
-${separator}
-<b>👥</b> <code>${e.data.loginAttempt?.username}</code>
-<b>🌐 IP:</b> <code>${e.data.loginAttempt?.ip}</code>
-<b>💻 User agent:</b> <code>${e.data.loginAttempt?.userAgent}</code>
-<b>💬 Description:</b> <code>${e.data.loginAttempt?.description}</code>`,
-
-    [EVENTS.SERVICE.SUBPAGE_CONFIG_CHANGED]: (e) => `
-📝  <b>#subpage_config_changed</b>
-${separator}
-<b>Action:</b> <code>${e.data.subpageConfig!.action}</code>
-<b>UUID:</b> <code>${e.data.subpageConfig!.uuid}</code>`,
-=======
     [EVENTS.SERVICE.PANEL_STARTED]: (e) => ({
         message: `
 <tg-emoji emoji-id='5418304400152096012'>🌊</tg-emoji> <b>#panel_started</b>
@@ -99,16 +61,11 @@ ${separator}
 <b>Action:</b> <code>${e.data.subpageConfig!.action}</code>
 <b>UUID:</b> <code>${e.data.subpageConfig!.uuid}</code>`,
     }),
->>>>>>> upstream/main
 };
 
 export const ERRORS_EVENTS_TEMPLATES: Record<TErrorsEvents, ErrorsEventsTemplate> = {
     [EVENTS.ERRORS.BANDWIDTH_USAGE_THRESHOLD_REACHED_MAX_NOTIFICATIONS]: (e) => `
-<<<<<<< HEAD
-📢 <b>#bandwidth_usage_threshold_reached_max_notifications</b>
-=======
 <tg-emoji emoji-id='5276089339967716971'>📢</tg-emoji> <b>#bandwidth_usage_threshold_reached_max_notifications</b>
->>>>>>> upstream/main
 ${separator}
 <b>Description:</b> <code>${e.data.description}</code>`,
 };

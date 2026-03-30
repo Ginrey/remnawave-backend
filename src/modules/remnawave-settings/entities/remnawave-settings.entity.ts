@@ -5,20 +5,12 @@ import {
     TOauth2Settings,
     TPasswordAuthSettings,
     TRemnawavePasskeySettings,
-<<<<<<< HEAD
-    TTgAuthSettings,
-=======
->>>>>>> upstream/main
 } from '@libs/contracts/models';
 
 export class RemnawaveSettingsEntity implements RemnawaveSettings {
     public id: number;
     public passkeySettings: TRemnawavePasskeySettings;
     public oauth2Settings: TOauth2Settings;
-<<<<<<< HEAD
-    public tgAuthSettings: TTgAuthSettings;
-=======
->>>>>>> upstream/main
     public passwordSettings: TPasswordAuthSettings;
     public brandingSettings: TBrandingSettings;
 

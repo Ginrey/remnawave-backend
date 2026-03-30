@@ -1,1 +1,0 @@
-{"version":3,"file":"node-bulk-actions.constant.js","sourceRoot":"","sources":["node-bulk-actions.constant.ts"],"names":[],"mappings":";;;AAAa,QAAA,kBAAkB,GAAG;IAC9B,MAAM,EAAE,QAAQ;IAChB,OAAO,EAAE,SAAS;IAClB,OAAO,EAAE,SAAS;IAClB,aAAa,EAAE,eAAe;CACxB,CAAC;AAGE,QAAA,yBAAyB,GAAG,MAAM,CAAC,MAAM,CAAC,0BAAkB,CAAC,CAAC;AAC9D,QAAA,uBAAuB,GAAG,MAAM,CAAC,IAAI,CAAC,0BAAkB,CAAwB,CAAC"}

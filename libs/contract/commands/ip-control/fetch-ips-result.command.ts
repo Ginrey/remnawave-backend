@@ -38,9 +38,6 @@ export namespace FetchIpsResultCommand {
                             nodeUuid: z.string().uuid(),
                             nodeName: z.string(),
                             countryCode: z.string(),
-<<<<<<< HEAD
-                            ips: z.array(z.string()),
-=======
                             ips: z.array(
                                 z.object({
                                     ip: z.string(),
@@ -53,7 +50,6 @@ export namespace FetchIpsResultCommand {
                                         .transform((str) => new Date(str)),
                                 }),
                             ),
->>>>>>> upstream/main
                         }),
                     ),
                 })

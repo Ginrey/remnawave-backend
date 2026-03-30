@@ -6,10 +6,6 @@ import { Logger } from '@nestjs/common';
 
 import { CountAndDeleteSubscriptionRequestHistoryCommand } from '@modules/user-subscription-request-history/commands/count-and-delete-subscription-request-history';
 import { CreateSubscriptionRequestHistoryCommand } from '@modules/user-subscription-request-history/commands/create-subscription-request-history';
-<<<<<<< HEAD
-import { UpdateSubLastOpenedAndUserAgentCommand } from '@modules/users/commands/update-sub-last-opened-and-user-agent';
-=======
->>>>>>> upstream/main
 import { UpsertHwidUserDeviceCommand } from '@modules/hwid-user-devices/commands/upsert-hwid-user-device';
 import { HwidUserDeviceEntity } from '@modules/hwid-user-devices/entities/hwid-user-device.entity';
 import { UserSubscriptionRequestHistoryEntity } from '@modules/user-subscription-request-history';
@@ -19,10 +15,6 @@ import { QUEUES_NAMES } from '@queue/queue.enum';
 import {
     IAddUserSubscriptionRequestHistoryPayload,
     ICheckAndUpsertHwidDevicePayload,
-<<<<<<< HEAD
-    IUpdateUserSubPayload,
-=======
->>>>>>> upstream/main
 } from '../interfaces';
 import { USERS_JOB_NAMES } from '../constants';
 
@@ -40,11 +32,6 @@ export class SubscriptionRequestsQueueProcessor extends WorkerHost {
         switch (job.name) {
             case USERS_JOB_NAMES.ADD_SUBSCRIPTION_REQUEST_RECORD:
                 return await this.handleAddRecordJob(job);
-<<<<<<< HEAD
-            case USERS_JOB_NAMES.UPDATE_USER_SUB:
-                return await this.handleUpdateUserSubJob(job);
-=======
->>>>>>> upstream/main
             case USERS_JOB_NAMES.UPSERT_HWID_DEVICE:
                 return await this.handleCheckAndUpsertHwidDeviceJob(job);
             default:
@@ -80,29 +67,6 @@ export class SubscriptionRequestsQueueProcessor extends WorkerHost {
         }
     }
 
-<<<<<<< HEAD
-    private async handleUpdateUserSubJob(job: Job<IUpdateUserSubPayload>) {
-        try {
-            const { userUuid, subLastOpenedAt, subLastUserAgent } = job.data;
-
-            await this.commandBus.execute(
-                new UpdateSubLastOpenedAndUserAgentCommand(
-                    userUuid,
-                    new Date(subLastOpenedAt),
-                    subLastUserAgent,
-                ),
-            );
-
-            return;
-        } catch (error) {
-            this.logger.error(`Error updating user sub: ${error}`);
-
-            return;
-        }
-    }
-
-=======
->>>>>>> upstream/main
     private async handleCheckAndUpsertHwidDeviceJob(job: Job<ICheckAndUpsertHwidDevicePayload>) {
         try {
             const { hwid, userUuid, platform, osVersion, deviceModel, userAgent } = job.data;

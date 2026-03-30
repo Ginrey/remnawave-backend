@@ -5,11 +5,6 @@
     "module": "NodeNext"
   },
   "include": [
-<<<<<<< HEAD
-    "seed/**/*",
-    "../libs/**/*"
-=======
     "seed/**/*"
->>>>>>> upstream/main
   ]
 }

@@ -1,9 +1,5 @@
 export * from './get-all-subscriptions.dto';
 export * from './get-connection-keys-by-uuid.dto';
-<<<<<<< HEAD
-export * from './get-outline-subscription.dto';
-=======
->>>>>>> upstream/main
 export * from './get-raw-subscription-by-short-uuid.dto';
 export * from './get-subscription-by-client-type.dto';
 export * from './get-subscription-by-short-uuid-protected.dto';

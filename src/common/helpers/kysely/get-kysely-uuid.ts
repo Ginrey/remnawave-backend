@@ -1,14 +1,8 @@
-<<<<<<< HEAD
-import { RawBuilder, sql } from 'kysely';
-=======
 import { RawBuilder, sql, type SelectQueryBuilder } from 'kysely';
->>>>>>> upstream/main
 
 export function getKyselyUuid(uuid: string): RawBuilder<string> {
     return sql`${uuid}::uuid`;
 }
-<<<<<<< HEAD
-=======
 
 export async function paginateQuery<DB, TB extends keyof DB, O>(
     query: SelectQueryBuilder<DB, TB, O>,
@@ -30,4 +24,3 @@ export async function paginateQuery<DB, TB extends keyof DB, O>(
 
     return { rows, count };
 }
->>>>>>> upstream/main

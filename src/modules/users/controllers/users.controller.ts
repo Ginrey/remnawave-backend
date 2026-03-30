@@ -33,10 +33,7 @@ import {
     GetUserByUuidCommand,
     GetUserSubscriptionRequestHistoryCommand,
     ResetUserTrafficCommand,
-<<<<<<< HEAD
-=======
     ResolveUserCommand,
->>>>>>> upstream/main
     RevokeUserSubscriptionCommand,
     UpdateUserCommand,
 } from '@libs/contracts/commands';
@@ -71,11 +68,8 @@ import {
     GetUserSubscriptionRequestHistoryResponseDto,
     ResetUserTrafficRequestDto,
     ResetUserTrafficResponseDto,
-<<<<<<< HEAD
-=======
     ResolveUserRequestBodyDto,
     ResolveUserResponseDto,
->>>>>>> upstream/main
     RevokeUserSubscriptionBodyDto,
     RevokeUserSubscriptionRequestDto,
     RevokeUserSubscriptionResponseDto,
@@ -189,10 +183,7 @@ export class UsersController {
     })
     async getAllUsers(@Query() query: GetAllUsersQueryDto): Promise<GetAllUsersResponseDto> {
         const { start, size, filters, filterModes, globalFilterMode, sorting } = query;
-<<<<<<< HEAD
-=======
 
->>>>>>> upstream/main
         const result = await this.usersService.getAllUsers({
             start,
             size,
@@ -574,8 +565,6 @@ export class UsersController {
             response: new GetFullUserResponseModel(data, this.subPublicDomain),
         };
     }
-<<<<<<< HEAD
-=======
 
     @ApiNotFoundResponse({
         description: 'User not found',
@@ -599,5 +588,4 @@ export class UsersController {
             response: data,
         };
     }
->>>>>>> upstream/main
 }

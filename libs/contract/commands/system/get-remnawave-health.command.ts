@@ -15,13 +15,6 @@ export namespace GetRemnawaveHealthCommand {
 
     export const ResponseSchema = z.object({
         response: z.object({
-<<<<<<< HEAD
-            pm2Stats: z.array(
-                z.object({
-                    name: z.string(),
-                    memory: z.string(),
-                    cpu: z.string(),
-=======
             runtimeMetrics: z.array(
                 z.object({
                     rss: z.number(),
@@ -37,7 +30,6 @@ export namespace GetRemnawaveHealthCommand {
                     timestamp: z.number(),
                     instanceId: z.string(),
                     instanceType: z.string(),
->>>>>>> upstream/main
                 }),
             ),
         }),

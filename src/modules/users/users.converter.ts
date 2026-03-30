@@ -20,11 +20,6 @@ const entityToModel = (entity: BaseUserEntity): Users => {
 
         trafficLimitBytes: entity.trafficLimitBytes,
         trafficLimitStrategy: entity.trafficLimitStrategy,
-<<<<<<< HEAD
-        subLastUserAgent: entity.subLastUserAgent,
-        subLastOpenedAt: entity.subLastOpenedAt,
-=======
->>>>>>> upstream/main
 
         expireAt: entity.expireAt,
         subRevokedAt: entity.subRevokedAt,

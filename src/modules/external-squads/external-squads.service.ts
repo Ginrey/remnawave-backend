@@ -1,20 +1,9 @@
-<<<<<<< HEAD
-import type { Cache } from 'cache-manager';
-
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Transactional } from '@nestjs-cls/transactional';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-
-=======
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 import { Transactional } from '@nestjs-cls/transactional';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { RawCacheService } from '@common/raw-cache';
->>>>>>> upstream/main
 import { fail, ok, TResult } from '@common/types';
 import { CACHE_KEYS, TSubscriptionTemplateType } from '@libs/contracts/constants';
 import { ERRORS } from '@libs/contracts/constants/errors';
@@ -38,11 +27,7 @@ export class ExternalSquadService {
     constructor(
         private readonly externalSquadRepository: ExternalSquadRepository,
         private readonly squadsQueueService: SquadsQueueService,
-<<<<<<< HEAD
-        @Inject(CACHE_MANAGER) private cacheManager: Cache,
-=======
         private readonly rawCacheService: RawCacheService,
->>>>>>> upstream/main
     ) {}
 
     public async getExternalSquads(): Promise<TResult<GetExternalSquadsResponseModel>> {
@@ -139,11 +124,7 @@ export class ExternalSquadService {
                 await this.syncExternalSquadTemplates(externalSquad, templates);
             }
 
-<<<<<<< HEAD
-            await this.cacheManager.del(CACHE_KEYS.EXTERNAL_SQUAD_SETTINGS(externalSquad.uuid));
-=======
             await this.rawCacheService.del(CACHE_KEYS.EXTERNAL_SQUAD_SETTINGS(externalSquad.uuid));
->>>>>>> upstream/main
 
             return await this.getExternalSquadByUuid(externalSquad.uuid);
         } catch (error) {
@@ -197,11 +178,7 @@ export class ExternalSquadService {
                 return fail(ERRORS.EXTERNAL_SQUAD_NOT_FOUND);
             }
 
-<<<<<<< HEAD
-            await this.cacheManager.del(CACHE_KEYS.EXTERNAL_SQUAD_SETTINGS(externalSquad.uuid));
-=======
             await this.rawCacheService.del(CACHE_KEYS.EXTERNAL_SQUAD_SETTINGS(externalSquad.uuid));
->>>>>>> upstream/main
 
             const deleted = await this.externalSquadRepository.deleteByUUID(uuid);
 

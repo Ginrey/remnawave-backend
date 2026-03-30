@@ -5,15 +5,9 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { SubscriptionTemplateService } from '@modules/subscription-template/subscription-template.service';
 
-<<<<<<< HEAD
-import { IFormattedHost } from './interfaces/formatted-hosts.interface';
-
-export interface NetworkConfig {
-=======
 import { ResolvedProxyConfig } from '../resolve-proxy/interfaces';
 
 interface NetworkConfig {
->>>>>>> upstream/main
     'early-data-header-name'?: string;
     'grpc-service-name'?: string;
     headers?: Record<string, string>;
@@ -21,25 +15,13 @@ interface NetworkConfig {
     host?: string[];
     'max-early-data'?: number;
     path?: string | string[];
-<<<<<<< HEAD
-    smux?: {
-        [key: string]: any;
-        enabled: boolean;
-    };
-=======
     smux?: { [key: string]: unknown; enabled: boolean };
->>>>>>> upstream/main
     'v2ray-http-upgrade'?: boolean;
     'v2ray-http-upgrade-fast-open'?: boolean;
 }
 
-<<<<<<< HEAD
-export interface ProxyNode {
-    [key: string]: any;
-=======
 interface ProxyNode {
     [key: string]: unknown;
->>>>>>> upstream/main
     alpn?: string[];
     alterId?: number;
     cipher?: string;
@@ -57,20 +39,13 @@ interface ProxyNode {
     uuid?: string;
 }
 
-<<<<<<< HEAD
-export interface ClashData {
-=======
 interface ClashData {
->>>>>>> upstream/main
     proxies: ProxyNode[];
     rules: string[];
 }
 
-<<<<<<< HEAD
-=======
 const UNSUPPORTED_TRANSPORTS = new Set(['hysteria', 'kcp', 'xhttp']);
 const UNSUPPORTED_PROTOCOLS = new Set(['hysteria', 'vless']);
->>>>>>> upstream/main
 @Injectable()
 export class ClashGeneratorService {
     private readonly logger = new Logger(ClashGeneratorService.name);
@@ -78,22 +53,6 @@ export class ClashGeneratorService {
     constructor(private readonly subscriptionTemplateService: SubscriptionTemplateService) {}
 
     public async generateConfig(
-<<<<<<< HEAD
-        hosts: IFormattedHost[],
-        overrideTemplateName?: string,
-    ): Promise<string> {
-        try {
-            const data: ClashData = {
-                proxies: [],
-                rules: [],
-            };
-
-            const proxyRemarks: string[] = [];
-
-            for (const host of hosts) {
-                if (host.serviceInfo.excludeFromSubscriptionTypes.includes('CLASH')) continue;
-                this.addProxy(host, data, proxyRemarks);
-=======
         hosts: ResolvedProxyConfig[],
         overrideTemplateName?: string,
     ): Promise<string> {
@@ -111,7 +70,6 @@ export class ClashGeneratorService {
 
                 data.proxies.push(node);
                 proxyRemarks.push(host.finalRemark);
->>>>>>> upstream/main
             }
 
             return await this.renderConfig(data, proxyRemarks, overrideTemplateName);
@@ -121,8 +79,6 @@ export class ClashGeneratorService {
         }
     }
 
-<<<<<<< HEAD
-=======
     private buildProxyNode(host: ResolvedProxyConfig): ProxyNode | null {
         const node: ProxyNode = {
             name: host.finalRemark,
@@ -303,25 +259,15 @@ export class ClashGeneratorService {
 
     // ── Template Rendering ───────────────────────────
 
->>>>>>> upstream/main
     private async renderConfig(
         data: ClashData,
         proxyRemarks: string[],
         overrideTemplateName?: string,
     ): Promise<string> {
-<<<<<<< HEAD
-        const yamlConfigDb = await this.subscriptionTemplateService.getCachedTemplateByType(
-            'CLASH',
-            overrideTemplateName,
-        );
-
-        const yamlConfig = yamlConfigDb as unknown as any;
-=======
         const yamlConfig = (await this.subscriptionTemplateService.getCachedTemplateByType(
             'CLASH',
             overrideTemplateName,
         )) as Record<string, unknown>;
->>>>>>> upstream/main
 
         try {
             if (!Array.isArray(yamlConfig.proxies)) {
@@ -332,57 +278,6 @@ export class ClashGeneratorService {
                 yamlConfig['proxy-groups'] = [];
             }
 
-<<<<<<< HEAD
-            for (const group of yamlConfig['proxy-groups']) {
-                if (!Array.isArray(group.proxies)) {
-                    group.proxies = [];
-                }
-            }
-
-            for (const proxy of data.proxies) {
-                yamlConfig.proxies.push(proxy);
-            }
-
-            for (const group of yamlConfig['proxy-groups']) {
-                let remnawaveCustom = undefined;
-
-                if (group?.remnawave) {
-                    remnawaveCustom = group.remnawave;
-
-                    delete group.remnawave;
-                }
-
-                if (remnawaveCustom && remnawaveCustom['include-proxies'] === false) {
-                    continue;
-                }
-
-                if (remnawaveCustom && remnawaveCustom['select-random-proxy'] === true) {
-                    const randomProxy =
-                        proxyRemarks[Math.floor(Math.random() * proxyRemarks.length)];
-
-                    if (randomProxy) {
-                        group.proxies.push(randomProxy);
-                    }
-
-                    continue;
-                }
-
-                if (remnawaveCustom && remnawaveCustom['shuffle-proxies-order'] === true) {
-                    const shuffledProxies = _.shuffle(proxyRemarks);
-
-                    for (const proxyRemark of shuffledProxies) {
-                        group.proxies.push(proxyRemark);
-                    }
-
-                    continue;
-                }
-
-                if (Array.isArray(group.proxies)) {
-                    for (const proxyRemark of proxyRemarks) {
-                        group.proxies.push(proxyRemark);
-                    }
-                }
-=======
             (yamlConfig.proxies as ProxyNode[]).push(...data.proxies);
 
             for (const group of yamlConfig['proxy-groups'] as Record<string, unknown>[]) {
@@ -393,7 +288,6 @@ export class ClashGeneratorService {
                 const remarks = this.resolveGroupRemarks(group, proxyRemarks);
 
                 (group.proxies as string[]).push(...remarks);
->>>>>>> upstream/main
             }
 
             return yaml.stringify(yamlConfig);
@@ -403,213 +297,6 @@ export class ClashGeneratorService {
         }
     }
 
-<<<<<<< HEAD
-    private addProxy(host: IFormattedHost, data: ClashData, proxyRemarks: string[]): void {
-        if (host.network === 'xhttp') {
-            return;
-        }
-
-        const proxyRemark = host.remark;
-
-        const node = this.makeNode({
-            name: host.remark,
-            remark: proxyRemark,
-            type: host.protocol,
-            server: host.address,
-            port: Number(host.port),
-            network: host.network || 'tcp',
-            tls: host.tls === 'tls',
-            sni: host.sni || '',
-            host: host.host,
-            path: host.path || '',
-            headers: '',
-            udp: true,
-            alpn: host.alpn,
-            clientFingerprint: host.fingerprint,
-            allowInsecure: host.allowInsecure,
-        });
-
-        switch (host.protocol) {
-            case 'trojan':
-                node.password = host.password.trojanPassword;
-                break;
-            case 'shadowsocks':
-                node.password = host.password.ssPassword;
-                node.cipher = 'chacha20-ietf-poly1305';
-                break;
-            default:
-                return;
-        }
-
-        data.proxies.push(node);
-        proxyRemarks.push(proxyRemark);
-    }
-
-    private makeNode(params: {
-        name: string;
-        remark: string;
-        type: string;
-        server: string;
-        port: number;
-        network: string;
-        tls: boolean;
-        sni: string;
-        host: string;
-        path: string;
-        headers: string;
-        udp: boolean;
-        alpn?: string;
-        clientFingerprint?: string;
-        allowInsecure?: boolean;
-    }): ProxyNode {
-        const {
-            server,
-            port,
-            remark,
-            tls,
-            sni,
-            alpn,
-            udp,
-            host,
-            path,
-            headers,
-            clientFingerprint,
-            allowInsecure,
-        } = params;
-        let { type, network } = params;
-
-        if (type === 'shadowsocks') {
-            type = 'ss';
-        }
-        if ((network === 'tcp' || network === 'raw') && headers === 'http') {
-            network = 'http';
-        }
-
-        let isHttpupgrade = false;
-        if (network === 'httpupgrade') {
-            network = 'ws';
-            isHttpupgrade = true;
-        }
-
-        const node: ProxyNode = {
-            name: remark,
-            type,
-            server,
-            port,
-            network,
-            udp,
-        };
-
-        let maxEarlyData: number | undefined;
-        let earlyDataHeaderName = '';
-
-        let pathValue = path;
-
-        if (path.includes('?ed=')) {
-            const [pathPart, edPart] = path.split('?ed=');
-            pathValue = pathPart;
-            const parsedEd = parseInt(edPart.split('/')[0]);
-            maxEarlyData = isNaN(parsedEd) ? undefined : parsedEd;
-            earlyDataHeaderName = 'Sec-WebSocket-Protocol';
-        }
-
-        if (tls) {
-            node.tls = true;
-            if (type === 'trojan') {
-                node.sni = sni;
-            } else {
-                node.servername = sni;
-            }
-            if (alpn) {
-                node.alpn = alpn.split(',');
-            }
-            if (allowInsecure) {
-                node['skip-cert-verify'] = allowInsecure;
-            }
-        }
-
-        let netOpts: NetworkConfig = {};
-
-        switch (network) {
-            case 'ws':
-                netOpts = this.wsConfig(
-                    pathValue,
-                    host,
-                    maxEarlyData,
-                    earlyDataHeaderName,
-                    isHttpupgrade,
-                );
-                break;
-            case 'tcp':
-            case 'raw':
-                netOpts = this.tcpConfig(pathValue, host);
-                break;
-            case 'grpc':
-                netOpts = this.grpcConfig(pathValue);
-                break;
-        }
-
-        if (Object.keys(netOpts).length > 0) {
-            node[`${network}-opts`] = netOpts;
-        }
-
-        node['client-fingerprint'] = clientFingerprint || 'chrome';
-
-        return node;
-    }
-
-    private wsConfig(
-        path = '',
-        host = '',
-        maxEarlyData?: number,
-        earlyDataHeaderName = '',
-        isHttpupgrade = false,
-    ): NetworkConfig {
-        const config: NetworkConfig = {};
-
-        if (path) {
-            config.path = path;
-        }
-
-        if (host) {
-            config.headers = { Host: host };
-        } else {
-            config.headers = {};
-        }
-
-        if (maxEarlyData !== undefined) {
-            config['max-early-data'] = maxEarlyData;
-        }
-
-        if (earlyDataHeaderName) {
-            config['early-data-header-name'] = earlyDataHeaderName;
-        }
-
-        if (isHttpupgrade) {
-            config['v2ray-http-upgrade'] = true;
-            config['v2ray-http-upgrade-fast-open'] = true;
-        }
-
-        return config;
-    }
-
-    private tcpConfig(path = '', host = ''): NetworkConfig {
-        const config: NetworkConfig = {};
-
-        if (!path && !host) {
-            return config;
-        }
-
-        return config;
-    }
-
-    private grpcConfig(path = ''): NetworkConfig {
-        const config: NetworkConfig = {};
-
-        config['grpc-service-name'] = path;
-
-        return config;
-=======
     private resolveGroupRemarks(group: Record<string, unknown>, proxyRemarks: string[]): string[] {
         const remnawaveCustom = group.remnawave as Record<string, unknown> | undefined;
 
@@ -631,6 +318,5 @@ export class ClashGeneratorService {
         }
 
         return [...proxyRemarks];
->>>>>>> upstream/main
     }
 }

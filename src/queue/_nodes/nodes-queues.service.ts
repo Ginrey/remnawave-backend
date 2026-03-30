@@ -14,24 +14,18 @@ import {
     IDropUsersConnectionsPayload,
     IGetIpsListProgress,
     IGetIpsListResult,
-<<<<<<< HEAD
-=======
     IGetUsersIpsListResult,
->>>>>>> upstream/main
     INodeHealthCheckPayload,
     IRecordNodeUsagePayload,
     IRecordUserUsagePayload,
     IRemoveUserFromNodePayload,
     IRemoveUsersFromNodePayload,
 } from './interfaces';
-<<<<<<< HEAD
-=======
 import {
     IBlockIpsPayload,
     IUnblockIpsPayload,
     IRecreateTablesPayload,
 } from './interfaces/executor.payload.interface';
->>>>>>> upstream/main
 import { NODES_JOB_NAMES } from './constants/nodes-job-name.constant';
 
 @Injectable()
@@ -52,10 +46,7 @@ export class NodesQueuesService implements OnApplicationBootstrap {
         private readonly recordNodeUsageQueue: Queue,
         @InjectQueue(QUEUES_NAMES.NODES.BULK_USERS) private readonly nodeBulkUsersQueue: Queue,
         @InjectQueue(QUEUES_NAMES.NODES.QUERY_NODES) private readonly queryNodesQueue: Queue,
-<<<<<<< HEAD
-=======
         @InjectQueue(QUEUES_NAMES.NODES.PLUGINS) private readonly nodePluginsQueue: Queue,
->>>>>>> upstream/main
     ) {}
 
     get queues() {
@@ -70,10 +61,7 @@ export class NodesQueuesService implements OnApplicationBootstrap {
             recordNodeUsage: this.recordNodeUsageQueue,
             nodeBulkUsers: this.nodeBulkUsersQueue,
             queryNodes: this.queryNodesQueue,
-<<<<<<< HEAD
-=======
             nodePlugins: this.nodePluginsQueue,
->>>>>>> upstream/main
         } as const;
     }
 
@@ -277,8 +265,6 @@ export class NodesQueuesService implements OnApplicationBootstrap {
         };
     }
 
-<<<<<<< HEAD
-=======
     public async queryUsersIpsList(payload: {
         nodeUuid: string;
     }): Promise<{ jobId: string } | null> {
@@ -320,7 +306,6 @@ export class NodesQueuesService implements OnApplicationBootstrap {
         };
     }
 
->>>>>>> upstream/main
     public async dropUsersConnections(payload: IDropUsersConnectionsPayload) {
         return this.nodeBulkUsersQueue.add(NODES_JOB_NAMES.DROP_USERS_CONNECTIONS, payload);
     }
@@ -328,8 +313,6 @@ export class NodesQueuesService implements OnApplicationBootstrap {
     public async dropIpsConnections(payload: IDropIpsConnectionsPayload) {
         return this.nodeBulkUsersQueue.add(NODES_JOB_NAMES.DROP_IPS_CONNECTIONS, payload);
     }
-<<<<<<< HEAD
-=======
 
     public async blockIps(payload: IBlockIpsPayload) {
         return this.nodeBulkUsersQueue.add(NODES_JOB_NAMES.BLOCK_IPS, payload);
@@ -363,5 +346,4 @@ export class NodesQueuesService implements OnApplicationBootstrap {
             })),
         );
     }
->>>>>>> upstream/main
 }

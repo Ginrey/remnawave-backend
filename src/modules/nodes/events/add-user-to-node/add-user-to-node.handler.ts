@@ -2,12 +2,6 @@ import { IEventHandler, QueryBus } from '@nestjs/cqrs';
 import { EventsHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
 
-<<<<<<< HEAD
-import { AddUserCommand as AddUserToNodeCommandSdk, CipherType } from '@remnawave/node-contract';
-
-import { getVlessFlowFromDbInbound } from '@common/utils/flow/get-vless-flow';
-
-=======
 import { AddUserCommand as AddUserToNodeCommandSdk } from '@remnawave/node-contract';
 
 import {
@@ -18,7 +12,6 @@ import {
 import { getVlessFlowFromDbInbound } from '@common/utils/flow/get-vless-flow';
 
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities/config-profile-inbound.entity';
->>>>>>> upstream/main
 import { GetUserWithResolvedInboundsQuery } from '@modules/users/queries/get-user-with-resolved-inbounds';
 
 import { NodesQueuesService } from '@queue/_nodes';
@@ -64,11 +57,7 @@ export class AddUserToNodeHandler implements IEventHandler<AddUserToNodeEvent> {
                 },
 
                 data: inbounds.map((inbound) => {
-<<<<<<< HEAD
-                    const inboundType = inbound.type;
-=======
                     const inboundType = this.resolveInboundType(inbound);
->>>>>>> upstream/main
 
                     switch (inboundType) {
                         case 'trojan':
@@ -92,11 +81,6 @@ export class AddUserToNodeHandler implements IEventHandler<AddUserToNodeEvent> {
                                 username: tId.toString(),
                                 password: ssPassword,
                                 tag: inbound.tag,
-<<<<<<< HEAD
-                                cipherType: CipherType.CHACHA20_POLY1305,
-                                ivCheck: false,
-                            };
-=======
                                 cipherType: getCipherTypeFromString(inbound.rawInbound),
                                 ivCheck: false,
                             };
@@ -114,7 +98,6 @@ export class AddUserToNodeHandler implements IEventHandler<AddUserToNodeEvent> {
                                 password: vlessUuid,
                                 tag: inbound.tag,
                             };
->>>>>>> upstream/main
                         default:
                             throw new Error(`Unsupported inbound type: ${inboundType}`);
                     }
@@ -164,8 +147,6 @@ export class AddUserToNodeHandler implements IEventHandler<AddUserToNodeEvent> {
             this.logger.error(`Error in Event AddUserToNodeHandler: ${error}`);
         }
     }
-<<<<<<< HEAD
-=======
 
     private resolveInboundType(inbound: ConfigProfileInboundEntity): string {
         if (inbound.type === 'shadowsocks' && isSS2022Method(inbound.rawInbound)) {
@@ -173,5 +154,4 @@ export class AddUserToNodeHandler implements IEventHandler<AddUserToNodeEvent> {
         }
         return inbound.type;
     }
->>>>>>> upstream/main
 }

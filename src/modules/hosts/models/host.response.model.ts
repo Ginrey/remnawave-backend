@@ -19,11 +19,7 @@ export class HostResponseModel {
     public xHttpExtraParams: null | object;
     public muxParams: null | object;
     public sockoptParams: null | object;
-<<<<<<< HEAD
-
-=======
     public finalMask: null | object;
->>>>>>> upstream/main
     public serverDescription: null | string;
     public allowInsecure: boolean;
 
@@ -67,10 +63,7 @@ export class HostResponseModel {
         this.xHttpExtraParams = data.xHttpExtraParams;
         this.muxParams = data.muxParams;
         this.sockoptParams = data.sockoptParams;
-<<<<<<< HEAD
-=======
         this.finalMask = data.finalMask;
->>>>>>> upstream/main
         this.serverDescription = data.serverDescription;
         this.allowInsecure = data.allowInsecure;
         this.shuffleHost = data.shuffleHost;

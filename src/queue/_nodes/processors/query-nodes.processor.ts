@@ -8,10 +8,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { AxiosService } from '@common/axios/axios.service';
 
 import { FindNodesByCriteriaQuery } from '@modules/nodes/queries/find-nodes-by-criteria';
-<<<<<<< HEAD
-=======
 import { GetNodeByUuidQuery } from '@modules/nodes/queries/get-node-by-uuid';
->>>>>>> upstream/main
 import { NodesEntity } from '@modules/nodes';
 
 import { QUEUES_NAMES } from '../../queue.enum';
@@ -42,11 +39,8 @@ export class QueryNodesQueueProcessor extends WorkerHost {
         switch (job.name) {
             case NODES_JOB_NAMES.FETCH_IPS_LIST:
                 return await this.handleFetchIpsList(job);
-<<<<<<< HEAD
-=======
             case NODES_JOB_NAMES.FETCH_USERS_IPS_LIST:
                 return await this.handleFetchUsersIpsList(job);
->>>>>>> upstream/main
             default:
                 this.logger.warn(`Job "${job.name}" is not handled.`);
                 break;
@@ -97,8 +91,6 @@ export class QueryNodesQueueProcessor extends WorkerHost {
                         return;
                     }
 
-<<<<<<< HEAD
-=======
                     const ips = ipsListResponse.response.response.ips;
                     let formattedIps: { ip: string; lastSeen: Date }[] = [];
 
@@ -116,16 +108,11 @@ export class QueryNodesQueueProcessor extends WorkerHost {
                             );
                     }
 
->>>>>>> upstream/main
                     return {
                         nodeUuid: node.uuid,
                         nodeName: node.name,
                         countryCode: node.countryCode,
-<<<<<<< HEAD
-                        ips: ipsListResponse.response.response.ips,
-=======
                         ips: formattedIps,
->>>>>>> upstream/main
                     };
                 } catch (error) {
                     this.logger.warn(`Failed to fetch IPs from node ${node.uuid}: ${error}`);
@@ -159,8 +146,6 @@ export class QueryNodesQueueProcessor extends WorkerHost {
             };
         }
     }
-<<<<<<< HEAD
-=======
 
     private async handleFetchUsersIpsList(job: Job<{ nodeUuid: string }>) {
         try {
@@ -214,5 +199,4 @@ export class QueryNodesQueueProcessor extends WorkerHost {
             };
         }
     }
->>>>>>> upstream/main
 }

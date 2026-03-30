@@ -1,8 +1,5 @@
 import { NestjsGrammyModule } from '@kastov/grammy-nestjs';
-<<<<<<< HEAD
-=======
 import { ProxyAgent } from 'proxy-agent';
->>>>>>> upstream/main
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Module } from '@nestjs/common';
@@ -17,12 +14,6 @@ import { TELEGRAM_BOT_EVENTS } from './events';
         NestjsGrammyModule.forRootAsync({
             imports: [ConfigModule],
             botName: BOT_NAME,
-<<<<<<< HEAD
-            useFactory: async (configService: ConfigService) => ({
-                token: configService.getOrThrow<string>('TELEGRAM_BOT_TOKEN'),
-                disableUpdates: true,
-            }),
-=======
             useFactory: async (configService: ConfigService) => {
                 let agent: ProxyAgent | undefined = undefined;
 
@@ -50,7 +41,6 @@ import { TELEGRAM_BOT_EVENTS } from './events';
                     },
                 };
             },
->>>>>>> upstream/main
 
             inject: [ConfigService],
         }),

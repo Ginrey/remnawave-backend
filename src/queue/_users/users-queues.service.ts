@@ -14,15 +14,9 @@ import { QUEUES_NAMES } from '@queue/queue.enum';
 import {
     IAddUserSubscriptionRequestHistoryPayload,
     ICheckAndUpsertHwidDevicePayload,
-<<<<<<< HEAD
-    IFireUserEventJobData,
-    IFireUserEventPayload,
-    IUpdateUserSubPayload,
-=======
     IFireTorrentBlockerEventJobData,
     IFireUserEventJobData,
     IFireUserEventPayload,
->>>>>>> upstream/main
 } from './interfaces';
 import { USERS_JOB_NAMES } from './constants/users-job-name.constant';
 
@@ -160,24 +154,6 @@ export class UsersQueuesService implements OnApplicationBootstrap {
         );
     }
 
-<<<<<<< HEAD
-    public async updateUserSub(payload: IUpdateUserSubPayload) {
-        return this.subscriptionRequestsQueue.add(USERS_JOB_NAMES.UPDATE_USER_SUB, payload, {
-            removeOnComplete: {
-                age: 3_600,
-                count: 500,
-            },
-            removeOnFail: {
-                age: 24 * 3_600,
-            },
-            deduplication: {
-                id: md5(`${payload.userUuid}_USS`),
-            },
-        });
-    }
-
-=======
->>>>>>> upstream/main
     public async checkAndUpsertHwidDevice(payload: ICheckAndUpsertHwidDevicePayload) {
         return this.subscriptionRequestsQueue.add(USERS_JOB_NAMES.UPSERT_HWID_DEVICE, payload, {
             removeOnComplete: {
@@ -201,8 +177,6 @@ export class UsersQueuesService implements OnApplicationBootstrap {
         return this.resetUserTrafficQueue.add(USERS_JOB_NAMES.RESET_MONTHLY_USER_TRAFFIC, {});
     }
 
-<<<<<<< HEAD
-=======
     public async resetMonthlyRollingUserTraffic() {
         return this.resetUserTrafficQueue.add(
             USERS_JOB_NAMES.RESET_MONTHLY_ROLLING_USER_TRAFFIC,
@@ -210,7 +184,6 @@ export class UsersQueuesService implements OnApplicationBootstrap {
         );
     }
 
->>>>>>> upstream/main
     public async resetWeeklyUserTraffic() {
         return this.resetUserTrafficQueue.add(USERS_JOB_NAMES.RESET_WEEKLY_USER_TRAFFIC, {});
     }
@@ -289,13 +262,10 @@ export class UsersQueuesService implements OnApplicationBootstrap {
         }
     }
 
-<<<<<<< HEAD
-=======
     public async fireTorrentBlockerEvent(payload: IFireTorrentBlockerEventJobData) {
         return this.userEventsQueue.add(USERS_JOB_NAMES.FIRE_TORRENT_BLOCKER_EVENT, payload);
     }
 
->>>>>>> upstream/main
     public async bulkUpdateAllUsers(payload: BulkAllUpdateUsersRequestDto) {
         return this.serialUsersOperationsQueue.add(USERS_JOB_NAMES.BULK_UPDATE_ALL_USERS, {
             dto: payload,

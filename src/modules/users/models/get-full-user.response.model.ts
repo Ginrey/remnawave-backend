@@ -31,11 +31,6 @@ export class GetFullUserResponseModel {
 
     public readonly lastTriggeredThreshold: number;
     public readonly subRevokedAt: Date | null;
-<<<<<<< HEAD
-    public readonly subLastUserAgent: null | string;
-    public readonly subLastOpenedAt: Date | null;
-=======
->>>>>>> upstream/main
     public readonly lastTrafficResetAt: Date | null;
 
     public readonly createdAt: Date;
@@ -81,22 +76,12 @@ export class GetFullUserResponseModel {
 
         this.lastTriggeredThreshold = entity.lastTriggeredThreshold;
         this.subRevokedAt = entity.subRevokedAt;
-<<<<<<< HEAD
-        this.subLastUserAgent = entity.subLastUserAgent;
-        this.subLastOpenedAt = entity.subLastOpenedAt;
-=======
->>>>>>> upstream/main
         this.lastTrafficResetAt = entity.lastTrafficResetAt;
 
         this.createdAt = entity.createdAt;
         this.updatedAt = entity.updatedAt;
 
-<<<<<<< HEAD
-        const protocol = subPublicDomain.includes('://') ? '' : 'https://';
-        this.subscriptionUrl = `${protocol}${subPublicDomain}/${entity.shortUuid}`;
-=======
         this.subscriptionUrl = `https://${subPublicDomain}/${entity.shortUuid}`;
->>>>>>> upstream/main
         this.activeInternalSquads = entity.activeInternalSquads;
 
         this.userTraffic = {
@@ -106,10 +91,7 @@ export class GetFullUserResponseModel {
             lastConnectedNodeUuid: entity.userTraffic.lastConnectedNodeUuid,
             firstConnectedAt: entity.userTraffic.firstConnectedAt,
         };
-<<<<<<< HEAD
-=======
 
         this.subscriptionUrl = `https://${subPublicDomain}/${entity.shortUuid}`;
->>>>>>> upstream/main
     }
 }

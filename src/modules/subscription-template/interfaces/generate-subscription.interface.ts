@@ -8,11 +8,6 @@ export interface IGenerateSubscription {
     user: UserEntity;
     hosts: HostWithRawInbound[];
     hostsOverrides?: ExternalSquadEntity['hostOverrides'];
-<<<<<<< HEAD
-    /** Raw proxy lines from external import sources, to be appended verbatim to XRAY_BASE64 output */
-    extraRawLines?: string[];
-=======
->>>>>>> upstream/main
     fallbackOptions?: {
         showHwidMaxDeviceRemarks?: boolean;
         showHwidNotSupportedRemarks?: boolean;

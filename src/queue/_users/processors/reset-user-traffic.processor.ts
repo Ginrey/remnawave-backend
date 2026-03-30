@@ -5,21 +5,14 @@ import { Logger, Scope } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 
 import { formatExecutionTime, getTime } from '@common/utils/get-elapsed-time';
-<<<<<<< HEAD
-import { throttleQueue } from '@common/utils/throttle-queue.util';
-=======
 import { throttleQueues } from '@common/utils/throttle-queue.util';
->>>>>>> upstream/main
 import { RESET_PERIODS, TResetPeriods } from '@libs/contracts/constants';
 import { EVENTS } from '@libs/contracts/constants/events/events';
 
 import { BatchResetLimitedUsersTrafficCommand } from '@modules/users/commands/batch-reset-limited-users-traffic';
 import { BatchResetUserTrafficCommand } from '@modules/users/commands/batch-reset-user-traffic';
 
-<<<<<<< HEAD
-=======
 import { PushFromRedisQueueService } from '@queue/push-from-redis/push-from-redis.service';
->>>>>>> upstream/main
 import { NodesQueuesService } from '@queue/_nodes';
 import { QUEUES_NAMES } from '@queue/queue.enum';
 
@@ -43,22 +36,14 @@ export class ResetUserTrafficQueueProcessor extends WorkerHost {
 
         private readonly nodesQueuesService: NodesQueuesService,
         private readonly usersQueuesService: UsersQueuesService,
-<<<<<<< HEAD
-=======
         private readonly pushFromRedisQueueService: PushFromRedisQueueService,
->>>>>>> upstream/main
     ) {
         super();
     }
 
     async process(job: Job) {
-<<<<<<< HEAD
-        const activateQueue = await throttleQueue(
-            this.usersQueuesService.queues.updateUsersUsage,
-=======
         const activateQueues = await throttleQueues(
             [this.usersQueuesService.queues.updateUsersUsage, this.pushFromRedisQueueService.queue],
->>>>>>> upstream/main
             this.logger,
         );
 
@@ -68,11 +53,8 @@ export class ResetUserTrafficQueueProcessor extends WorkerHost {
                     return await this.handleResetUserTraffic(job, RESET_PERIODS.DAY);
                 case USERS_JOB_NAMES.RESET_MONTHLY_USER_TRAFFIC:
                     return await this.handleResetUserTraffic(job, RESET_PERIODS.MONTH);
-<<<<<<< HEAD
-=======
                 case USERS_JOB_NAMES.RESET_MONTHLY_ROLLING_USER_TRAFFIC:
                     return await this.handleResetUserTraffic(job, RESET_PERIODS.MONTH_ROLLING);
->>>>>>> upstream/main
                 case USERS_JOB_NAMES.RESET_WEEKLY_USER_TRAFFIC:
                     return await this.handleResetUserTraffic(job, RESET_PERIODS.WEEK);
                 case USERS_JOB_NAMES.RESET_NO_RESET_USER_TRAFFIC:
@@ -86,11 +68,7 @@ export class ResetUserTrafficQueueProcessor extends WorkerHost {
         } catch (error) {
             this.logger.error(`Error handling "${job.name}" job: ${error}`);
         } finally {
-<<<<<<< HEAD
-            await activateQueue();
-=======
             await activateQueues();
->>>>>>> upstream/main
         }
     }
 
@@ -145,10 +123,7 @@ export class ResetUserTrafficQueueProcessor extends WorkerHost {
 
             await this.handleResetUserTraffic(job, RESET_PERIODS.NO_RESET);
             await this.handleResetUserTraffic(job, RESET_PERIODS.DAY);
-<<<<<<< HEAD
-=======
             await this.handleResetUserTraffic(job, RESET_PERIODS.MONTH_ROLLING);
->>>>>>> upstream/main
             await this.handleResetUserTraffic(job, RESET_PERIODS.WEEK);
             await this.handleResetUserTraffic(job, RESET_PERIODS.MONTH);
 

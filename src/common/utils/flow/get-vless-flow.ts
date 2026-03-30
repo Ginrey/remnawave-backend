@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-import { VLessSettings } from '@common/helpers/xray-config/interfaces/protocol-settings.config';
-import { InboundObject } from '@common/helpers/xray-config/interfaces/protocols.config';
-=======
 import { InboundConfig } from 'xray-typed';
->>>>>>> upstream/main
 
 import { ConfigProfileInboundEntity } from '@modules/config-profiles/entities';
 
@@ -25,15 +20,6 @@ export const hasVlessSettingsWithFlow = (obj: unknown): obj is VlessSettingsWith
     );
 };
 
-<<<<<<< HEAD
-export const getVlessFlow = (inbound: InboundObject): 'xtls-rprx-vision' | '' | undefined => {
-    if (inbound.protocol !== 'vless') {
-        return undefined;
-    }
-
-    if ((inbound.settings as VLessSettings).flow !== undefined) {
-        if ((inbound.settings as VLessSettings).flow === 'xtls-rprx-vision') {
-=======
 export const getVlessFlow = (inbound: InboundConfig): 'xtls-rprx-vision' | '' => {
     if (inbound.protocol !== 'vless' || !inbound.settings) {
         return '';
@@ -41,7 +27,6 @@ export const getVlessFlow = (inbound: InboundConfig): 'xtls-rprx-vision' | '' =>
 
     if (inbound.settings.flow !== undefined) {
         if (inbound.settings.flow === 'xtls-rprx-vision') {
->>>>>>> upstream/main
             return 'xtls-rprx-vision';
         } else {
             return '';
@@ -51,11 +36,7 @@ export const getVlessFlow = (inbound: InboundConfig): 'xtls-rprx-vision' | '' =>
     if (inbound.streamSettings) {
         if (
             ['reality', 'tls'].includes(inbound.streamSettings.security || '') &&
-<<<<<<< HEAD
-            ['raw', 'tcp'].includes(inbound.streamSettings.network)
-=======
             ['raw', 'tcp'].includes(inbound.streamSettings.network || '')
->>>>>>> upstream/main
         ) {
             return 'xtls-rprx-vision';
         }

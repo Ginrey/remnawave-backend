@@ -468,14 +468,6 @@ export const ERRORS = {
         message: 'Get nodes user usage by range error',
         httpCode: 500,
     },
-<<<<<<< HEAD
-    GET_NODES_REALTIME_USAGE_ERROR: {
-        code: 'A095',
-        message: 'Get nodes realtime usage error',
-        httpCode: 500,
-    },
-=======
->>>>>>> upstream/main
     CREATE_HWID_USER_DEVICE_ERROR: {
         code: 'A096',
         message: 'Create hwid user device error',
@@ -1107,46 +1099,6 @@ export const ERRORS = {
         message: 'Connected nodes not found',
         httpCode: 404,
     },
-<<<<<<< HEAD
-    GET_SUBSCRIPTION_IMPORT_SOURCES_ERROR: {
-        code: 'A220',
-        message: 'Get subscription import sources error',
-        httpCode: 500,
-    },
-    GET_SUBSCRIPTION_IMPORT_SOURCE_BY_UUID_ERROR: {
-        code: 'A221',
-        message: 'Get subscription import source by UUID error',
-        httpCode: 500,
-    },
-    SUBSCRIPTION_IMPORT_SOURCE_NOT_FOUND: {
-        code: 'A222',
-        message: 'Subscription import source not found',
-        httpCode: 404,
-    },
-    CREATE_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
-        code: 'A223',
-        message: 'Create subscription import source error',
-        httpCode: 500,
-    },
-    SUBSCRIPTION_IMPORT_SOURCE_NAME_ALREADY_EXISTS: {
-        code: 'A224',
-        message: 'Subscription import source name already exists',
-        httpCode: 400,
-    },
-    UPDATE_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
-        code: 'A225',
-        message: 'Update subscription import source error',
-        httpCode: 500,
-    },
-    DELETE_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
-        code: 'A226',
-        message: 'Delete subscription import source error',
-        httpCode: 500,
-    },
-    FETCH_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
-        code: 'A227',
-        message: 'Fetch subscription import source error',
-=======
     GET_ALL_NODE_PLUGINS_ERROR: {
         code: 'A219',
         message: 'Get all node plugins error',
@@ -1190,7 +1142,46 @@ export const ERRORS = {
     GET_TORRENT_BLOCKER_REPORTS_ERROR: {
         code: 'A227',
         message: 'Get torrent blocker reports error',
->>>>>>> upstream/main
+        httpCode: 500,
+    },
+    GET_SUBSCRIPTION_IMPORT_SOURCES_ERROR: {
+        code: 'A228',
+        message: 'Get subscription import sources error',
+        httpCode: 500,
+    },
+    GET_SUBSCRIPTION_IMPORT_SOURCE_BY_UUID_ERROR: {
+        code: 'A229',
+        message: 'Get subscription import source by UUID error',
+        httpCode: 500,
+    },
+    SUBSCRIPTION_IMPORT_SOURCE_NOT_FOUND: {
+        code: 'A230',
+        message: 'Subscription import source not found',
+        httpCode: 404,
+    },
+    CREATE_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
+        code: 'A231',
+        message: 'Create subscription import source error',
+        httpCode: 500,
+    },
+    SUBSCRIPTION_IMPORT_SOURCE_NAME_ALREADY_EXISTS: {
+        code: 'A232',
+        message: 'Subscription import source name already exists',
+        httpCode: 400,
+    },
+    UPDATE_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
+        code: 'A233',
+        message: 'Update subscription import source error',
+        httpCode: 500,
+    },
+    DELETE_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
+        code: 'A234',
+        message: 'Delete subscription import source error',
+        httpCode: 500,
+    },
+    FETCH_SUBSCRIPTION_IMPORT_SOURCE_ERROR: {
+        code: 'A235',
+        message: 'Fetch subscription import source error',
         httpCode: 500,
     },
 } as const;

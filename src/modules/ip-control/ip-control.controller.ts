@@ -17,11 +17,8 @@ import {
     DropConnectionsCommand,
     FetchIpsCommand,
     FetchIpsResultCommand,
-<<<<<<< HEAD
-=======
     FetchUsersIpsCommand,
     FetchUsersIpsResultCommand,
->>>>>>> upstream/main
 } from '@libs/contracts/commands';
 import { CONTROLLERS_INFO, IP_CONTROL_CONTROLLER } from '@libs/contracts/api';
 import { ROLE } from '@libs/contracts/constants';
@@ -33,13 +30,10 @@ import {
     FetchIpsResultResponseDto,
     DropConnectionsRequestDto,
     DropConnectionsResponseDto,
-<<<<<<< HEAD
-=======
     FetchUsersIpsResponseDto,
     FetchUsersIpsRequestDto,
     FetchUsersIpsResultRequestDto,
     FetchUsersIpsResultResponseDto,
->>>>>>> upstream/main
 } from './dtos';
 import { IpControlService } from './ip-control.service';
 
@@ -118,8 +112,6 @@ export class IpControlController {
             response: data,
         };
     }
-<<<<<<< HEAD
-=======
 
     @ApiNotFoundResponse({
         description: 'Node not found',
@@ -166,5 +158,4 @@ export class IpControlController {
             response: data,
         };
     }
->>>>>>> upstream/main
 }
