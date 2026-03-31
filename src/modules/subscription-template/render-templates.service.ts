@@ -30,7 +30,7 @@ export class RenderTemplatesService {
         contentType: string;
         subscription: string;
     }> {
-        const { srrContext, user, hosts, hostsOverrides, fallbackOptions } = params;
+        const { srrContext, user, hosts, hostsOverrides, extraRawLines, fallbackOptions } = params;
 
         const formattedHosts = await this.resolveProxyConfigService.resolveProxyConfig({
             subscriptionSettings: srrContext.subscriptionSettings,
@@ -47,6 +47,7 @@ export class RenderTemplatesService {
                         formattedHosts,
                         SUBSCRIPTION_CONFIG_TYPES['XRAY_BASE64'].isBase64,
                         srrContext.isExtendedClient,
+                        extraRawLines,
                     ),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_BASE64'].CONTENT_TYPE,
                 };

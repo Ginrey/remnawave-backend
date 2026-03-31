@@ -17,10 +17,11 @@ export class XrayGeneratorService {
         hosts: ResolvedProxyConfig[],
         isBase64: boolean,
         isHapp: boolean,
+        extraRawLines: string[] = [],
     ): Promise<string> {
         try {
             const links = this.generateLinks(hosts, isHapp);
-            const joined = links.join('\n');
+            const joined = [...links, ...extraRawLines].join('\n');
             return isBase64 ? Buffer.from(joined).toString('base64') : joined;
         } catch (error) {
             this.logger.error('Error generating xray config:', error);
