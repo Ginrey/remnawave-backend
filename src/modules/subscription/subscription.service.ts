@@ -253,10 +253,12 @@ export class SubscriptionService {
                 srrContext.ip,
             );
 
-            const extraRawLines =
-                srrContext.matchedResponseType === 'XRAY_BASE64'
-                    ? await this.importSourceService.getRawLinesForUser(user.response.tId)
-                    : [];
+            const extraRawLines = this.shouldIncludeImportSubscriptions(
+                user.response,
+                srrContext.matchedResponseType,
+            )
+                ? await this.importSourceService.getRawLinesForUser(user.response.tId)
+                : [];
 
             const subscription = await this.renderTemplatesService.generateSubscription({
                 srrContext,
@@ -520,6 +522,19 @@ export class SubscriptionService {
             ssConfLinks,
             subscriptionUrl: this.resolveSubscriptionUrl(user.shortUuid),
         });
+    }
+
+    private shouldIncludeImportSubscriptions(
+        user: UserEntity,
+        matchedResponseType: ISRRContext['matchedResponseType'],
+    ): boolean {
+        if (matchedResponseType !== 'XRAY_BASE64') {
+            return false;
+        }
+
+        return (
+            user.status !== USERS_STATUS.EXPIRED && dayjs(user.expireAt).isAfter(dayjs())
+        );
     }
 
     public async getAllSubscriptions(query: GetAllSubscriptionsQueryDto): Promise<
