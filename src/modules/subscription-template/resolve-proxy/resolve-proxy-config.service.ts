@@ -9,6 +9,7 @@ import {
     TCPConfig,
     WebSocketConfig,
 } from 'xray-typed';
+import dayjs from 'dayjs';
 import { filter, shuffle } from 'lodash';
 import { customAlphabet } from 'nanoid';
 
@@ -149,9 +150,12 @@ export class ResolveProxyConfigService {
                 }
             }
 
+            if (this.isExpiredUser(user)) {
+                return settings.customRemarks.expiredUsers;
+            }
+
             if (user.status !== USERS_STATUS.ACTIVE) {
                 const statusRemarksMap: Partial<Record<string, string[]>> = {
-                    [USERS_STATUS.EXPIRED]: settings.customRemarks.expiredUsers,
                     [USERS_STATUS.DISABLED]: settings.customRemarks.disabledUsers,
                     [USERS_STATUS.LIMITED]: settings.customRemarks.limitedUsers,
                 };
@@ -164,6 +168,10 @@ export class ResolveProxyConfigService {
         }
 
         return null;
+    }
+
+    private isExpiredUser(user: UserEntity): boolean {
+        return user.status === USERS_STATUS.EXPIRED || !dayjs(user.expireAt).isAfter(dayjs());
     }
 
     private resolveTransport(
