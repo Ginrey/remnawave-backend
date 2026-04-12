@@ -553,6 +553,7 @@ export class UsersRepository {
             lastDay: Number(result.lastDay),
             lastWeek: Number(result.lastWeek),
             neverOnline: Number(result.neverOnline),
+            subscriptionUpdatedLast24h: 0,
         };
     }
 
