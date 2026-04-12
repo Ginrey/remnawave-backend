@@ -10,6 +10,7 @@ interface IGetStatsResponseData {
         used: number;
     };
     onlineStats: {
+        activeSubscriptionUpdatedLast24h: number;
         lastDay: number;
         lastWeek: number;
         neverOnline: number;
@@ -44,6 +45,7 @@ export class GetStatsResponseModel {
         totalUsers: number;
     };
     onlineStats: {
+        activeSubscriptionUpdatedLast24h: number;
         lastDay: number;
         lastWeek: number;
         neverOnline: number;

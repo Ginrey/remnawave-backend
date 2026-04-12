@@ -15,6 +15,7 @@ export namespace GetSubscriptionRequestHistoryStatsCommand {
 
     export const ResponseSchema = z.object({
         response: z.object({
+            activeUniqueUsersLast24h: z.number(),
             byParsedApp: z.array(
                 z.object({
                     app: z.string(),

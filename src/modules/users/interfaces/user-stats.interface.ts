@@ -1,6 +1,7 @@
 import { TUsersStatus } from '@libs/contracts/constants';
 
 export interface IUserOnlineStats {
+    activeSubscriptionUpdatedLast24h: number;
     onlineNow: number;
     lastDay: number;
     lastWeek: number;

@@ -137,6 +137,8 @@ export class SystemService implements OnApplicationBootstrap {
                     users: userStats.response.statusCounts,
                     onlineStats: {
                         ...userStats.response.onlineStats,
+                        activeSubscriptionUpdatedLast24h:
+                            subscriptionRequestHistoryStats.activeUniqueUsersLast24h,
                         subscriptionUpdatedLast24h:
                             subscriptionRequestHistoryStats.uniqueUsersLast24h,
                     },

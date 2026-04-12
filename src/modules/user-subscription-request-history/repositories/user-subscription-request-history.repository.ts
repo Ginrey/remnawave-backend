@@ -182,6 +182,7 @@ export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<Use
 
     public async getSubscriptionRequestHistoryStats(): Promise<{
         byParsedApp: { app: string; count: number }[];
+        activeUniqueUsersLast24h: number;
         uniqueUsersLast24h: number;
     }> {
         const appExtraction = sql<string>`
@@ -209,11 +210,24 @@ export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<Use
             .where('requestAt', '>=', sql<Date>`NOW() - INTERVAL '24 hours'`)
             .executeTakeFirstOrThrow();
 
+        const activeUniqueUsersLast24hResult = await this.qb.kysely
+            .selectFrom('userSubscriptionRequestHistory')
+            .innerJoin('users', 'users.uuid', 'userSubscriptionRequestHistory.userUuid')
+            .select((eb) =>
+                eb.fn.count<string>(sql`distinct "user_uuid"`).as('activeUniqueUsersLast24h'),
+            )
+            .where('requestAt', '>=', sql<Date>`NOW() - INTERVAL '24 hours'`)
+            .where('users.status', '=', 'ACTIVE')
+            .executeTakeFirstOrThrow();
+
         return {
             byParsedApp: appStats.map((stat) => ({
                 app: stat.app,
                 count: Number(stat.count),
             })),
+            activeUniqueUsersLast24h: Number(
+                activeUniqueUsersLast24hResult.activeUniqueUsersLast24h,
+            ),
             uniqueUsersLast24h: Number(uniqueUsersLast24hResult.uniqueUsersLast24h),
         };
     }

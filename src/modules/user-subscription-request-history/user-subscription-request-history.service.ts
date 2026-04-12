@@ -51,6 +51,7 @@ export class UserSubscriptionRequestHistoryService {
 
             return ok(
                 new GetSubscriptionRequestHistoryStatsResponseModel({
+                    activeUniqueUsersLast24h: stats.activeUniqueUsersLast24h,
                     byParsedApp: stats.byParsedApp,
                     hourlyRequestStats,
                     uniqueUsersLast24h: stats.uniqueUsersLast24h,

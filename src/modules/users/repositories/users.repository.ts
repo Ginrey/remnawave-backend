@@ -549,6 +549,7 @@ export class UsersRepository {
             .executeTakeFirstOrThrow();
 
         return {
+            activeSubscriptionUpdatedLast24h: 0,
             onlineNow: Number(result.onlineNow),
             lastDay: Number(result.lastDay),
             lastWeek: Number(result.lastWeek),

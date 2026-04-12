@@ -40,6 +40,7 @@ export namespace GetStatsCommand {
                 totalUsers: z.number(),
             }),
             onlineStats: z.object({
+                activeSubscriptionUpdatedLast24h: z.number(),
                 lastDay: z.number(),
                 lastWeek: z.number(),
                 neverOnline: z.number(),
