@@ -21,6 +21,7 @@ export namespace GetSubscriptionRequestHistoryStatsCommand {
                     count: z.number(),
                 }),
             ),
+            uniqueUsersLast24h: z.number(),
             hourlyRequestStats: z.array(
                 z.object({
                     dateTime: z

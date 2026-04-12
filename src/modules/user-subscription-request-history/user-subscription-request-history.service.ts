@@ -53,6 +53,7 @@ export class UserSubscriptionRequestHistoryService {
                 new GetSubscriptionRequestHistoryStatsResponseModel({
                     byParsedApp: stats.byParsedApp,
                     hourlyRequestStats,
+                    uniqueUsersLast24h: stats.uniqueUsersLast24h,
                 }),
             );
         } catch (error) {

@@ -5,6 +5,7 @@ export interface IUserOnlineStats {
     lastDay: number;
     lastWeek: number;
     neverOnline: number;
+    subscriptionUpdatedLast24h: number;
 }
 
 export interface IUserStats {

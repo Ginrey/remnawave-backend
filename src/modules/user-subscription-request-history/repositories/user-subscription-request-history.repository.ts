@@ -182,6 +182,7 @@ export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<Use
 
     public async getSubscriptionRequestHistoryStats(): Promise<{
         byParsedApp: { app: string; count: number }[];
+        uniqueUsersLast24h: number;
     }> {
         const appExtraction = sql<string>`
         CASE 
@@ -200,11 +201,20 @@ export class UserSubscriptionRequestHistoryRepository implements ICrudWithId<Use
             .orderBy('count', 'desc')
             .execute();
 
+        const uniqueUsersLast24hResult = await this.qb.kysely
+            .selectFrom('userSubscriptionRequestHistory')
+            .select((eb) =>
+                eb.fn.count<string>(sql`distinct "user_uuid"`).as('uniqueUsersLast24h'),
+            )
+            .where('requestAt', '>=', sql<Date>`NOW() - INTERVAL '24 hours'`)
+            .executeTakeFirstOrThrow();
+
         return {
             byParsedApp: appStats.map((stat) => ({
                 app: stat.app,
                 count: Number(stat.count),
             })),
+            uniqueUsersLast24h: Number(uniqueUsersLast24hResult.uniqueUsersLast24h),
         };
     }
 

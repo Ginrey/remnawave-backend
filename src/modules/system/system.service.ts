@@ -31,6 +31,7 @@ import { fail, ok, TResult } from '@common/types';
 
 import { ResponseRulesMatcherService } from '@modules/subscription-response-rules/services/response-rules-matcher.service';
 import { ResponseRulesParserService } from '@modules/subscription-response-rules/services/response-rules-parser.service';
+import { UserSubscriptionRequestHistoryRepository } from '@modules/user-subscription-request-history/repositories/user-subscription-request-history.repository';
 import { GetSumLifetimeQuery } from '@modules/nodes-usage-history/queries/get-sum-lifetime';
 import { Get7DaysStatsQuery } from '@modules/nodes-usage-history/queries/get-7days-stats';
 import { GetInitDateQuery } from '@modules/remnawave-settings/queries/get-init-date';
@@ -75,6 +76,7 @@ export class SystemService implements OnApplicationBootstrap {
         private readonly srrParser: ResponseRulesParserService,
         private readonly srrMatcher: ResponseRulesMatcherService,
         private readonly rawCacheService: RawCacheService,
+        private readonly userSubscriptionRequestHistoryRepository: UserSubscriptionRequestHistoryRepository,
     ) {}
 
     public async onApplicationBootstrap(): Promise<void> {
@@ -109,6 +111,8 @@ export class SystemService implements OnApplicationBootstrap {
     public async getStats(): Promise<TResult<GetStatsResponseModel>> {
         try {
             const userStats = await this.getShortUserStats();
+            const subscriptionRequestHistoryStats =
+                await this.userSubscriptionRequestHistoryRepository.getSubscriptionRequestHistoryStats();
             const onlineUsers = await this.queryBus.execute(new CountOnlineUsersQuery());
             const nodesSumLifetime = await this.queryBus.execute(new GetSumLifetimeQuery());
 
@@ -131,7 +135,11 @@ export class SystemService implements OnApplicationBootstrap {
                     uptime: os.uptime(),
                     timestamp: Date.now(),
                     users: userStats.response.statusCounts,
-                    onlineStats: userStats.response.onlineStats,
+                    onlineStats: {
+                        ...userStats.response.onlineStats,
+                        subscriptionUpdatedLast24h:
+                            subscriptionRequestHistoryStats.uniqueUsersLast24h,
+                    },
                     nodes: {
                         totalOnline: onlineUsers.response.usersOnline,
                         totalBytesLifetime: nodesSumLifetime.response.totalBytes,

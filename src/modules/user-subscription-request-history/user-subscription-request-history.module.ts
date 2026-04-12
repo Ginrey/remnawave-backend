@@ -18,5 +18,6 @@ import { QUERIES } from './queries';
         ...COMMANDS,
         ...QUERIES,
     ],
+    exports: [UserSubscriptionRequestHistoryRepository],
 })
 export class UserSubscriptionRequestHistoryModule {}

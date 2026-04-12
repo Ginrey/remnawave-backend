@@ -14,6 +14,7 @@ interface IGetStatsResponseData {
         lastWeek: number;
         neverOnline: number;
         onlineNow: number;
+        subscriptionUpdatedLast24h: number;
     };
     timestamp: number;
     uptime: number;
@@ -47,6 +48,7 @@ export class GetStatsResponseModel {
         lastWeek: number;
         neverOnline: number;
         onlineNow: number;
+        subscriptionUpdatedLast24h: number;
     };
     nodes: {
         totalOnline: number;
