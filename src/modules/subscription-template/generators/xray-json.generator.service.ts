@@ -304,23 +304,36 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         groups: ISubscriptionImportSourceGroup[],
     ): XrayJsonConfig[] {
-        return groups
-            .flatMap((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
-            .filter(Boolean) as XrayJsonConfig[];
+        const groupedConfigs = groups
+            .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
+            .filter(Boolean) as Array<{
+            autoConfig: XrayJsonConfig;
+            manualConfigs: XrayJsonConfig[];
+        }>;
+
+        return [
+            ...groupedConfigs.map((config) => config.autoConfig),
+            ...groupedConfigs.flatMap((config) => config.manualConfigs),
+        ];
     }
 
     private buildImportSourceConfigsForGroup(
         template: XrayJsonConfig,
         group: ISubscriptionImportSourceGroup,
         groupIndex: number,
-    ): XrayJsonConfig[] {
+    ):
+        | {
+              autoConfig: XrayJsonConfig;
+              manualConfigs: XrayJsonConfig[];
+          }
+        | null {
         const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
         const importedConfigs = group.rawLines
             .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
             .filter(Boolean) as ImportedOutboundConfig[];
 
         if (importedConfigs.length === 0) {
-            return [];
+            return null;
         }
 
         const { remnawave, ...baseTemplate } = template;
@@ -394,7 +407,7 @@ export class XrayJsonGeneratorService {
             outbounds: [config.outbound, ...baseTemplate.outbounds],
         }));
 
-        return [autoConfig, ...manualConfigs];
+        return { autoConfig, manualConfigs };
     }
 
     private buildOutbound(host: ResolvedProxyConfig, tag: string): Outbound {
