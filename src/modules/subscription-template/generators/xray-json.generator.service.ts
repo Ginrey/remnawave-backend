@@ -299,24 +299,27 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         groups: ISubscriptionImportSourceGroup[],
     ): XrayJsonConfig[] {
-        if (groups.length === 0) {
-            return [];
-        }
+        return groups
+            .map((group, index) => this.buildImportSourcePoolConfig(template, group, index))
+            .filter(Boolean) as XrayJsonConfig[];
+    }
 
-        const importedOutbounds = groups.flatMap((group, groupIndex) => {
-            const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
-
-            return group.rawLines
-                .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
-                .filter(Boolean) as Outbound[];
-        });
+    private buildImportSourcePoolConfig(
+        template: XrayJsonConfig,
+        group: ISubscriptionImportSourceGroup,
+        groupIndex: number,
+    ): XrayJsonConfig | null {
+        const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
+        const importedOutbounds = group.rawLines
+            .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
+            .filter(Boolean) as Outbound[];
 
         if (importedOutbounds.length === 0) {
-            return [];
+            return null;
         }
 
         const { remnawave, ...baseTemplate } = template;
-        const balancerTag = 'lb_import_sources';
+        const balancerTag = `lb_${tagPrefix}`;
         const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
         const existingRules = Array.isArray(baseTemplate.routing?.rules)
             ? baseTemplate.routing.rules
@@ -328,59 +331,53 @@ export class XrayJsonGeneratorService {
             ? baseTemplate.observatory.subjectSelector
             : [];
 
-        const selectedNames = groups.flatMap((group) => group.sourceNames);
-        const selectedGroups = groups.map((group) => group.name);
-        const remarks = Array.from(new Set(selectedGroups)).join(' + ') || 'Import Sources';
-
-        return [
-            {
-                ...baseTemplate,
-                remarks,
-                meta: {
-                    serverDescription: `Import sources: ${selectedNames.join(', ')}`,
-                },
-                outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
-                observatory: {
-                    ...(baseTemplate.observatory ?? {}),
-                    enableConcurrency: true,
-                    probeInterval: '2m',
-                    probeUrl: 'http://www.gstatic.com/generate_204',
-                    subjectSelector: [...existingSelector, ...subjectSelector],
-                },
-                routing: {
-                    ...(baseTemplate.routing ?? {}),
-                    balancers: [
-                        ...existingBalancers,
-                        {
-                            tag: balancerTag,
-                            selector: subjectSelector,
-                            strategy: {
-                                type: 'leastLoad',
-                                settings: {
-                                    costs: subjectSelector.map((tag, index) => ({
-                                        match: tag,
-                                        regexp: false,
-                                        value: index * 1_000_000_000,
-                                    })),
-                                    expected: 1,
-                                    maxRTT: '2s',
-                                },
-                            },
-                            fallbackTag: 'direct',
-                        },
-                    ],
-                    rules: [
-                        ...existingRules,
-                        {
-                            type: 'field',
-                            balancerTag,
-                            inboundTag: ['socks', 'http'],
-                            network: 'tcp,udp',
-                        },
-                    ],
-                },
+        return {
+            ...baseTemplate,
+            remarks: group.name,
+            meta: {
+                serverDescription: `Import sources: ${group.sourceNames.join(', ')}`,
             },
-        ];
+            outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
+            observatory: {
+                ...(baseTemplate.observatory ?? {}),
+                enableConcurrency: true,
+                probeInterval: '2m',
+                probeUrl: 'http://www.gstatic.com/generate_204',
+                subjectSelector: [...existingSelector, ...subjectSelector],
+            },
+            routing: {
+                ...(baseTemplate.routing ?? {}),
+                balancers: [
+                    ...existingBalancers,
+                    {
+                        tag: balancerTag,
+                        selector: subjectSelector,
+                        strategy: {
+                            type: 'leastLoad',
+                            settings: {
+                                costs: subjectSelector.map((tag, index) => ({
+                                    match: tag,
+                                    regexp: false,
+                                    value: index * 1_000_000_000,
+                                })),
+                                expected: 1,
+                                maxRTT: '2s',
+                            },
+                        },
+                        fallbackTag: 'direct',
+                    },
+                ],
+                rules: [
+                    ...existingRules,
+                    {
+                        type: 'field',
+                        balancerTag,
+                        inboundTag: ['socks', 'http'],
+                        network: 'tcp,udp',
+                    },
+                ],
+            },
+        };
     }
 
     private buildOutbound(host: ResolvedProxyConfig, tag: string): Outbound {
