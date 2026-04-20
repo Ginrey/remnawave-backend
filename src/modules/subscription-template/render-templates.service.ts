@@ -39,12 +39,15 @@ export class RenderTemplatesService {
             extraImportSourceGroups,
             fallbackOptions,
         } = params;
+        const hasImportedConfigs =
+            (extraRawLines?.length ?? 0) > 0 || (extraImportSourceGroups?.length ?? 0) > 0;
 
         const formattedHosts = await this.resolveProxyConfigService.resolveProxyConfig({
             subscriptionSettings: srrContext.subscriptionSettings,
             hosts,
             user,
             hostsOverrides,
+            skipEmptyHostsFallback: hasImportedConfigs,
             fallbackOptions,
         });
 

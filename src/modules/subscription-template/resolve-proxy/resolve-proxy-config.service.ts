@@ -52,6 +52,7 @@ interface IResolveProxyConfigOptions {
     hosts: HostWithRawInbound[];
     user: UserEntity;
     hostsOverrides?: ExternalSquadEntity['hostOverrides'];
+    skipEmptyHostsFallback?: boolean;
     fallbackOptions?: {
         showHwidMaxDeviceRemarks?: boolean;
         showHwidNotSupportedRemarks?: boolean;
@@ -73,7 +74,13 @@ export class ResolveProxyConfigService {
     public async resolveProxyConfig(
         options: IResolveProxyConfigOptions,
     ): Promise<ResolvedProxyConfig[]> {
-        const { user, hostsOverrides, subscriptionSettings, fallbackOptions } = options;
+        const {
+            user,
+            hostsOverrides,
+            subscriptionSettings,
+            fallbackOptions,
+            skipEmptyHostsFallback = false,
+        } = options;
 
         if (subscriptionSettings === null) {
             return [];
@@ -84,6 +91,7 @@ export class ResolveProxyConfigService {
             subscriptionSettings,
             fallbackOptions,
             options.hosts.length,
+            skipEmptyHostsFallback,
         );
         if (earlyRemarks !== null) {
             return this.createFallbackHosts(
@@ -139,6 +147,7 @@ export class ResolveProxyConfigService {
         settings: SubscriptionSettingsEntity,
         fallbackOptions: IResolveProxyConfigOptions['fallbackOptions'],
         hostCount: number,
+        skipEmptyHostsFallback: boolean,
     ): string[] | null {
         if (settings.isShowCustomRemarks) {
             if (fallbackOptions) {
@@ -163,7 +172,7 @@ export class ResolveProxyConfigService {
             }
         }
 
-        if (hostCount === 0) {
+        if (hostCount === 0 && !skipEmptyHostsFallback) {
             return settings.customRemarks.emptyHosts;
         }
 
