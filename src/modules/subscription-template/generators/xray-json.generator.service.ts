@@ -6,6 +6,7 @@ import type {
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyObject } from '@common/utils';
+import { ISubscriptionImportSourceGroup } from '@modules/subscription-import-sources/interfaces/import-source-group.interface';
 
 import {
     IGenerateConfigParams,
@@ -173,6 +174,33 @@ function buildRealitySettings(host: ResolvedProxyConfig): Record<string, unknown
     return settings;
 }
 
+function safeDecodeUriComponent(value: string): string {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
+}
+
+function decodeBase64Url(value: string): string {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const remainder = normalized.length % 4;
+    const padded =
+        remainder === 0 ? normalized : normalized.padEnd(normalized.length + (4 - remainder), '=');
+
+    return Buffer.from(padded, 'base64').toString('utf-8');
+}
+
+function normalizeTagPart(value: string): string {
+    const normalized = value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 32);
+
+    return normalized || 'import';
+}
+
 @Injectable()
 export class XrayJsonGeneratorService {
     private readonly logger = new Logger(XrayJsonGeneratorService.name);
@@ -185,6 +213,7 @@ export class XrayJsonGeneratorService {
             isExtendedClient,
             overrideTemplateName,
             ignoreHostXrayJsonTemplate = false,
+            extraImportSourceGroups = [],
         } = params;
 
         try {
@@ -226,6 +255,10 @@ export class XrayJsonGeneratorService {
                 });
             }
 
+            configs.push(
+                ...this.buildImportSourcePoolConfigs(templateContent, extraImportSourceGroups),
+            );
+
             return JSON.stringify(configs, null, 0);
         } catch (error) {
             this.logger.error(`Error generating xray-json config: ${error}`);
@@ -260,6 +293,91 @@ export class XrayJsonGeneratorService {
             this.logger.error(`Error creating config for host: ${error}`);
             return null;
         }
+    }
+
+    private buildImportSourcePoolConfigs(
+        template: XrayJsonConfig,
+        groups: ISubscriptionImportSourceGroup[],
+    ): XrayJsonConfig[] {
+        return groups
+            .map((group, index) => this.buildImportSourcePoolConfig(template, group, index))
+            .filter(Boolean) as XrayJsonConfig[];
+    }
+
+    private buildImportSourcePoolConfig(
+        template: XrayJsonConfig,
+        group: ISubscriptionImportSourceGroup,
+        groupIndex: number,
+    ): XrayJsonConfig | null {
+        const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
+        const importedOutbounds = group.rawLines
+            .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
+            .filter(Boolean) as Outbound[];
+
+        if (importedOutbounds.length === 0) {
+            return null;
+        }
+
+        const { remnawave, ...baseTemplate } = template;
+        const balancerTag = `lb_${tagPrefix}`;
+        const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
+        const existingRules = Array.isArray(baseTemplate.routing?.rules)
+            ? baseTemplate.routing.rules
+            : [];
+        const existingBalancers = Array.isArray(baseTemplate.routing?.balancers)
+            ? baseTemplate.routing.balancers
+            : [];
+        const existingSelector = Array.isArray(baseTemplate.observatory?.subjectSelector)
+            ? baseTemplate.observatory.subjectSelector
+            : [];
+
+        return {
+            ...baseTemplate,
+            remarks: group.name,
+            meta: {
+                serverDescription: `Import sources: ${group.sourceNames.join(', ')}`,
+            },
+            outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
+            observatory: {
+                ...(baseTemplate.observatory ?? {}),
+                enableConcurrency: true,
+                probeInterval: '2m',
+                probeUrl: 'http://www.gstatic.com/generate_204',
+                subjectSelector: [...existingSelector, ...subjectSelector],
+            },
+            routing: {
+                ...(baseTemplate.routing ?? {}),
+                balancers: [
+                    ...existingBalancers,
+                    {
+                        tag: balancerTag,
+                        selector: subjectSelector,
+                        strategy: {
+                            type: 'leastLoad',
+                            settings: {
+                                costs: subjectSelector.map((tag, index) => ({
+                                    match: tag,
+                                    regexp: false,
+                                    value: index * 1_000_000_000,
+                                })),
+                                expected: 1,
+                                maxRTT: '2s',
+                            },
+                        },
+                        fallbackTag: 'direct',
+                    },
+                ],
+                rules: [
+                    ...existingRules,
+                    {
+                        type: 'field',
+                        balancerTag,
+                        inboundTag: ['socks', 'http'],
+                        network: 'tcp,udp',
+                    },
+                ],
+            },
+        };
     }
 
     private buildOutbound(host: ResolvedProxyConfig, tag: string): Outbound {
@@ -455,5 +573,300 @@ export class XrayJsonGeneratorService {
         }
 
         return config;
+    }
+
+    private parseImportSourceLine(
+        line: string,
+        tagPrefix: string,
+        index: number,
+    ): Outbound | null {
+        const schemeSeparatorIndex = line.indexOf('://');
+        if (schemeSeparatorIndex === -1) {
+            return null;
+        }
+
+        const scheme = line.slice(0, schemeSeparatorIndex).toLowerCase();
+        const tag = `${tagPrefix}-${index}`;
+
+        switch (scheme) {
+            case 'vless':
+                return this.parseVlessOrTrojanImportLine(line, 'vless', tag);
+            case 'vmess':
+                return this.parseVmessImportLine(line, tag);
+            case 'trojan':
+                return this.parseVlessOrTrojanImportLine(line, 'trojan', tag);
+            case 'ss':
+            case 'shadowsocks':
+                return this.parseShadowsocksImportLine(line, tag);
+            default:
+                return null;
+        }
+    }
+
+    private parseVmessImportLine(line: string, tag: string): Outbound | null {
+        try {
+            const encoded = line.slice(line.indexOf('://') + 3);
+            const payload = JSON.parse(decodeBase64Url(encoded)) as Record<string, string>;
+            const address = payload.add;
+            const port = Number(payload.port);
+
+            if (!address || !port || !payload.id) {
+                return null;
+            }
+
+            const network = (payload.net ?? 'tcp').toLowerCase();
+            const tlsMode = (payload.tls ?? '').toLowerCase();
+
+            return {
+                tag,
+                protocol: 'vmess',
+                settings: {
+                    vnext: [
+                        {
+                            address,
+                            port,
+                            users: [
+                                {
+                                    id: payload.id,
+                                    alterId: Number(payload.aid ?? '0'),
+                                    security: payload.scy ?? 'auto',
+                                },
+                            ],
+                        },
+                    ],
+                },
+                streamSettings: {
+                    network,
+                    ...this.buildImportTransportSettings(network, new URLSearchParams({
+                        host: payload.host ?? '',
+                        path: payload.path ?? '',
+                        serviceName: payload.path ?? '',
+                        sni: payload.sni ?? payload.host ?? '',
+                        fp: payload.fp ?? '',
+                        alpn: payload.alpn ?? '',
+                    })),
+                    ...this.buildImportSecuritySettings(
+                        tlsMode === 'tls' ? 'tls' : 'none',
+                        new URLSearchParams({
+                            sni: payload.sni ?? payload.host ?? '',
+                            fp: payload.fp ?? '',
+                            alpn: payload.alpn ?? '',
+                        }),
+                    ),
+                },
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private parseVlessOrTrojanImportLine(
+        line: string,
+        protocol: 'vless' | 'trojan',
+        tag: string,
+    ): Outbound | null {
+        try {
+            const url = new URL(line);
+            const address = url.hostname;
+            const port = Number(url.port);
+
+            if (!address || !port) {
+                return null;
+            }
+
+            const params = url.searchParams;
+            const network = (params.get('type') ?? 'tcp').toLowerCase();
+            const security = (
+                params.get('security') ?? (protocol === 'trojan' ? 'tls' : 'none')
+            ).toLowerCase();
+
+            return {
+                tag,
+                protocol,
+                settings:
+                    protocol === 'vless'
+                        ? {
+                              vnext: [
+                                  {
+                                      address,
+                                      port,
+                                      users: [
+                                          {
+                                              id: safeDecodeUriComponent(url.username),
+                                              encryption: params.get('encryption') ?? 'none',
+                                              flow: params.get('flow') ?? undefined,
+                                          },
+                                      ],
+                                  },
+                              ],
+                          }
+                        : {
+                              servers: [
+                                  {
+                                      address,
+                                      port,
+                                      password: safeDecodeUriComponent(url.username),
+                                  },
+                              ],
+                          },
+                streamSettings: {
+                    network,
+                    ...this.buildImportTransportSettings(network, params),
+                    ...this.buildImportSecuritySettings(security, params),
+                },
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private parseShadowsocksImportLine(line: string, tag: string): Outbound | null {
+        try {
+            const hashless = line.split('#', 1)[0];
+            const queryless = hashless.split('?', 1)[0];
+            const payload = queryless.slice(queryless.indexOf('://') + 3);
+
+            let decoded = payload;
+            if (!payload.includes('@')) {
+                decoded = decodeBase64Url(payload);
+            }
+
+            const atIndex = decoded.lastIndexOf('@');
+            if (atIndex === -1) {
+                return null;
+            }
+
+            let credentials = decoded.slice(0, atIndex);
+            const serverPart = decoded.slice(atIndex + 1);
+
+            if (!credentials.includes(':')) {
+                credentials = decodeBase64Url(credentials);
+            }
+
+            const separatorIndex = credentials.indexOf(':');
+            if (separatorIndex === -1) {
+                return null;
+            }
+
+            const method = credentials.slice(0, separatorIndex);
+            const password = credentials.slice(separatorIndex + 1);
+            const serverUrl = new URL(`http://${serverPart}`);
+            const address = serverUrl.hostname;
+            const port = Number(serverUrl.port);
+
+            if (!address || !port) {
+                return null;
+            }
+
+            return {
+                tag,
+                protocol: 'shadowsocks',
+                settings: {
+                    servers: [
+                        {
+                            address,
+                            port,
+                            method,
+                            password,
+                        },
+                    ],
+                },
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    private buildImportTransportSettings(
+        network: string,
+        params: URLSearchParams,
+    ): Partial<StreamSettings> {
+        switch (network) {
+            case 'ws':
+                return {
+                    wsSettings: {
+                        path: params.get('path') ?? '/',
+                        headers: {
+                            ...(params.get('host') ? { Host: params.get('host') } : {}),
+                        },
+                    },
+                };
+            case 'grpc':
+                return {
+                    grpcSettings: {
+                        serviceName: params.get('serviceName'),
+                        authority: params.get('authority') ?? params.get('host'),
+                        mode: params.get('mode') === 'multi',
+                    },
+                };
+            case 'httpupgrade':
+                return {
+                    httpupgradeSettings: {
+                        path: params.get('path') ?? '/',
+                        host: params.get('host'),
+                        headers: {
+                            ...(params.get('host') ? { Host: params.get('host') } : {}),
+                        },
+                    },
+                };
+            case 'xhttp':
+                return {
+                    xhttpSettings: {
+                        mode: params.get('mode'),
+                        host: params.get('host'),
+                        path: params.get('path'),
+                    },
+                };
+            case 'tcp':
+            default:
+                return {
+                    tcpSettings: {},
+                };
+        }
+    }
+
+    private buildImportSecuritySettings(
+        security: string,
+        params: URLSearchParams,
+    ): Partial<StreamSettings> {
+        switch (security) {
+            case 'tls':
+                return {
+                    security: 'tls',
+                    tlsSettings: {
+                        serverName: params.get('sni') ?? '',
+                        ...(params.get('fp') ? { fingerprint: params.get('fp') } : {}),
+                        ...(params.get('alpn')
+                            ? { alpn: params.get('alpn')?.split(',').filter(Boolean) }
+                            : {}),
+                        ...(params.get('allowInsecure') === '1' ||
+                        params.get('allowInsecure') === 'true'
+                            ? { allowInsecure: true }
+                            : {}),
+                    },
+                };
+            case 'reality':
+                return {
+                    security: 'reality',
+                    realitySettings: {
+                        serverName: params.get('sni') ?? '',
+                        ...(params.get('pbk') || params.get('publicKey')
+                            ? { publicKey: params.get('pbk') ?? params.get('publicKey') }
+                            : {}),
+                        ...(params.get('sid') || params.get('shortId')
+                            ? { shortId: params.get('sid') ?? params.get('shortId') }
+                            : {}),
+                        ...(params.get('spx') || params.get('spiderX')
+                            ? { spiderX: params.get('spx') ?? params.get('spiderX') }
+                            : {}),
+                        ...(params.get('fp') ? { fingerprint: params.get('fp') } : {}),
+                    },
+                };
+            case 'none':
+            default:
+                return {
+                    security: 'none',
+                };
+        }
     }
 }

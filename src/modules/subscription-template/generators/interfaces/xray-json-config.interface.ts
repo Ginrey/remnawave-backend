@@ -1,5 +1,6 @@
 import type { TRemnawaveInjector } from '@libs/contracts/models';
 
+import { ISubscriptionImportSourceGroup } from '@modules/subscription-import-sources/interfaces/import-source-group.interface';
 import { ResolvedProxyConfig } from '@modules/subscription-template/resolve-proxy/interfaces';
 
 export interface StreamSettings {
@@ -53,10 +54,20 @@ export interface Outbound {
 export interface XrayJsonConfig {
     remarks: string;
     outbounds: Outbound[];
+    dns?: Record<string, unknown>;
+    inbounds?: Record<string, unknown>[];
+    routing?: Record<string, unknown> & {
+        rules?: Record<string, unknown>[];
+        balancers?: Record<string, unknown>[];
+    };
+    observatory?: Record<string, unknown> & {
+        subjectSelector?: string[];
+    };
     meta?: {
         serverDescription?: string;
     };
     remnawave?: TRemnawaveInjector;
+    [key: string]: unknown;
 }
 
 export interface IGenerateConfigParams {
@@ -64,4 +75,5 @@ export interface IGenerateConfigParams {
     isExtendedClient: boolean;
     overrideTemplateName?: string;
     ignoreHostXrayJsonTemplate?: boolean;
+    extraImportSourceGroups?: ISubscriptionImportSourceGroup[];
 }

@@ -15,6 +15,7 @@ import {
     GetSubscriptionImportSourceResponseModel,
     GetSubscriptionImportSourcesResponseModel,
 } from './models';
+import { ISubscriptionImportSourceGroup } from './interfaces/import-source-group.interface';
 import { SubscriptionFetchService } from './services/subscription-fetch.service';
 
 @Injectable()
@@ -190,6 +191,17 @@ export class SubscriptionImportSourceService {
             return await this.repository.findRawLinesForUser(userId);
         } catch (error) {
             this.logger.error('Error in getRawLinesForUser:', error);
+            return [];
+        }
+    }
+
+    public async getGroupedRawLinesForUser(
+        userId: bigint,
+    ): Promise<ISubscriptionImportSourceGroup[]> {
+        try {
+            return await this.repository.findGroupedRawLinesForUser(userId);
+        } catch (error) {
+            this.logger.error('Error in getGroupedRawLinesForUser:', error);
             return [];
         }
     }

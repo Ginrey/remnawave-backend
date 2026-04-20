@@ -30,7 +30,15 @@ export class RenderTemplatesService {
         contentType: string;
         subscription: string;
     }> {
-        const { srrContext, user, hosts, hostsOverrides, extraRawLines, fallbackOptions } = params;
+        const {
+            srrContext,
+            user,
+            hosts,
+            hostsOverrides,
+            extraRawLines,
+            extraImportSourceGroups,
+            fallbackOptions,
+        } = params;
 
         const formattedHosts = await this.resolveProxyConfigService.resolveProxyConfig({
             subscriptionSettings: srrContext.subscriptionSettings,
@@ -99,6 +107,7 @@ export class RenderTemplatesService {
                         isExtendedClient: srrContext.isExtendedClient,
                         overrideTemplateName: srrContext.overrideTemplateName,
                         ignoreHostXrayJsonTemplate: srrContext.ignoreHostXrayJsonTemplate,
+                        extraImportSourceGroups,
                     }),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_JSON'].CONTENT_TYPE,
                 };

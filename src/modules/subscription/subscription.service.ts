@@ -253,12 +253,18 @@ export class SubscriptionService {
                 srrContext.ip,
             );
 
-            const extraRawLines = this.shouldIncludeImportSubscriptions(
+            const shouldIncludeImportSubscriptions = this.shouldIncludeImportSubscriptions(
                 user.response,
                 srrContext.matchedResponseType,
-            )
-                ? await this.importSourceService.getRawLinesForUser(user.response.tId)
-                : [];
+            );
+            const extraRawLines =
+                shouldIncludeImportSubscriptions && srrContext.matchedResponseType === 'XRAY_BASE64'
+                    ? await this.importSourceService.getRawLinesForUser(user.response.tId)
+                    : [];
+            const extraImportSourceGroups =
+                shouldIncludeImportSubscriptions && srrContext.matchedResponseType === 'XRAY_JSON'
+                    ? await this.importSourceService.getGroupedRawLinesForUser(user.response.tId)
+                    : [];
 
             const subscription = await this.renderTemplatesService.generateSubscription({
                 srrContext,
@@ -266,6 +272,7 @@ export class SubscriptionService {
                 hosts: hosts.response,
                 hostsOverrides,
                 extraRawLines,
+                extraImportSourceGroups,
             });
 
             return new SubscriptionWithConfigResponse({
@@ -528,7 +535,7 @@ export class SubscriptionService {
         user: UserEntity,
         matchedResponseType: ISRRContext['matchedResponseType'],
     ): boolean {
-        if (matchedResponseType !== 'XRAY_BASE64') {
+        if (matchedResponseType !== 'XRAY_BASE64' && matchedResponseType !== 'XRAY_JSON') {
             return false;
         }
 

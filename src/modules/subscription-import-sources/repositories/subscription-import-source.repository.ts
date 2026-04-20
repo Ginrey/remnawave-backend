@@ -7,6 +7,7 @@ import { ICrud } from '@common/types/crud-port';
 
 import { SubscriptionImportSourceConverter } from '../subscription-import-source.converter';
 import { SubscriptionImportSourceEntity } from '../entities';
+import { ISubscriptionImportSourceGroup } from '../interfaces/import-source-group.interface';
 
 @Injectable()
 export class SubscriptionImportSourceRepository
@@ -132,5 +133,54 @@ export class SubscriptionImportSourceRepository
         }
 
         return winners.flatMap((s) => s.cachedRawLines);
+    }
+
+    public async findGroupedRawLinesForUser(
+        userId: bigint,
+    ): Promise<ISubscriptionImportSourceGroup[]> {
+        const sources = await this.prisma.tx.subscriptionImportSources.findMany({
+            where: {
+                isEnabled: true,
+                configProfileInbound: {
+                    internalSquadInbounds: {
+                        some: {
+                            internalSquad: {
+                                internalSquadMembers: {
+                                    some: { userId },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            orderBy: { createdAt: 'asc' },
+            select: {
+                name: true,
+                importGroup: true,
+                cachedRawLines: true,
+            },
+        });
+
+        const groups = new Map<string, ISubscriptionImportSourceGroup>();
+
+        for (const source of sources) {
+            const groupKey = source.importGroup ?? `source:${source.name}`;
+            const existing = groups.get(groupKey);
+
+            if (existing) {
+                existing.sourceNames.push(source.name);
+                existing.rawLines.push(...source.cachedRawLines);
+                continue;
+            }
+
+            groups.set(groupKey, {
+                name: source.importGroup ?? source.name,
+                importGroup: source.importGroup,
+                sourceNames: [source.name],
+                rawLines: [...source.cachedRawLines],
+            });
+        }
+
+        return Array.from(groups.values()).filter((group) => group.rawLines.length > 0);
     }
 }
