@@ -240,7 +240,7 @@ export class SubscriptionImportSourceService {
             }
 
             const counter = await this.rawCacheService.increment(
-                INTERNAL_CACHE_KEYS.SUBSCRIPTION_IMPORT_SOURCE_ROUND_ROBIN(userId, groupKey),
+                INTERNAL_CACHE_KEYS.SUBSCRIPTION_IMPORT_SOURCE_ROUND_ROBIN(groupKey),
             );
             const index = (counter - 1) % bucket.length;
             const selected = bucket[index];
