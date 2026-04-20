@@ -7,7 +7,6 @@ import { ICrud } from '@common/types/crud-port';
 
 import { SubscriptionImportSourceConverter } from '../subscription-import-source.converter';
 import { SubscriptionImportSourceEntity } from '../entities';
-import { ISubscriptionImportSourceGroup } from '../interfaces/import-source-group.interface';
 
 @Injectable()
 export class SubscriptionImportSourceRepository
@@ -86,59 +85,16 @@ export class SubscriptionImportSourceRepository
         return !!result;
     }
 
-    /**
-     * Returns cached raw proxy lines for the user, applying group-based random selection.
-     *
-     * Sources that share the same non-null `importGroup` are treated as a pool:
-     * exactly ONE source is picked at random from each group, preventing clients
-     * from receiving duplicate/redundant configs. Sources with no group (null)
-     * always contribute their lines individually.
-     */
-    public async findRawLinesForUser(userId: bigint): Promise<string[]> {
-        const sources = await this.prisma.tx.subscriptionImportSources.findMany({
-            where: {
-                isEnabled: true,
-                configProfileInbound: {
-                    internalSquadInbounds: {
-                        some: {
-                            internalSquad: {
-                                internalSquadMembers: {
-                                    some: { userId },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            select: { cachedRawLines: true, importGroup: true },
-        });
-
-        const groups = new Map<string, (typeof sources)>();
-        const ungrouped: (typeof sources) = [];
-
-        for (const source of sources) {
-            if (source.importGroup) {
-                const bucket = groups.get(source.importGroup) ?? [];
-                bucket.push(source);
-                groups.set(source.importGroup, bucket);
-            } else {
-                ungrouped.push(source);
-            }
-        }
-
-        const winners: (typeof sources) = [...ungrouped];
-        for (const bucket of groups.values()) {
-            const pick = bucket[Math.floor(Math.random() * bucket.length)];
-            winners.push(pick);
-        }
-
-        return winners.flatMap((s) => s.cachedRawLines);
-    }
-
-    public async findGroupedRawLinesForUser(
+    public async findSourcesForUser(
         userId: bigint,
-    ): Promise<ISubscriptionImportSourceGroup[]> {
-        const sources = await this.prisma.tx.subscriptionImportSources.findMany({
+    ): Promise<
+        Array<{
+            name: string;
+            importGroup: string | null;
+            cachedRawLines: string[];
+        }>
+    > {
+        return await this.prisma.tx.subscriptionImportSources.findMany({
             where: {
                 isEnabled: true,
                 configProfileInbound: {
@@ -160,27 +116,5 @@ export class SubscriptionImportSourceRepository
                 cachedRawLines: true,
             },
         });
-
-        const groups = new Map<string, ISubscriptionImportSourceGroup>();
-
-        for (const source of sources) {
-            const groupKey = source.importGroup ?? `source:${source.name}`;
-            const existing = groups.get(groupKey);
-
-            if (existing) {
-                existing.sourceNames.push(source.name);
-                existing.rawLines.push(...source.cachedRawLines);
-                continue;
-            }
-
-            groups.set(groupKey, {
-                name: source.importGroup ?? source.name,
-                importGroup: source.importGroup,
-                sourceNames: [source.name],
-                rawLines: [...source.cachedRawLines],
-            });
-        }
-
-        return Array.from(groups.values()).filter((group) => group.rawLines.length > 0);
     }
 }

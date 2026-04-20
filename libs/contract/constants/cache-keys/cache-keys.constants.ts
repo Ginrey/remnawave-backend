@@ -29,6 +29,8 @@ export const INTERNAL_CACHE_KEYS = {
     NODE_USER_USAGE: (nodeId: bigint) =>
         `${INTERNAL_CACHE_KEYS.NODE_USER_USAGE_PREFIX}${nodeId.toString()}`,
     NODE_USER_USAGE_KEYS: 'node_user_usage_keys',
+    SUBSCRIPTION_IMPORT_SOURCE_ROUND_ROBIN: (userId: bigint, groupKey: string) =>
+        `subscription_import_source_rr:${userId.toString()}:${groupKey}`,
     PROCESSING_POSTFIX: ':processing',
     RUNTIME_METRICS: 'runtime_metrics',
 } as const;

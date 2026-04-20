@@ -34,6 +34,10 @@ export class RawCacheService {
         }
     }
 
+    async increment(key: string): Promise<number> {
+        return await this.redis.incr(key);
+    }
+
     async del(key: string): Promise<void> {
         await this.redis.del(key);
     }

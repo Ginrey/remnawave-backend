@@ -2,8 +2,9 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { RawCacheService } from '@common/raw-cache';
 import { fail, ok, TResult } from '@common/types';
-import { ERRORS } from '@libs/contracts/constants';
+import { ERRORS, INTERNAL_CACHE_KEYS } from '@libs/contracts/constants';
 
 import { SubscriptionImportSourceEntity } from './entities';
 import { SubscriptionImportSourceRepository } from './repositories/subscription-import-source.repository';
@@ -25,6 +26,7 @@ export class SubscriptionImportSourceService {
     constructor(
         private readonly repository: SubscriptionImportSourceRepository,
         private readonly fetchService: SubscriptionFetchService,
+        private readonly rawCacheService: RawCacheService,
     ) {}
 
     public async getAll(): Promise<TResult<GetSubscriptionImportSourcesResponseModel>> {
@@ -188,7 +190,8 @@ export class SubscriptionImportSourceService {
      */
     public async getRawLinesForUser(userId: bigint): Promise<string[]> {
         try {
-            return await this.repository.findRawLinesForUser(userId);
+            const selectedSources = await this.selectRoundRobinSourcesForUser(userId);
+            return selectedSources.flatMap((source) => source.rawLines);
         } catch (error) {
             this.logger.error('Error in getRawLinesForUser:', error);
             return [];
@@ -199,10 +202,61 @@ export class SubscriptionImportSourceService {
         userId: bigint,
     ): Promise<ISubscriptionImportSourceGroup[]> {
         try {
-            return await this.repository.findGroupedRawLinesForUser(userId);
+            return await this.selectRoundRobinSourcesForUser(userId);
         } catch (error) {
             this.logger.error('Error in getGroupedRawLinesForUser:', error);
             return [];
         }
+    }
+
+    private async selectRoundRobinSourcesForUser(
+        userId: bigint,
+    ): Promise<ISubscriptionImportSourceGroup[]> {
+        const sources = await this.repository.findSourcesForUser(userId);
+        const groupedSources = new Map<string, typeof sources>();
+        const selectedSources: ISubscriptionImportSourceGroup[] = [];
+
+        for (const source of sources) {
+            if (!source.importGroup) {
+                if (source.cachedRawLines.length > 0) {
+                    selectedSources.push({
+                        name: source.name,
+                        importGroup: null,
+                        sourceNames: [source.name],
+                        rawLines: [...source.cachedRawLines],
+                    });
+                }
+                continue;
+            }
+
+            const bucket = groupedSources.get(source.importGroup) ?? [];
+            bucket.push(source);
+            groupedSources.set(source.importGroup, bucket);
+        }
+
+        for (const [groupKey, bucket] of groupedSources.entries()) {
+            if (bucket.length === 0) {
+                continue;
+            }
+
+            const counter = await this.rawCacheService.increment(
+                INTERNAL_CACHE_KEYS.SUBSCRIPTION_IMPORT_SOURCE_ROUND_ROBIN(userId, groupKey),
+            );
+            const index = (counter - 1) % bucket.length;
+            const selected = bucket[index];
+
+            if (selected.cachedRawLines.length === 0) {
+                continue;
+            }
+
+            selectedSources.push({
+                name: selected.importGroup ?? selected.name,
+                importGroup: selected.importGroup,
+                sourceNames: [selected.name],
+                rawLines: [...selected.cachedRawLines],
+            });
+        }
+
+        return selectedSources;
     }
 }
