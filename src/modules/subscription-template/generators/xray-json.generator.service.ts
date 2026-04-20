@@ -46,6 +46,11 @@ type TransportBuilderMap = {
     grpc: (host: GrpcConfig) => Record<string, unknown>;
     kcp: (host: KcpConfig) => Record<string, unknown>;
 };
+
+type ImportedOutboundConfig = {
+    outbound: Outbound;
+    remarks: string;
+};
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
     vless: (host) => ({
         vnext: [
@@ -300,26 +305,27 @@ export class XrayJsonGeneratorService {
         groups: ISubscriptionImportSourceGroup[],
     ): XrayJsonConfig[] {
         return groups
-            .map((group, index) => this.buildImportSourcePoolConfig(template, group, index))
+            .flatMap((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
             .filter(Boolean) as XrayJsonConfig[];
     }
 
-    private buildImportSourcePoolConfig(
+    private buildImportSourceConfigsForGroup(
         template: XrayJsonConfig,
         group: ISubscriptionImportSourceGroup,
         groupIndex: number,
-    ): XrayJsonConfig | null {
+    ): XrayJsonConfig[] {
         const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
-        const importedOutbounds = group.rawLines
+        const importedConfigs = group.rawLines
             .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
-            .filter(Boolean) as Outbound[];
+            .filter(Boolean) as ImportedOutboundConfig[];
 
-        if (importedOutbounds.length === 0) {
-            return null;
+        if (importedConfigs.length === 0) {
+            return [];
         }
 
         const { remnawave, ...baseTemplate } = template;
         const balancerTag = `lb_${tagPrefix}`;
+        const importedOutbounds = importedConfigs.map((config) => config.outbound);
         const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
         const existingRules = Array.isArray(baseTemplate.routing?.rules)
             ? baseTemplate.routing.rules
@@ -330,12 +336,12 @@ export class XrayJsonGeneratorService {
         const existingSelector = Array.isArray(baseTemplate.observatory?.subjectSelector)
             ? baseTemplate.observatory.subjectSelector
             : [];
-
-        return {
+        const sourceDescription = `Import sources: ${group.sourceNames.join(', ')}`;
+        const autoConfig: XrayJsonConfig = {
             ...baseTemplate,
-            remarks: group.name,
+            remarks: `AUTO | ${group.name}`,
             meta: {
-                serverDescription: `Import sources: ${group.sourceNames.join(', ')}`,
+                serverDescription: sourceDescription,
             },
             outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
             observatory: {
@@ -378,6 +384,17 @@ export class XrayJsonGeneratorService {
                 ],
             },
         };
+
+        const manualConfigs = importedConfigs.map((config) => ({
+            ...baseTemplate,
+            remarks: config.remarks,
+            meta: {
+                serverDescription: sourceDescription,
+            },
+            outbounds: [config.outbound, ...baseTemplate.outbounds],
+        }));
+
+        return [autoConfig, ...manualConfigs];
     }
 
     private buildOutbound(host: ResolvedProxyConfig, tag: string): Outbound {
@@ -579,7 +596,8 @@ export class XrayJsonGeneratorService {
         line: string,
         tagPrefix: string,
         index: number,
-    ): Outbound | null {
+        fallbackRemarks?: string,
+    ): ImportedOutboundConfig | null {
         const schemeSeparatorIndex = line.indexOf('://');
         if (schemeSeparatorIndex === -1) {
             return null;
@@ -587,23 +605,28 @@ export class XrayJsonGeneratorService {
 
         const scheme = line.slice(0, schemeSeparatorIndex).toLowerCase();
         const tag = `${tagPrefix}-${index}`;
+        const remarks = fallbackRemarks ?? `${tagPrefix}-${index + 1}`;
 
         switch (scheme) {
             case 'vless':
-                return this.parseVlessOrTrojanImportLine(line, 'vless', tag);
+                return this.parseVlessOrTrojanImportLine(line, 'vless', tag, remarks);
             case 'vmess':
-                return this.parseVmessImportLine(line, tag);
+                return this.parseVmessImportLine(line, tag, remarks);
             case 'trojan':
-                return this.parseVlessOrTrojanImportLine(line, 'trojan', tag);
+                return this.parseVlessOrTrojanImportLine(line, 'trojan', tag, remarks);
             case 'ss':
             case 'shadowsocks':
-                return this.parseShadowsocksImportLine(line, tag);
+                return this.parseShadowsocksImportLine(line, tag, remarks);
             default:
                 return null;
         }
     }
 
-    private parseVmessImportLine(line: string, tag: string): Outbound | null {
+    private parseVmessImportLine(
+        line: string,
+        tag: string,
+        fallbackRemarks: string,
+    ): ImportedOutboundConfig | null {
         try {
             const encoded = line.slice(line.indexOf('://') + 3);
             const payload = JSON.parse(decodeBase64Url(encoded)) as Record<string, string>;
@@ -618,41 +641,44 @@ export class XrayJsonGeneratorService {
             const tlsMode = (payload.tls ?? '').toLowerCase();
 
             return {
-                tag,
-                protocol: 'vmess',
-                settings: {
-                    vnext: [
-                        {
-                            address,
-                            port,
-                            users: [
-                                {
-                                    id: payload.id,
-                                    alterId: Number(payload.aid ?? '0'),
-                                    security: payload.scy ?? 'auto',
-                                },
-                            ],
-                        },
-                    ],
-                },
-                streamSettings: {
-                    network,
-                    ...this.buildImportTransportSettings(network, new URLSearchParams({
-                        host: payload.host ?? '',
-                        path: payload.path ?? '',
-                        serviceName: payload.path ?? '',
-                        sni: payload.sni ?? payload.host ?? '',
-                        fp: payload.fp ?? '',
-                        alpn: payload.alpn ?? '',
-                    })),
-                    ...this.buildImportSecuritySettings(
-                        tlsMode === 'tls' ? 'tls' : 'none',
-                        new URLSearchParams({
+                remarks: safeDecodeUriComponent(payload.ps ?? '') || fallbackRemarks,
+                outbound: {
+                    tag,
+                    protocol: 'vmess',
+                    settings: {
+                        vnext: [
+                            {
+                                address,
+                                port,
+                                users: [
+                                    {
+                                        id: payload.id,
+                                        alterId: Number(payload.aid ?? '0'),
+                                        security: payload.scy ?? 'auto',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    streamSettings: {
+                        network,
+                        ...this.buildImportTransportSettings(network, new URLSearchParams({
+                            host: payload.host ?? '',
+                            path: payload.path ?? '',
+                            serviceName: payload.path ?? '',
                             sni: payload.sni ?? payload.host ?? '',
                             fp: payload.fp ?? '',
                             alpn: payload.alpn ?? '',
-                        }),
-                    ),
+                        })),
+                        ...this.buildImportSecuritySettings(
+                            tlsMode === 'tls' ? 'tls' : 'none',
+                            new URLSearchParams({
+                                sni: payload.sni ?? payload.host ?? '',
+                                fp: payload.fp ?? '',
+                                alpn: payload.alpn ?? '',
+                            }),
+                        ),
+                    },
                 },
             };
         } catch {
@@ -664,7 +690,8 @@ export class XrayJsonGeneratorService {
         line: string,
         protocol: 'vless' | 'trojan',
         tag: string,
-    ): Outbound | null {
+        fallbackRemarks: string,
+    ): ImportedOutboundConfig | null {
         try {
             const url = new URL(line);
             const address = url.hostname;
@@ -679,40 +706,44 @@ export class XrayJsonGeneratorService {
             const security = (
                 params.get('security') ?? (protocol === 'trojan' ? 'tls' : 'none')
             ).toLowerCase();
+            const remarks = safeDecodeUriComponent(url.hash.slice(1)) || fallbackRemarks;
 
             return {
-                tag,
-                protocol,
-                settings:
-                    protocol === 'vless'
-                        ? {
-                              vnext: [
-                                  {
-                                      address,
-                                      port,
-                                      users: [
-                                          {
-                                              id: safeDecodeUriComponent(url.username),
-                                              encryption: params.get('encryption') ?? 'none',
-                                              flow: params.get('flow') ?? undefined,
-                                          },
-                                      ],
-                                  },
-                              ],
-                          }
-                        : {
-                              servers: [
-                                  {
-                                      address,
-                                      port,
-                                      password: safeDecodeUriComponent(url.username),
-                                  },
-                              ],
-                          },
-                streamSettings: {
-                    network,
-                    ...this.buildImportTransportSettings(network, params),
-                    ...this.buildImportSecuritySettings(security, params),
+                remarks,
+                outbound: {
+                    tag,
+                    protocol,
+                    settings:
+                        protocol === 'vless'
+                            ? {
+                                  vnext: [
+                                      {
+                                          address,
+                                          port,
+                                          users: [
+                                              {
+                                                  id: safeDecodeUriComponent(url.username),
+                                                  encryption: params.get('encryption') ?? 'none',
+                                                  flow: params.get('flow') ?? undefined,
+                                              },
+                                          ],
+                                      },
+                                  ],
+                              }
+                            : {
+                                  servers: [
+                                      {
+                                          address,
+                                          port,
+                                          password: safeDecodeUriComponent(url.username),
+                                      },
+                                  ],
+                              },
+                    streamSettings: {
+                        network,
+                        ...this.buildImportTransportSettings(network, params),
+                        ...this.buildImportSecuritySettings(security, params),
+                    },
                 },
             };
         } catch {
@@ -720,11 +751,16 @@ export class XrayJsonGeneratorService {
         }
     }
 
-    private parseShadowsocksImportLine(line: string, tag: string): Outbound | null {
+    private parseShadowsocksImportLine(
+        line: string,
+        tag: string,
+        fallbackRemarks: string,
+    ): ImportedOutboundConfig | null {
         try {
             const hashless = line.split('#', 1)[0];
             const queryless = hashless.split('?', 1)[0];
             const payload = queryless.slice(queryless.indexOf('://') + 3);
+            const remarks = safeDecodeUriComponent(line.split('#').slice(1).join('#')) || fallbackRemarks;
 
             let decoded = payload;
             if (!payload.includes('@')) {
@@ -759,17 +795,20 @@ export class XrayJsonGeneratorService {
             }
 
             return {
-                tag,
-                protocol: 'shadowsocks',
-                settings: {
-                    servers: [
-                        {
-                            address,
-                            port,
-                            method,
-                            password,
-                        },
-                    ],
+                remarks,
+                outbound: {
+                    tag,
+                    protocol: 'shadowsocks',
+                    settings: {
+                        servers: [
+                            {
+                                address,
+                                port,
+                                method,
+                                password,
+                            },
+                        ],
+                    },
                 },
             };
         } catch {
