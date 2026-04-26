@@ -51,6 +51,18 @@ type ImportedOutboundConfig = {
     outbound: Outbound;
     remarks: string;
 };
+
+type ImportSourceGroupConfigs = {
+    autoConfig: XrayJsonConfig | null;
+    manualConfigs: XrayJsonConfig[];
+};
+
+const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
+
+function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
+    return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
+}
+
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
     vless: (host) => ({
         vnext: [
@@ -306,13 +318,10 @@ export class XrayJsonGeneratorService {
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
             .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
-            .filter(Boolean) as Array<{
-            autoConfig: XrayJsonConfig;
-            manualConfigs: XrayJsonConfig[];
-        }>;
+            .filter(Boolean) as ImportSourceGroupConfigs[];
 
         return [
-            ...groupedConfigs.map((config) => config.autoConfig),
+            ...groupedConfigs.flatMap((config) => (config.autoConfig ? [config.autoConfig] : [])),
             ...groupedConfigs.flatMap((config) => config.manualConfigs),
         ];
     }
@@ -321,12 +330,7 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         group: ISubscriptionImportSourceGroup,
         groupIndex: number,
-    ):
-        | {
-              autoConfig: XrayJsonConfig;
-              manualConfigs: XrayJsonConfig[];
-          }
-        | null {
+    ): ImportSourceGroupConfigs | null {
         const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
         const importedConfigs = group.rawLines
             .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
@@ -338,7 +342,10 @@ export class XrayJsonGeneratorService {
 
         const { remnawave, ...baseTemplate } = template;
         const balancerTag = `lb_${tagPrefix}`;
-        const importedOutbounds = importedConfigs.map((config) => config.outbound);
+        const autoImportedConfigs = importedConfigs.filter(
+            (config) => !isRussianImportSourceConfig(config),
+        );
+        const importedOutbounds = autoImportedConfigs.map((config) => config.outbound);
         const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
         const existingRules = Array.isArray(baseTemplate.routing?.rules)
             ? baseTemplate.routing.rules
@@ -350,53 +357,56 @@ export class XrayJsonGeneratorService {
             ? baseTemplate.observatory.subjectSelector
             : [];
         const sourceDescription = `Import sources: ${group.sourceNames.join(', ')}`;
-        const autoConfig: XrayJsonConfig = {
-            ...baseTemplate,
-            remarks: `AUTO | ${group.name}`,
-            meta: {
-                serverDescription: sourceDescription,
-            },
-            outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
-            observatory: {
-                ...(baseTemplate.observatory ?? {}),
-                enableConcurrency: true,
-                probeInterval: '2m',
-                probeUrl: 'http://www.gstatic.com/generate_204',
-                subjectSelector: [...existingSelector, ...subjectSelector],
-            },
-            routing: {
-                ...(baseTemplate.routing ?? {}),
-                balancers: [
-                    ...existingBalancers,
-                    {
-                        tag: balancerTag,
-                        selector: subjectSelector,
-                        strategy: {
-                            type: 'leastLoad',
-                            settings: {
-                                costs: subjectSelector.map((tag, index) => ({
-                                    match: tag,
-                                    regexp: false,
-                                    value: index * 1_000_000_000,
-                                })),
-                                expected: 1,
-                                maxRTT: '2s',
-                            },
-                        },
-                        fallbackTag: 'direct',
-                    },
-                ],
-                rules: [
-                    ...existingRules,
-                    {
-                        type: 'field',
-                        balancerTag,
-                        inboundTag: ['socks', 'http'],
-                        network: 'tcp,udp',
-                    },
-                ],
-            },
-        };
+        const autoConfig: XrayJsonConfig | null =
+            autoImportedConfigs.length > 0
+                ? {
+                      ...baseTemplate,
+                      remarks: `AUTO | ${group.name}`,
+                      meta: {
+                          serverDescription: sourceDescription,
+                      },
+                      outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
+                      observatory: {
+                          ...(baseTemplate.observatory ?? {}),
+                          enableConcurrency: true,
+                          probeInterval: '2m',
+                          probeUrl: 'http://www.gstatic.com/generate_204',
+                          subjectSelector: [...existingSelector, ...subjectSelector],
+                      },
+                      routing: {
+                          ...(baseTemplate.routing ?? {}),
+                          balancers: [
+                              ...existingBalancers,
+                              {
+                                  tag: balancerTag,
+                                  selector: subjectSelector,
+                                  strategy: {
+                                      type: 'leastLoad',
+                                      settings: {
+                                          costs: subjectSelector.map((tag) => ({
+                                              match: tag,
+                                              regexp: false,
+                                              value: 0,
+                                          })),
+                                          expected: 1,
+                                          maxRTT: '2s',
+                                      },
+                                  },
+                                  fallbackTag: 'direct',
+                              },
+                          ],
+                          rules: [
+                              ...existingRules,
+                              {
+                                  type: 'field',
+                                  balancerTag,
+                                  inboundTag: ['socks', 'http'],
+                                  network: 'tcp,udp',
+                              },
+                          ],
+                      },
+                  }
+                : null;
 
         const manualConfigs = importedConfigs.map((config) => ({
             ...baseTemplate,
@@ -675,14 +685,17 @@ export class XrayJsonGeneratorService {
                     },
                     streamSettings: {
                         network,
-                        ...this.buildImportTransportSettings(network, new URLSearchParams({
-                            host: payload.host ?? '',
-                            path: payload.path ?? '',
-                            serviceName: payload.path ?? '',
-                            sni: payload.sni ?? payload.host ?? '',
-                            fp: payload.fp ?? '',
-                            alpn: payload.alpn ?? '',
-                        })),
+                        ...this.buildImportTransportSettings(
+                            network,
+                            new URLSearchParams({
+                                host: payload.host ?? '',
+                                path: payload.path ?? '',
+                                serviceName: payload.path ?? '',
+                                sni: payload.sni ?? payload.host ?? '',
+                                fp: payload.fp ?? '',
+                                alpn: payload.alpn ?? '',
+                            }),
+                        ),
                         ...this.buildImportSecuritySettings(
                             tlsMode === 'tls' ? 'tls' : 'none',
                             new URLSearchParams({
@@ -773,7 +786,8 @@ export class XrayJsonGeneratorService {
             const hashless = line.split('#', 1)[0];
             const queryless = hashless.split('?', 1)[0];
             const payload = queryless.slice(queryless.indexOf('://') + 3);
-            const remarks = safeDecodeUriComponent(line.split('#').slice(1).join('#')) || fallbackRemarks;
+            const remarks =
+                safeDecodeUriComponent(line.split('#').slice(1).join('#')) || fallbackRemarks;
 
             let decoded = payload;
             if (!payload.includes('@')) {
