@@ -61,6 +61,8 @@ type ImportSourceGroupConfigs = {
 };
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
+const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '5m';
+const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
     return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
@@ -68,6 +70,21 @@ function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
 
 function buildImportSourcesDescription(sourceNames: string[]): string {
     return `Import sources: ${Array.from(new Set(sourceNames)).join(', ')}`;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : null;
+}
+
+function getBalancerStrategySettings(
+    balancer: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+    const strategy = asRecord(balancer?.strategy);
+    const settings = asRecord(strategy?.settings);
+
+    return settings ?? {};
 }
 
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
@@ -408,9 +425,18 @@ export class XrayJsonGeneratorService {
         const existingRules = Array.isArray(baseTemplate.routing?.rules)
             ? baseTemplate.routing.rules
             : [];
-        const existingBalancers = Array.isArray(baseTemplate.routing?.balancers)
+        const templateBalancers = Array.isArray(baseTemplate.routing?.balancers)
             ? baseTemplate.routing.balancers
             : [];
+        const existingBalancer = templateBalancers.find((balancer) => balancer.tag === balancerTag);
+        const existingBalancers = templateBalancers.filter(
+            (balancer) => balancer.tag !== balancerTag,
+        );
+        const existingBalancerSettings = getBalancerStrategySettings(existingBalancer);
+        const maxRTT =
+            typeof existingBalancerSettings.maxRTT === 'string'
+                ? existingBalancerSettings.maxRTT
+                : DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT;
         const existingSelector = Array.isArray(baseTemplate.observatory?.subjectSelector)
             ? baseTemplate.observatory.subjectSelector
             : [];
@@ -423,10 +449,10 @@ export class XrayJsonGeneratorService {
             },
             outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
             observatory: {
-                ...(baseTemplate.observatory ?? {}),
                 enableConcurrency: true,
-                probeInterval: '2m',
+                probeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
                 probeUrl: 'http://www.gstatic.com/generate_204',
+                ...(baseTemplate.observatory ?? {}),
                 subjectSelector: [...existingSelector, ...subjectSelector],
             },
             routing: {
@@ -445,7 +471,7 @@ export class XrayJsonGeneratorService {
                                     value: 0,
                                 })),
                                 expected: 1,
-                                maxRTT: '2s',
+                                maxRTT,
                             },
                         },
                         fallbackTag: 'direct',
