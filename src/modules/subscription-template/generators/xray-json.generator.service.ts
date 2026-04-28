@@ -54,13 +54,20 @@ type ImportedOutboundConfig = {
 
 type ImportSourceGroupConfigs = {
     autoConfig: XrayJsonConfig | null;
+    autoImportedConfigs: ImportedOutboundConfig[];
+    groupName: string;
     manualConfigs: XrayJsonConfig[];
+    sourceNames: string[];
 };
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
     return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
+}
+
+function buildImportSourcesDescription(sourceNames: string[]): string {
+    return `Import sources: ${Array.from(new Set(sourceNames)).join(', ')}`;
 }
 
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
@@ -320,7 +327,19 @@ export class XrayJsonGeneratorService {
             .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
             .filter(Boolean) as ImportSourceGroupConfigs[];
 
+        const universalAutoImportedConfigs = groupedConfigs.flatMap(
+            (config) => config.autoImportedConfigs,
+        );
+        const universalAutoConfig = this.buildAutoImportSourceConfig(
+            template,
+            'AUTO',
+            'lb_import_sources_auto',
+            universalAutoImportedConfigs,
+            buildImportSourcesDescription(groupedConfigs.flatMap((config) => config.sourceNames)),
+        );
+
         return [
+            ...(universalAutoConfig ? [universalAutoConfig] : []),
             ...groupedConfigs.flatMap((config) => (config.autoConfig ? [config.autoConfig] : [])),
             ...groupedConfigs.flatMap((config) => config.manualConfigs),
         ];
@@ -345,68 +364,14 @@ export class XrayJsonGeneratorService {
         const autoImportedConfigs = importedConfigs.filter(
             (config) => !isRussianImportSourceConfig(config),
         );
-        const importedOutbounds = autoImportedConfigs.map((config) => config.outbound);
-        const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
-        const existingRules = Array.isArray(baseTemplate.routing?.rules)
-            ? baseTemplate.routing.rules
-            : [];
-        const existingBalancers = Array.isArray(baseTemplate.routing?.balancers)
-            ? baseTemplate.routing.balancers
-            : [];
-        const existingSelector = Array.isArray(baseTemplate.observatory?.subjectSelector)
-            ? baseTemplate.observatory.subjectSelector
-            : [];
-        const sourceDescription = `Import sources: ${group.sourceNames.join(', ')}`;
-        const autoConfig: XrayJsonConfig | null =
-            autoImportedConfigs.length > 0
-                ? {
-                      ...baseTemplate,
-                      remarks: `AUTO | ${group.name}`,
-                      meta: {
-                          serverDescription: sourceDescription,
-                      },
-                      outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
-                      observatory: {
-                          ...(baseTemplate.observatory ?? {}),
-                          enableConcurrency: true,
-                          probeInterval: '2m',
-                          probeUrl: 'http://www.gstatic.com/generate_204',
-                          subjectSelector: [...existingSelector, ...subjectSelector],
-                      },
-                      routing: {
-                          ...(baseTemplate.routing ?? {}),
-                          balancers: [
-                              ...existingBalancers,
-                              {
-                                  tag: balancerTag,
-                                  selector: subjectSelector,
-                                  strategy: {
-                                      type: 'leastLoad',
-                                      settings: {
-                                          costs: subjectSelector.map((tag) => ({
-                                              match: tag,
-                                              regexp: false,
-                                              value: 0,
-                                          })),
-                                          expected: 1,
-                                          maxRTT: '2s',
-                                      },
-                                  },
-                                  fallbackTag: 'direct',
-                              },
-                          ],
-                          rules: [
-                              ...existingRules,
-                              {
-                                  type: 'field',
-                                  balancerTag,
-                                  inboundTag: ['socks', 'http'],
-                                  network: 'tcp,udp',
-                              },
-                          ],
-                      },
-                  }
-                : null;
+        const sourceDescription = buildImportSourcesDescription(group.sourceNames);
+        const autoConfig = this.buildAutoImportSourceConfig(
+            template,
+            `AUTO | ${group.name}`,
+            balancerTag,
+            autoImportedConfigs,
+            sourceDescription,
+        );
 
         const manualConfigs = importedConfigs.map((config) => ({
             ...baseTemplate,
@@ -417,7 +382,86 @@ export class XrayJsonGeneratorService {
             outbounds: [config.outbound, ...baseTemplate.outbounds],
         }));
 
-        return { autoConfig, manualConfigs };
+        return {
+            autoConfig,
+            autoImportedConfigs,
+            groupName: group.name,
+            manualConfigs,
+            sourceNames: group.sourceNames,
+        };
+    }
+
+    private buildAutoImportSourceConfig(
+        template: XrayJsonConfig,
+        remarks: string,
+        balancerTag: string,
+        importedConfigs: ImportedOutboundConfig[],
+        sourceDescription: string,
+    ): XrayJsonConfig | null {
+        if (importedConfigs.length === 0) {
+            return null;
+        }
+
+        const { remnawave, ...baseTemplate } = template;
+        const importedOutbounds = importedConfigs.map((config) => config.outbound);
+        const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
+        const existingRules = Array.isArray(baseTemplate.routing?.rules)
+            ? baseTemplate.routing.rules
+            : [];
+        const existingBalancers = Array.isArray(baseTemplate.routing?.balancers)
+            ? baseTemplate.routing.balancers
+            : [];
+        const existingSelector = Array.isArray(baseTemplate.observatory?.subjectSelector)
+            ? baseTemplate.observatory.subjectSelector
+            : [];
+
+        return {
+            ...baseTemplate,
+            remarks,
+            meta: {
+                serverDescription: sourceDescription,
+            },
+            outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
+            observatory: {
+                ...(baseTemplate.observatory ?? {}),
+                enableConcurrency: true,
+                probeInterval: '2m',
+                probeUrl: 'http://www.gstatic.com/generate_204',
+                subjectSelector: [...existingSelector, ...subjectSelector],
+            },
+            routing: {
+                ...(baseTemplate.routing ?? {}),
+                balancers: [
+                    ...existingBalancers,
+                    {
+                        tag: balancerTag,
+                        selector: subjectSelector,
+                        strategy: {
+                            type: 'leastLoad',
+                            settings: {
+                                costs: subjectSelector.map((tag) => ({
+                                    match: tag,
+                                    regexp: false,
+                                    value: 0,
+                                })),
+                                expected: 1,
+                                maxRTT: '2s',
+                            },
+                        },
+                        fallbackTag: 'direct',
+                    },
+                ],
+                rules: [
+                    ...existingRules,
+                    {
+                        type: 'field',
+                        balancerTag,
+                        inboundTag: ['socks', 'http'],
+                        network: 'tcp,udp',
+                    },
+                ],
+            },
+        };
     }
 
     private buildOutbound(host: ResolvedProxyConfig, tag: string): Outbound {
