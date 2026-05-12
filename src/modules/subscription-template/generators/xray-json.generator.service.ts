@@ -53,11 +53,13 @@ type ImportedOutboundConfig = {
     remarks: string;
 };
 
+type ImportSourceAutoCategory = 'LTE' | 'SMART' | 'COUNTRY' | 'BACKUP';
+
 type ImportSourceGroupConfigs = {
     autoConfig: XrayJsonConfig | null;
     autoImportedConfigs: ImportedOutboundConfig[];
     groupName: string;
-    manualConfigs: XrayJsonConfig[];
+    importedConfigs: ImportedOutboundConfig[];
     sourceNames: string[];
 };
 
@@ -66,6 +68,18 @@ const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '5m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['0.0.0.0', '::', '::0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+const IMPORT_SOURCE_AUTO_CATEGORY_ORDER: ImportSourceAutoCategory[] = [
+    'LTE',
+    'SMART',
+    'COUNTRY',
+    'BACKUP',
+];
+const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
+    SMART: 0,
+    COUNTRY: 0,
+    BACKUP: 2_000_000_000,
+    LTE: 10_000_000_000,
+};
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
     return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
@@ -148,6 +162,88 @@ function hasServerData(config: ImportedOutboundConfig): boolean {
         default:
             return true;
     }
+}
+
+function getImportSourceFingerprint(config: ImportedOutboundConfig): string {
+    const outbound = config.outbound;
+    const streamSettings: Partial<StreamSettings> = outbound.streamSettings ?? {};
+    const vnext = outbound.settings.vnext?.[0];
+    const user = vnext?.users?.[0];
+    const server = outbound.settings.servers?.[0];
+
+    return JSON.stringify({
+        protocol: outbound.protocol,
+        address: vnext?.address ?? server?.address ?? '',
+        port: vnext?.port ?? server?.port ?? '',
+        userId: user?.id ?? '',
+        userSecurity: user?.security ?? '',
+        encryption: user?.encryption ?? '',
+        flow: user?.flow ?? '',
+        password: server?.password ?? '',
+        method: server?.method ?? '',
+        network: streamSettings.network ?? '',
+        security: streamSettings.security ?? '',
+        tlsSettings: streamSettings.tlsSettings ?? null,
+        realitySettings: streamSettings.realitySettings ?? null,
+        wsSettings: streamSettings.wsSettings ?? null,
+        grpcSettings: streamSettings.grpcSettings ?? null,
+        httpupgradeSettings: streamSettings.httpupgradeSettings ?? null,
+        xhttpSettings: streamSettings.xhttpSettings ?? null,
+    });
+}
+
+function dedupeImportedConfigs(configs: ImportedOutboundConfig[]): ImportedOutboundConfig[] {
+    const seen = new Set<string>();
+    const deduped: ImportedOutboundConfig[] = [];
+
+    for (const config of configs) {
+        const fingerprint = getImportSourceFingerprint(config);
+        if (seen.has(fingerprint)) continue;
+
+        seen.add(fingerprint);
+        deduped.push(config);
+    }
+
+    return deduped;
+}
+
+function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSourceAutoCategory {
+    const normalizedRemark = config.remarks.toLowerCase().replace(/\s+/g, ' ');
+
+    if (/\blte\b|лте/u.test(normalizedRemark)) {
+        return 'LTE';
+    }
+
+    if (/\bsmart\b|s[мm]art/u.test(normalizedRemark)) {
+        return 'SMART';
+    }
+
+    if (
+        /(?:🇩🇪|🇨🇭|🇵🇱|🇸🇪|🇱🇹|🇲🇩|🇳🇱|🇫🇮|🇺🇸|🇫🇷|🇬🇧|🇹🇷|🇸🇬|герман|швейцар|польш|швец|литв|молдов|нидерланд|финлян|сша|сингапур|fr-|kz-|\[fr\]|\[kz\])/iu.test(
+            normalizedRemark,
+        )
+    ) {
+        return 'COUNTRY';
+    }
+
+    return 'BACKUP';
+}
+
+function groupImportedConfigsByAutoCategory(
+    configs: ImportedOutboundConfig[],
+): Record<ImportSourceAutoCategory, ImportedOutboundConfig[]> {
+    const groups: Record<ImportSourceAutoCategory, ImportedOutboundConfig[]> = {
+        LTE: [],
+        SMART: [],
+        COUNTRY: [],
+        BACKUP: [],
+    };
+
+    for (const config of configs) {
+        groups[getImportSourceAutoCategory(config)].push(config);
+    }
+
+    return groups;
 }
 
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
@@ -407,8 +503,12 @@ export class XrayJsonGeneratorService {
             .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
             .filter(Boolean) as ImportSourceGroupConfigs[];
 
-        const universalAutoImportedConfigs = groupedConfigs.flatMap(
+        const allAutoImportedConfigs = groupedConfigs.flatMap(
             (config) => config.autoImportedConfigs,
+        );
+        const universalAutoImportedConfigs = dedupeImportedConfigs(allAutoImportedConfigs);
+        const categorizedAutoImportedConfigs = groupImportedConfigsByAutoCategory(
+            universalAutoImportedConfigs,
         );
         const universalAutoConfig = this.buildAutoImportSourceConfig(
             template,
@@ -416,12 +516,42 @@ export class XrayJsonGeneratorService {
             'lb_import_sources_auto',
             universalAutoImportedConfigs,
             buildImportSourcesDescription(groupedConfigs.flatMap((config) => config.sourceNames)),
+            (config) => IMPORT_SOURCE_AUTO_CATEGORY_COST[getImportSourceAutoCategory(config)],
         );
+        const categorizedAutoConfigs = IMPORT_SOURCE_AUTO_CATEGORY_ORDER.map((category) =>
+            this.buildAutoImportSourceConfig(
+                template,
+                `AUTO | ${category}`,
+                `lb_import_sources_auto_${category.toLowerCase()}`,
+                categorizedAutoImportedConfigs[category],
+                buildImportSourcesDescription(
+                    groupedConfigs.flatMap((config) => config.sourceNames),
+                ),
+            ),
+        ).filter(Boolean) as XrayJsonConfig[];
+        const sourceDescription = buildImportSourcesDescription(
+            groupedConfigs.flatMap((groupConfig) => groupConfig.sourceNames),
+        );
+        const manualConfigs = dedupeImportedConfigs(
+            groupedConfigs.flatMap((config) => config.importedConfigs),
+        ).map((config) => {
+            const { remnawave, ...baseTemplate } = template;
+
+            return {
+                ...baseTemplate,
+                remarks: config.remarks,
+                meta: {
+                    serverDescription: sourceDescription,
+                },
+                outbounds: [config.outbound, ...baseTemplate.outbounds],
+            };
+        });
 
         return [
             ...(universalAutoConfig ? [universalAutoConfig] : []),
+            ...categorizedAutoConfigs,
             ...groupedConfigs.flatMap((config) => (config.autoConfig ? [config.autoConfig] : [])),
-            ...groupedConfigs.flatMap((config) => config.manualConfigs),
+            ...manualConfigs,
         ];
     }
 
@@ -431,17 +561,18 @@ export class XrayJsonGeneratorService {
         groupIndex: number,
     ): ImportSourceGroupConfigs | null {
         const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
-        const importedConfigs = group.rawLines
-            .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
-            .filter((config): config is ImportedOutboundConfig =>
-                Boolean(config && hasServerData(config)),
-            );
+        const importedConfigs = dedupeImportedConfigs(
+            group.rawLines
+                .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
+                .filter((config): config is ImportedOutboundConfig =>
+                    Boolean(config && hasServerData(config)),
+                ),
+        );
 
         if (importedConfigs.length === 0) {
             return null;
         }
 
-        const { remnawave, ...baseTemplate } = template;
         const balancerTag = `lb_${tagPrefix}`;
         const autoImportedConfigs = importedConfigs.filter(
             (config) => !isRussianImportSourceConfig(config),
@@ -455,20 +586,11 @@ export class XrayJsonGeneratorService {
             sourceDescription,
         );
 
-        const manualConfigs = importedConfigs.map((config) => ({
-            ...baseTemplate,
-            remarks: config.remarks,
-            meta: {
-                serverDescription: sourceDescription,
-            },
-            outbounds: [config.outbound, ...baseTemplate.outbounds],
-        }));
-
         return {
             autoConfig,
             autoImportedConfigs,
             groupName: group.name,
-            manualConfigs,
+            importedConfigs,
             sourceNames: group.sourceNames,
         };
     }
@@ -479,6 +601,7 @@ export class XrayJsonGeneratorService {
         balancerTag: string,
         importedConfigs: ImportedOutboundConfig[],
         sourceDescription: string,
+        getCost: (config: ImportedOutboundConfig) => number = () => 0,
     ): XrayJsonConfig | null {
         if (importedConfigs.length === 0) {
             return null;
@@ -530,10 +653,10 @@ export class XrayJsonGeneratorService {
                         strategy: {
                             type: 'leastLoad',
                             settings: {
-                                costs: subjectSelector.map((tag) => ({
-                                    match: tag,
+                                costs: importedConfigs.map((config) => ({
+                                    match: config.outbound.tag,
                                     regexp: false,
-                                    value: 0,
+                                    value: getCost(config),
                                 })),
                                 expected: 1,
                                 maxRTT,
