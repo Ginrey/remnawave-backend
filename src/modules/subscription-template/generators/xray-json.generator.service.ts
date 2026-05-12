@@ -303,7 +303,7 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
         case 'lte':
             return '🇪🇺 LTE';
         default:
-            return '🇺🇳 Прочие';
+            return '🇯🇵 Прочие';
     }
 }
 
