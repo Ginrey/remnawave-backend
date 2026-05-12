@@ -260,6 +260,7 @@ function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSour
 function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSourceManualGroupKey {
     const normalizedRemark = config.remarks.toLowerCase().replace(/\s+/g, ' ');
 
+    if (/🇷🇺|росси|\bru\b|\[ru\]/iu.test(normalizedRemark)) return 'russia';
     if (/\bsmart\b|s[мm]art/u.test(normalizedRemark)) return 'smart';
     if (/\blte\b|лте/u.test(normalizedRemark)) return 'lte';
     if (/🇩🇪|герман|\bde\b|\[de\]/iu.test(normalizedRemark)) return 'germany';
@@ -271,7 +272,6 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
     if (/🇵🇱|польш|\bpl\b|\[pl\]/iu.test(normalizedRemark)) return 'poland';
     if (/🇸🇬|сингапур|\bsg\b|\[sg\]/iu.test(normalizedRemark)) return 'singapore';
     if (/казах|\bkz-|^\[kz\]|\bkz\b/iu.test(normalizedRemark)) return 'kazakhstan';
-    if (/🇷🇺|росси|\bru\b|\[ru\]/iu.test(normalizedRemark)) return 'russia';
 
     return 'other';
 }
