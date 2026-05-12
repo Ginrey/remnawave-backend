@@ -55,10 +55,29 @@ type ImportedOutboundConfig = {
 
 type ImportSourceAutoCategory = 'LTE' | 'SMART' | 'COUNTRY' | 'BACKUP';
 
+type ImportSourceManualGroupKey =
+    | 'smart'
+    | 'germany'
+    | 'netherlands'
+    | 'sweden'
+    | 'france'
+    | 'usa'
+    | 'switzerland'
+    | 'poland'
+    | 'singapore'
+    | 'kazakhstan'
+    | 'russia'
+    | 'lte'
+    | 'other';
+
+type ImportSourceManualGroup = {
+    configs: ImportedOutboundConfig[];
+    remarks: string;
+    tagPart: string;
+};
+
 type ImportSourceGroupConfigs = {
-    autoConfig: XrayJsonConfig | null;
     autoImportedConfigs: ImportedOutboundConfig[];
-    groupName: string;
     importedConfigs: ImportedOutboundConfig[];
     sourceNames: string[];
 };
@@ -68,18 +87,27 @@ const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '5m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['0.0.0.0', '::', '::0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
-const IMPORT_SOURCE_AUTO_CATEGORY_ORDER: ImportSourceAutoCategory[] = [
-    'LTE',
-    'SMART',
-    'COUNTRY',
-    'BACKUP',
-];
 const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
     SMART: 0,
     COUNTRY: 0,
     BACKUP: 2_000_000_000,
     LTE: 10_000_000_000,
 };
+const IMPORT_SOURCE_MANUAL_GROUP_ORDER: ImportSourceManualGroupKey[] = [
+    'smart',
+    'germany',
+    'netherlands',
+    'sweden',
+    'france',
+    'usa',
+    'switzerland',
+    'poland',
+    'singapore',
+    'kazakhstan',
+    'russia',
+    'lte',
+    'other',
+];
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
     return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
@@ -229,21 +257,84 @@ function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSour
     return 'BACKUP';
 }
 
-function groupImportedConfigsByAutoCategory(
+function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSourceManualGroupKey {
+    const normalizedRemark = config.remarks.toLowerCase().replace(/\s+/g, ' ');
+
+    if (/\bsmart\b|s[мm]art/u.test(normalizedRemark)) return 'smart';
+    if (/\blte\b|лте/u.test(normalizedRemark)) return 'lte';
+    if (/🇩🇪|герман|\bde\b|\[de\]/iu.test(normalizedRemark)) return 'germany';
+    if (/🇳🇱|нидерланд|\bnl\b|\[nl\]/iu.test(normalizedRemark)) return 'netherlands';
+    if (/🇸🇪|швец|\bsweden\b|\bse\b|\[se\]/iu.test(normalizedRemark)) return 'sweden';
+    if (/🇫🇷|франц|\bfr-|^\[fr\]|\bfr\b/iu.test(normalizedRemark)) return 'france';
+    if (/🇺🇸|сша|\busa\b|\bus\b|\[us\]/iu.test(normalizedRemark)) return 'usa';
+    if (/🇨🇭|швейцар|\bch\b|\[ch\]/iu.test(normalizedRemark)) return 'switzerland';
+    if (/🇵🇱|польш|\bpl\b|\[pl\]/iu.test(normalizedRemark)) return 'poland';
+    if (/🇸🇬|сингапур|\bsg\b|\[sg\]/iu.test(normalizedRemark)) return 'singapore';
+    if (/казах|\bkz-|^\[kz\]|\bkz\b/iu.test(normalizedRemark)) return 'kazakhstan';
+    if (/🇷🇺|росси|\bru\b|\[ru\]/iu.test(normalizedRemark)) return 'russia';
+
+    return 'other';
+}
+
+function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKey): string {
+    switch (groupKey) {
+        case 'smart':
+            return '⚡ Быстрые';
+        case 'germany':
+            return '🇩🇪 Германия';
+        case 'netherlands':
+            return '🇳🇱 Нидерланды';
+        case 'sweden':
+            return '🇸🇪 Швеция';
+        case 'france':
+            return '🇫🇷 Франция';
+        case 'usa':
+            return '🇺🇸 США';
+        case 'switzerland':
+            return '🇨🇭 Швейцария';
+        case 'poland':
+            return '🇵🇱 Польша';
+        case 'singapore':
+            return '🇸🇬 Сингапур';
+        case 'kazakhstan':
+            return '🇰🇿 Казахстан';
+        case 'russia':
+            return '🇷🇺 Россия';
+        case 'lte':
+            return '🇪🇺 LTE резерв';
+        default:
+            return '🧩 Прочие';
+    }
+}
+
+function groupImportedConfigsForManualOutput(
     configs: ImportedOutboundConfig[],
-): Record<ImportSourceAutoCategory, ImportedOutboundConfig[]> {
-    const groups: Record<ImportSourceAutoCategory, ImportedOutboundConfig[]> = {
-        LTE: [],
-        SMART: [],
-        COUNTRY: [],
-        BACKUP: [],
-    };
+): ImportSourceManualGroup[] {
+    const groups = new Map<ImportSourceManualGroupKey, ImportedOutboundConfig[]>();
 
     for (const config of configs) {
-        groups[getImportSourceAutoCategory(config)].push(config);
+        const groupKey = getImportSourceManualGroupKey(config);
+        const group = groups.get(groupKey) ?? [];
+        group.push(config);
+        groups.set(groupKey, group);
     }
 
-    return groups;
+    return Array.from(groups.entries())
+        .sort(([left], [right]) => {
+            const leftIndex = IMPORT_SOURCE_MANUAL_GROUP_ORDER.indexOf(left);
+            const rightIndex = IMPORT_SOURCE_MANUAL_GROUP_ORDER.indexOf(right);
+            const normalizedLeftIndex =
+                leftIndex === -1 ? IMPORT_SOURCE_MANUAL_GROUP_ORDER.length : leftIndex;
+            const normalizedRightIndex =
+                rightIndex === -1 ? IMPORT_SOURCE_MANUAL_GROUP_ORDER.length : rightIndex;
+
+            return normalizedLeftIndex - normalizedRightIndex || left.localeCompare(right);
+        })
+        .map(([groupKey, groupConfigs]) => ({
+            configs: groupConfigs,
+            remarks: buildImportSourceManualGroupRemarks(groupKey),
+            tagPart: normalizeTagPart(groupKey),
+        }));
 }
 
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
@@ -507,9 +598,6 @@ export class XrayJsonGeneratorService {
             (config) => config.autoImportedConfigs,
         );
         const universalAutoImportedConfigs = dedupeImportedConfigs(allAutoImportedConfigs);
-        const categorizedAutoImportedConfigs = groupImportedConfigsByAutoCategory(
-            universalAutoImportedConfigs,
-        );
         const universalAutoConfig = this.buildAutoImportSourceConfig(
             template,
             'AUTO',
@@ -518,41 +606,39 @@ export class XrayJsonGeneratorService {
             buildImportSourcesDescription(groupedConfigs.flatMap((config) => config.sourceNames)),
             (config) => IMPORT_SOURCE_AUTO_CATEGORY_COST[getImportSourceAutoCategory(config)],
         );
-        const categorizedAutoConfigs = IMPORT_SOURCE_AUTO_CATEGORY_ORDER.map((category) =>
-            this.buildAutoImportSourceConfig(
-                template,
-                `AUTO | ${category}`,
-                `lb_import_sources_auto_${category.toLowerCase()}`,
-                categorizedAutoImportedConfigs[category],
-                buildImportSourcesDescription(
-                    groupedConfigs.flatMap((config) => config.sourceNames),
-                ),
-            ),
-        ).filter(Boolean) as XrayJsonConfig[];
         const sourceDescription = buildImportSourcesDescription(
             groupedConfigs.flatMap((groupConfig) => groupConfig.sourceNames),
         );
-        const manualConfigs = dedupeImportedConfigs(
-            groupedConfigs.flatMap((config) => config.importedConfigs),
-        ).map((config) => {
-            const { remnawave, ...baseTemplate } = template;
+        const manualGroups = groupImportedConfigsForManualOutput(
+            dedupeImportedConfigs(groupedConfigs.flatMap((config) => config.importedConfigs)),
+        );
+        const manualConfigs = manualGroups
+            .map((manualGroup, groupIndex) =>
+                this.buildManualImportSourceGroupConfig(
+                    template,
+                    manualGroup,
+                    groupIndex,
+                    sourceDescription,
+                ),
+            )
+            .filter(Boolean) as XrayJsonConfig[];
 
-            return {
-                ...baseTemplate,
-                remarks: config.remarks,
-                meta: {
-                    serverDescription: sourceDescription,
-                },
-                outbounds: [config.outbound, ...baseTemplate.outbounds],
-            };
-        });
+        return [...(universalAutoConfig ? [universalAutoConfig] : []), ...manualConfigs];
+    }
 
-        return [
-            ...(universalAutoConfig ? [universalAutoConfig] : []),
-            ...categorizedAutoConfigs,
-            ...groupedConfigs.flatMap((config) => (config.autoConfig ? [config.autoConfig] : [])),
-            ...manualConfigs,
-        ];
+    private buildManualImportSourceGroupConfig(
+        template: XrayJsonConfig,
+        manualGroup: ImportSourceManualGroup,
+        groupIndex: number,
+        sourceDescription: string,
+    ): XrayJsonConfig | null {
+        return this.buildAutoImportSourceConfig(
+            template,
+            manualGroup.remarks,
+            `lb_import_sources_manual_${manualGroup.tagPart}_${groupIndex}`,
+            manualGroup.configs,
+            sourceDescription,
+        );
     }
 
     private buildImportSourceConfigsForGroup(
@@ -573,23 +659,12 @@ export class XrayJsonGeneratorService {
             return null;
         }
 
-        const balancerTag = `lb_${tagPrefix}`;
         const autoImportedConfigs = importedConfigs.filter(
             (config) => !isRussianImportSourceConfig(config),
         );
-        const sourceDescription = buildImportSourcesDescription(group.sourceNames);
-        const autoConfig = this.buildAutoImportSourceConfig(
-            template,
-            `AUTO | ${group.name}`,
-            balancerTag,
-            autoImportedConfigs,
-            sourceDescription,
-        );
 
         return {
-            autoConfig,
             autoImportedConfigs,
-            groupName: group.name,
             importedConfigs,
             sourceNames: group.sourceNames,
         };
