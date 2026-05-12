@@ -279,7 +279,7 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
 function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKey): string {
     switch (groupKey) {
         case 'smart':
-            return '⚡ Быстрые';
+            return '🇪🇺 Быстрые';
         case 'germany':
             return '🇩🇪 Германия';
         case 'netherlands':
@@ -301,9 +301,9 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
         case 'russia':
             return '🇷🇺 Россия';
         case 'lte':
-            return '🇪🇺 LTE резерв';
+            return '🇪🇺 LTE';
         default:
-            return '🧩 Прочие';
+            return '🇺🇳 Прочие';
     }
 }
 
