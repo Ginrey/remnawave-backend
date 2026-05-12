@@ -11,6 +11,7 @@ import { ISubscriptionImportSourceGroup } from '@modules/subscription-import-sou
 import {
     IGenerateConfigParams,
     Outbound,
+    OutboundSettings,
     StreamSettings,
     XrayJsonConfig,
 } from './interfaces/xray-json-config.interface';
@@ -63,6 +64,8 @@ type ImportSourceGroupConfigs = {
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '5m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
+const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['0.0.0.0', '::', '::0']);
+const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
     return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
@@ -85,6 +88,66 @@ function getBalancerStrategySettings(
     const settings = asRecord(strategy?.settings);
 
     return settings ?? {};
+}
+
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isValidPort(value: unknown): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value > 1 && value <= 65_535;
+}
+
+function isValidServerAddress(value: unknown): value is string {
+    return isNonEmptyString(value) && !PLACEHOLDER_IMPORT_SOURCE_ADDRESSES.has(value);
+}
+
+function isValidUserId(value: unknown): value is string {
+    return isNonEmptyString(value) && value !== ZERO_UUID;
+}
+
+function hasValidVnextServer(settings: OutboundSettings): boolean {
+    return (
+        settings.vnext?.some((server) => {
+            return (
+                isValidServerAddress(server.address) &&
+                isValidPort(server.port) &&
+                server.users.some((user) => isValidUserId(user.id))
+            );
+        }) ?? false
+    );
+}
+
+function hasValidServerEntry(settings: OutboundSettings, protocol: string): boolean {
+    return (
+        settings.servers?.some((server) => {
+            const hasEndpoint = isValidServerAddress(server.address) && isValidPort(server.port);
+            if (!hasEndpoint) return false;
+
+            if (protocol === 'trojan') {
+                return isNonEmptyString(server.password);
+            }
+
+            if (protocol === 'shadowsocks') {
+                return isNonEmptyString(server.method) && isNonEmptyString(server.password);
+            }
+
+            return true;
+        }) ?? false
+    );
+}
+
+function hasServerData(config: ImportedOutboundConfig): boolean {
+    switch (config.outbound.protocol) {
+        case 'vless':
+        case 'vmess':
+            return hasValidVnextServer(config.outbound.settings);
+        case 'trojan':
+        case 'shadowsocks':
+            return hasValidServerEntry(config.outbound.settings, config.outbound.protocol);
+        default:
+            return true;
+    }
 }
 
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
@@ -370,7 +433,9 @@ export class XrayJsonGeneratorService {
         const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
         const importedConfigs = group.rawLines
             .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
-            .filter(Boolean) as ImportedOutboundConfig[];
+            .filter((config): config is ImportedOutboundConfig =>
+                Boolean(config && hasServerData(config)),
+            );
 
         if (importedConfigs.length === 0) {
             return null;

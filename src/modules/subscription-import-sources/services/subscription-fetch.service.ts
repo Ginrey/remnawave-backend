@@ -20,13 +20,116 @@ const ACCEPTED_PROTOCOLS = [
     'shadowsocks://',
 ];
 
+const PLACEHOLDER_ADDRESSES = new Set(['0.0.0.0', '::', '::0']);
+const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+
+function decodeBase64Url(value: string): string {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const remainder = normalized.length % 4;
+    const padded =
+        remainder === 0 ? normalized : normalized.padEnd(normalized.length + (4 - remainder), '=');
+
+    return Buffer.from(padded, 'base64').toString('utf-8');
+}
+
+function hasValidUrlProxyEndpoint(line: string): boolean {
+    try {
+        const url = new URL(line);
+        const address = url.hostname;
+        const port = Number(url.port);
+        const username = decodeURIComponent(url.username);
+
+        return Boolean(
+            address &&
+            !PLACEHOLDER_ADDRESSES.has(address) &&
+            port > 1 &&
+            username &&
+            username !== ZERO_UUID,
+        );
+    } catch {
+        return false;
+    }
+}
+
+function hasValidVmessEndpoint(line: string): boolean {
+    try {
+        const encoded = line.slice(line.indexOf('://') + 3);
+        const payload = JSON.parse(decodeBase64Url(encoded)) as Record<string, string>;
+
+        return Boolean(
+            payload.add &&
+            !PLACEHOLDER_ADDRESSES.has(payload.add) &&
+            Number(payload.port) > 1 &&
+            payload.id &&
+            payload.id !== ZERO_UUID,
+        );
+    } catch {
+        return false;
+    }
+}
+
+function hasValidShadowsocksEndpoint(line: string): boolean {
+    try {
+        const hashless = line.split('#', 1)[0];
+        const queryless = hashless.split('?', 1)[0];
+        const payload = queryless.slice(queryless.indexOf('://') + 3);
+        let decoded = payload;
+
+        if (!payload.includes('@')) {
+            decoded = decodeBase64Url(payload);
+        }
+
+        const atIndex = decoded.lastIndexOf('@');
+        if (atIndex === -1) return false;
+
+        let credentials = decoded.slice(0, atIndex);
+        const serverPart = decoded.slice(atIndex + 1);
+
+        if (!credentials.includes(':')) {
+            credentials = decodeBase64Url(credentials);
+        }
+
+        const separatorIndex = credentials.indexOf(':');
+        if (separatorIndex === -1) return false;
+
+        const method = credentials.slice(0, separatorIndex);
+        const password = credentials.slice(separatorIndex + 1);
+        const serverUrl = new URL(`http://${serverPart}`);
+
+        return Boolean(
+            method &&
+            password &&
+            serverUrl.hostname &&
+            !PLACEHOLDER_ADDRESSES.has(serverUrl.hostname) &&
+            Number(serverUrl.port) > 1,
+        );
+    } catch {
+        return false;
+    }
+}
+
+function hasServerData(line: string): boolean {
+    const scheme = line.slice(0, line.indexOf('://')).toLowerCase();
+
+    switch (scheme) {
+        case 'vless':
+        case 'trojan':
+            return hasValidUrlProxyEndpoint(line);
+        case 'vmess':
+            return hasValidVmessEndpoint(line);
+        case 'ss':
+        case 'shadowsocks':
+            return hasValidShadowsocksEndpoint(line);
+        default:
+            return true;
+    }
+}
+
 @Injectable()
 export class SubscriptionFetchService {
     private readonly logger = new Logger(SubscriptionFetchService.name);
 
-    constructor(
-        private readonly importSourceRepository: SubscriptionImportSourceRepository,
-    ) {}
+    constructor(private readonly importSourceRepository: SubscriptionImportSourceRepository) {}
 
     /**
      * Fetch the external subscription URL and cache raw proxy lines.
@@ -55,7 +158,7 @@ export class SubscriptionFetchService {
             if (rawLines.length === 0) {
                 this.logger.warn(
                     `No proxy lines found in source "${source.name}". ` +
-                    `Response may be empty, unsupported format, or contain only Clash/JSON configs.`,
+                        `Response may be empty, unsupported format, or contain only Clash/JSON configs.`,
                 );
             }
 
@@ -72,9 +175,7 @@ export class SubscriptionFetchService {
                 lastExpireAt: userInfo.expire !== null ? new Date(userInfo.expire * 1000) : null,
             });
 
-            this.logger.log(
-                `Cached ${rawLines.length} proxy lines from source "${source.name}"`,
-            );
+            this.logger.log(`Cached ${rawLines.length} proxy lines from source "${source.name}"`);
         } catch (error) {
             const errMsg = error instanceof Error ? error.message : String(error);
             this.logger.error(`Failed to fetch source "${source.name}": ${errMsg}`);
@@ -148,6 +249,10 @@ export class SubscriptionFetchService {
         return text
             .split(/\r?\n/)
             .map((line) => line.trim())
-            .filter((line) => ACCEPTED_PROTOCOLS.some((proto) => line.startsWith(proto)));
+            .filter(
+                (line) =>
+                    ACCEPTED_PROTOCOLS.some((proto) => line.startsWith(proto)) &&
+                    hasServerData(line),
+            );
     }
 }
