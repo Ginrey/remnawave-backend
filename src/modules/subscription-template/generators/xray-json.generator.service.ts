@@ -6,6 +6,7 @@ import type {
 import { Injectable, Logger } from '@nestjs/common';
 
 import { isNonEmptyObject } from '@common/utils';
+
 import { ISubscriptionImportSourceGroup } from '@modules/subscription-import-sources/interfaces/import-source-group.interface';
 
 import {
@@ -51,6 +52,8 @@ type TransportBuilderMap = {
 type ImportedOutboundConfig = {
     outbound: Outbound;
     remarks: string;
+    sourceGroupName?: string;
+    sourceNames?: string[];
 };
 
 type ImportSourceAutoCategory = 'LTE' | 'SMART' | 'COUNTRY' | 'BACKUP';
@@ -83,15 +86,15 @@ type ImportSourceGroupConfigs = {
 };
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
-const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '5m';
+const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
-const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['0.0.0.0', '::', '::0']);
+const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
     SMART: 0,
     COUNTRY: 0,
-    BACKUP: 2_000_000_000,
-    LTE: 10_000_000_000,
+    BACKUP: 0,
+    LTE: 0,
 };
 const IMPORT_SOURCE_MANUAL_GROUP_ORDER: ImportSourceManualGroupKey[] = [
     'smart',
@@ -108,10 +111,6 @@ const IMPORT_SOURCE_MANUAL_GROUP_ORDER: ImportSourceManualGroupKey[] = [
     'lte',
     'other',
 ];
-
-function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
-    return RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(config.remarks);
-}
 
 function buildImportSourcesDescription(sourceNames: string[]): string {
     return `Import sources: ${Array.from(new Set(sourceNames)).join(', ')}`;
@@ -192,6 +191,39 @@ function hasServerData(config: ImportedOutboundConfig): boolean {
     }
 }
 
+function getImportSourceEndpointText(config: ImportedOutboundConfig): string {
+    const outbound = config.outbound;
+    const vnext = outbound.settings.vnext?.[0];
+    const server = outbound.settings.servers?.[0];
+
+    return [vnext?.address, server?.address].filter(isNonEmptyString).join(' ').toLowerCase();
+}
+
+function getImportSourceClassificationText(config: ImportedOutboundConfig): string {
+    return [
+        config.remarks,
+        config.sourceGroupName,
+        ...(config.sourceNames ?? []),
+        getImportSourceEndpointText(config),
+    ]
+        .filter(isNonEmptyString)
+        .join(' ')
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+}
+
+function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
+    const text = getImportSourceClassificationText(config);
+    const endpointText = getImportSourceEndpointText(config);
+
+    return (
+        RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(text) ||
+        /(?:^|\s|\.)ru(?:\s|$|\.|-)|\[ru\]|\bru-\d|\byandex\b|\bvk(?:proxy)?\b|userapi\.com|max\.ru|x5\.ru|cdp\.x5\.ru/iu.test(
+            endpointText,
+        )
+    );
+}
+
 function getImportSourceFingerprint(config: ImportedOutboundConfig): string {
     const outbound = config.outbound;
     const streamSettings: Partial<StreamSettings> = outbound.streamSettings ?? {};
@@ -236,19 +268,19 @@ function dedupeImportedConfigs(configs: ImportedOutboundConfig[]): ImportedOutbo
 }
 
 function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSourceAutoCategory {
-    const normalizedRemark = config.remarks.toLowerCase().replace(/\s+/g, ' ');
+    const text = getImportSourceClassificationText(config);
 
-    if (/\blte\b|лте/u.test(normalizedRemark)) {
+    if (/\blte\b|лте/u.test(text)) {
         return 'LTE';
     }
 
-    if (/\bsmart\b|s[мm]art/u.test(normalizedRemark)) {
+    if (/\bsmart\b|s[мm]art/u.test(text) && !isRussianImportSourceConfig(config)) {
         return 'SMART';
     }
 
     if (
         /(?:🇩🇪|🇨🇭|🇵🇱|🇸🇪|🇱🇹|🇲🇩|🇳🇱|🇫🇮|🇺🇸|🇫🇷|🇬🇧|🇹🇷|🇸🇬|герман|швейцар|польш|швец|литв|молдов|нидерланд|финлян|сша|сингапур|fr-|kz-|\[fr\]|\[kz\])/iu.test(
-            normalizedRemark,
+            text,
         )
     ) {
         return 'COUNTRY';
@@ -258,20 +290,45 @@ function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSour
 }
 
 function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSourceManualGroupKey {
-    const normalizedRemark = config.remarks.toLowerCase().replace(/\s+/g, ' ');
+    const text = getImportSourceClassificationText(config);
+    const endpointText = getImportSourceEndpointText(config);
 
-    if (/🇷🇺|росси|\bru\b|\[ru\]/iu.test(normalizedRemark)) return 'russia';
-    if (/\bsmart\b|s[мm]art/u.test(normalizedRemark)) return 'smart';
-    if (/\blte\b|лте/u.test(normalizedRemark)) return 'lte';
-    if (/🇩🇪|герман|\bde\b|\[de\]/iu.test(normalizedRemark)) return 'germany';
-    if (/🇳🇱|нидерланд|\bnl\b|\[nl\]/iu.test(normalizedRemark)) return 'netherlands';
-    if (/🇸🇪|швец|\bsweden\b|\bse\b|\[se\]/iu.test(normalizedRemark)) return 'sweden';
-    if (/🇫🇷|франц|\bfr-|^\[fr\]|\bfr\b/iu.test(normalizedRemark)) return 'france';
-    if (/🇺🇸|сша|\busa\b|\bus\b|\[us\]/iu.test(normalizedRemark)) return 'usa';
-    if (/🇨🇭|швейцар|\bch\b|\[ch\]/iu.test(normalizedRemark)) return 'switzerland';
-    if (/🇵🇱|польш|\bpl\b|\[pl\]/iu.test(normalizedRemark)) return 'poland';
-    if (/🇸🇬|сингапур|\bsg\b|\[sg\]/iu.test(normalizedRemark)) return 'singapore';
-    if (/казах|\bkz-|^\[kz\]|\bkz\b/iu.test(normalizedRemark)) return 'kazakhstan';
+    if (isRussianImportSourceConfig(config)) return 'russia';
+    if (/\blte\b|лте/u.test(text)) return 'lte';
+    if (/\bsmart\b|s[мm]art/u.test(text)) return 'smart';
+    if (/🇩🇪|герман|\bde\b|\[de\]|(?:^|\.)de(?:\.|-|$)|\bger(?:many)?\b/iu.test(text)) {
+        return 'germany';
+    }
+    if (/🇳🇱|нидерланд|\bnl\b|\[nl\]|(?:^|\.)nl(?:\.|-|$)/iu.test(text)) {
+        return 'netherlands';
+    }
+    if (/🇸🇪|швец|\bsweden\b|\bse\b|\[se\]|(?:^|\.)se(?:\.|-|$)/iu.test(text)) {
+        return 'sweden';
+    }
+    if (/🇫🇷|франц|\bfr-|^\[fr\]|\bfr\b|\[fr\]|(?:^|\.)fr(?:\.|-|$)/iu.test(text)) {
+        return 'france';
+    }
+    if (/🇺🇸|сша|\busa\b|\bus\b|\[us\]|(?:^|\.)us(?:\.|-|$)|united/iu.test(text)) {
+        return 'usa';
+    }
+    if (/🇨🇭|швейцар|\bch\b|\[ch\]|\bsw\.|(?:^|\.)ch(?:\.|-|$)/iu.test(text)) {
+        return 'switzerland';
+    }
+    if (/🇵🇱|польш|\bpl\b|\[pl\]|(?:^|\.)pl(?:\.|-|$)/iu.test(text)) return 'poland';
+    if (/🇸🇬|сингапур|\bsg\b|\[sg\]|(?:^|\.)sg(?:\.|-|$)/iu.test(text)) return 'singapore';
+    if (/казах|\bkz-|^\[kz\]|\bkz\b|\[kz\]|(?:^|\.)kz(?:\.|-|$)/iu.test(text)) {
+        return 'kazakhstan';
+    }
+
+    if (/(?:^|\.)de(?:\.|-|$)/iu.test(endpointText)) return 'germany';
+    if (/(?:^|\.)nl(?:\.|-|$)/iu.test(endpointText)) return 'netherlands';
+    if (/(?:^|\.)se(?:\.|-|$)/iu.test(endpointText)) return 'sweden';
+    if (/(?:^|\.)fr(?:\.|-|$)/iu.test(endpointText)) return 'france';
+    if (/(?:^|\.)us(?:\.|-|$)/iu.test(endpointText)) return 'usa';
+    if (/(?:^|\.)ch(?:\.|-|$)/iu.test(endpointText)) return 'switzerland';
+    if (/(?:^|\.)pl(?:\.|-|$)/iu.test(endpointText)) return 'poland';
+    if (/(?:^|\.)sg(?:\.|-|$)/iu.test(endpointText)) return 'singapore';
+    if (/(?:^|\.)kz(?:\.|-|$)/iu.test(endpointText)) return 'kazakhstan';
 
     return 'other';
 }
@@ -594,10 +651,12 @@ export class XrayJsonGeneratorService {
             .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
             .filter(Boolean) as ImportSourceGroupConfigs[];
 
-        const allAutoImportedConfigs = groupedConfigs.flatMap(
-            (config) => config.autoImportedConfigs,
+        const allImportedConfigs = dedupeImportedConfigs(
+            groupedConfigs.flatMap((config) => config.importedConfigs),
         );
-        const universalAutoImportedConfigs = dedupeImportedConfigs(allAutoImportedConfigs);
+        const universalAutoImportedConfigs = dedupeImportedConfigs(
+            groupedConfigs.flatMap((config) => config.autoImportedConfigs),
+        );
         const universalAutoConfig = this.buildAutoImportSourceConfig(
             template,
             'AUTO',
@@ -609,9 +668,7 @@ export class XrayJsonGeneratorService {
         const sourceDescription = buildImportSourcesDescription(
             groupedConfigs.flatMap((groupConfig) => groupConfig.sourceNames),
         );
-        const manualGroups = groupImportedConfigsForManualOutput(
-            dedupeImportedConfigs(groupedConfigs.flatMap((config) => config.importedConfigs)),
-        );
+        const manualGroups = groupImportedConfigsForManualOutput(allImportedConfigs);
         const manualConfigs = manualGroups
             .map((manualGroup, groupIndex) =>
                 this.buildManualImportSourceGroupConfig(
@@ -647,13 +704,24 @@ export class XrayJsonGeneratorService {
         groupIndex: number,
     ): ImportSourceGroupConfigs | null {
         const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
-        const importedConfigs = dedupeImportedConfigs(
-            group.rawLines
-                .map((line, index) => this.parseImportSourceLine(line, tagPrefix, index))
-                .filter((config): config is ImportedOutboundConfig =>
-                    Boolean(config && hasServerData(config)),
-                ),
-        );
+        const parsedConfigs: ImportedOutboundConfig[] = [];
+
+        for (const [index, line] of group.rawLines.entries()) {
+            const config = this.parseImportSourceLine(line, tagPrefix, index);
+            if (!config) continue;
+
+            const configWithSourceContext: ImportedOutboundConfig = {
+                ...config,
+                sourceGroupName: group.name,
+                sourceNames: group.sourceNames,
+            };
+
+            if (hasServerData(configWithSourceContext)) {
+                parsedConfigs.push(configWithSourceContext);
+            }
+        }
+
+        const importedConfigs = dedupeImportedConfigs(parsedConfigs);
 
         if (importedConfigs.length === 0) {
             return null;
@@ -682,7 +750,8 @@ export class XrayJsonGeneratorService {
             return null;
         }
 
-        const { remnawave, ...baseTemplate } = template;
+        const baseTemplate = { ...template };
+        delete baseTemplate.remnawave;
         const importedOutbounds = importedConfigs.map((config) => config.outbound);
         const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
         const existingRules = Array.isArray(baseTemplate.routing?.rules)
