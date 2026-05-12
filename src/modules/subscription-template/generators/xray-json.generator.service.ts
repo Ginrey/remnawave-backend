@@ -200,6 +200,14 @@ function getImportSourceEndpointText(config: ImportedOutboundConfig): string {
 }
 
 function getImportSourceClassificationText(config: ImportedOutboundConfig): string {
+    return [config.remarks, getImportSourceEndpointText(config)]
+        .filter(isNonEmptyString)
+        .join(' ')
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+}
+
+function getImportSourceContextText(config: ImportedOutboundConfig): string {
     return [
         config.remarks,
         config.sourceGroupName,
@@ -213,7 +221,7 @@ function getImportSourceClassificationText(config: ImportedOutboundConfig): stri
 }
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
-    const text = getImportSourceClassificationText(config);
+    const text = getImportSourceContextText(config);
     const endpointText = getImportSourceEndpointText(config);
 
     return (
@@ -268,7 +276,7 @@ function dedupeImportedConfigs(configs: ImportedOutboundConfig[]): ImportedOutbo
 }
 
 function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSourceAutoCategory {
-    const text = getImportSourceClassificationText(config);
+    const text = getImportSourceContextText(config);
 
     if (/\blte\b|лте/u.test(text)) {
         return 'LTE';
