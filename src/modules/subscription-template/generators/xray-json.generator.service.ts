@@ -220,6 +220,10 @@ function getImportSourceContextText(config: ImportedOutboundConfig): string {
         .replace(/\s+/g, ' ');
 }
 
+function isLteImportSourceText(text: string): boolean {
+    return /\blte\b|лте|бел(?:ые|ый|ых|ого)?\s+списк/iu.test(text);
+}
+
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
     const text = getImportSourceContextText(config);
     const endpointText = getImportSourceEndpointText(config);
@@ -278,7 +282,7 @@ function dedupeImportedConfigs(configs: ImportedOutboundConfig[]): ImportedOutbo
 function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSourceAutoCategory {
     const text = getImportSourceContextText(config);
 
-    if (/\blte\b|лте/u.test(text)) {
+    if (isLteImportSourceText(text)) {
         return 'LTE';
     }
 
@@ -302,7 +306,7 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
     const endpointText = getImportSourceEndpointText(config);
 
     if (isRussianImportSourceConfig(config)) return 'russia';
-    if (/\blte\b|лте/u.test(text)) return 'lte';
+    if (isLteImportSourceText(text)) return 'lte';
     if (/\bsmart\b|s[мm]art/u.test(text)) return 'smart';
     if (/🇩🇪|герман|\bde\b|\[de\]|(?:^|\.)de(?:\.|-|$)|\bger(?:many)?\b/iu.test(text)) {
         return 'germany';
