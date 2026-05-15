@@ -99,6 +99,12 @@ const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 const REGIONAL_INDICATOR_SYMBOL_LETTER_A = 0x1f1e6;
 const ASCII_LOWERCASE_A = 97;
 const COUNTRY_DISPLAY_NAMES = new Intl.DisplayNames(['ru'], { type: 'region' });
+const IMPORT_SOURCE_COUNTRY_CODE_ALIASES: Record<string, string> = {
+    uk: 'gb',
+};
+const IMPORT_SOURCE_COUNTRY_LABEL_ALIASES: Record<string, string> = {
+    gb: 'Великобритания',
+};
 const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
     SMART: 0,
     COUNTRY: 0,
@@ -179,20 +185,27 @@ function getFlagFromCountryCode(countryCode: string): string {
 
 function buildCountryManualGroupKey(
     countryCode: string,
-    flag = getFlagFromCountryCode(countryCode),
+    flag?: string,
     label?: string,
 ): CountryImportSourceManualGroupKey | null {
-    const normalizedCountryCode = countryCode.toUpperCase();
+    const aliasedCountryCode = IMPORT_SOURCE_COUNTRY_CODE_ALIASES[countryCode.toLowerCase()];
+    const normalizedCountryCode = (aliasedCountryCode ?? countryCode).toUpperCase();
     if (!/^[A-Z]{2}$/.test(normalizedCountryCode) || normalizedCountryCode === 'EU') {
         return null;
     }
 
-    const displayName = label || COUNTRY_DISPLAY_NAMES.of(normalizedCountryCode);
+    const normalizedCountryCodeLower = normalizedCountryCode.toLowerCase();
+    const displayName =
+        IMPORT_SOURCE_COUNTRY_LABEL_ALIASES[normalizedCountryCodeLower] ||
+        label ||
+        COUNTRY_DISPLAY_NAMES.of(normalizedCountryCode);
     if (!displayName || displayName === normalizedCountryCode) {
         return null;
     }
 
-    return `country:${normalizedCountryCode.toLowerCase()}:${flag} ${displayName}`;
+    const normalizedFlag = flag ?? getFlagFromCountryCode(normalizedCountryCode);
+
+    return `country:${normalizedCountryCodeLower}:${normalizedFlag} ${displayName}`;
 }
 
 function getCountryLabelFromFlagText(text: string, flag: string): string | undefined {
