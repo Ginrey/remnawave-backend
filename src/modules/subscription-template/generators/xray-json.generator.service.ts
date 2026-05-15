@@ -107,6 +107,7 @@ const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number>
 };
 const IMPORT_SOURCE_MANUAL_GROUP_ORDER: KnownImportSourceManualGroupKey[] = [
     'smart',
+    'lte',
     'germany',
     'netherlands',
     'sweden',
@@ -118,7 +119,6 @@ const IMPORT_SOURCE_MANUAL_GROUP_ORDER: KnownImportSourceManualGroupKey[] = [
     'kazakhstan',
     'thailand',
     'russia',
-    'lte',
     'other',
 ];
 
@@ -200,6 +200,9 @@ function getCountryLabelFromFlagText(text: string, flag: string): string | undef
         .slice(text.indexOf(flag) + flag.length)
         .split('|', 1)[0]
         .replace(/^[\s\-–—|⚡🔥🧶💧]+/u, '')
+        .replace(/[\s\-–—|⚡🔥🧶💧]+$/u, '')
+        .replace(/\s*[\[(].*?[\])]\s*$/u, '')
+        .replace(/\s+(?:ads?|demo|демо|torrent)\s*$/iu, '')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -493,7 +496,7 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
         case 'russia':
             return '🇷🇺 Россия';
         case 'lte':
-            return '🇪🇺 LTE';
+            return '🇪🇺 LTE (Белые списки)';
         default:
             return '🇯🇵 Прочие';
     }
