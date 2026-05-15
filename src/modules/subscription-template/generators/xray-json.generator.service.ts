@@ -58,7 +58,7 @@ type ImportedOutboundConfig = {
 
 type ImportSourceAutoCategory = 'LTE' | 'SMART' | 'COUNTRY' | 'BACKUP';
 
-type ImportSourceManualGroupKey =
+type KnownImportSourceManualGroupKey =
     | 'smart'
     | 'germany'
     | 'netherlands'
@@ -69,9 +69,15 @@ type ImportSourceManualGroupKey =
     | 'poland'
     | 'singapore'
     | 'kazakhstan'
+    | 'thailand'
     | 'russia'
     | 'lte'
     | 'other';
+
+type CountryImportSourceManualGroupKey = `country:${string}:${string}`;
+type ImportSourceManualGroupKey =
+    | KnownImportSourceManualGroupKey
+    | CountryImportSourceManualGroupKey;
 
 type ImportSourceManualGroup = {
     configs: ImportedOutboundConfig[];
@@ -90,13 +96,16 @@ const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+const REGIONAL_INDICATOR_SYMBOL_LETTER_A = 0x1f1e6;
+const ASCII_LOWERCASE_A = 97;
+const COUNTRY_DISPLAY_NAMES = new Intl.DisplayNames(['ru'], { type: 'region' });
 const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
     SMART: 0,
     COUNTRY: 0,
     BACKUP: 0,
     LTE: 0,
 };
-const IMPORT_SOURCE_MANUAL_GROUP_ORDER: ImportSourceManualGroupKey[] = [
+const IMPORT_SOURCE_MANUAL_GROUP_ORDER: KnownImportSourceManualGroupKey[] = [
     'smart',
     'germany',
     'netherlands',
@@ -107,14 +116,11 @@ const IMPORT_SOURCE_MANUAL_GROUP_ORDER: ImportSourceManualGroupKey[] = [
     'poland',
     'singapore',
     'kazakhstan',
+    'thailand',
     'russia',
     'lte',
     'other',
 ];
-
-function buildImportSourcesDescription(sourceNames: string[]): string {
-    return `Import sources: ${Array.from(new Set(sourceNames)).join(', ')}`;
-}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
     return value && typeof value === 'object' && !Array.isArray(value)
@@ -133,6 +139,111 @@ function getBalancerStrategySettings(
 
 function isNonEmptyString(value: unknown): value is string {
     return typeof value === 'string' && value.trim().length > 0;
+}
+
+function getNonEmptyParam(params: URLSearchParams, key: string): string | undefined {
+    const value = params.get(key);
+
+    return isNonEmptyString(value) ? value : undefined;
+}
+
+function getCountryCodeFromFlag(flag: string): string | null {
+    const codePoints = Array.from(flag);
+    if (codePoints.length !== 2) return null;
+
+    const letters = codePoints.map((symbol) => {
+        const codePoint = symbol.codePointAt(0);
+        if (
+            codePoint === undefined ||
+            codePoint < REGIONAL_INDICATOR_SYMBOL_LETTER_A ||
+            codePoint > REGIONAL_INDICATOR_SYMBOL_LETTER_A + 25
+        ) {
+            return null;
+        }
+
+        return String.fromCharCode(
+            ASCII_LOWERCASE_A + codePoint - REGIONAL_INDICATOR_SYMBOL_LETTER_A,
+        );
+    });
+
+    return letters.every(isNonEmptyString) ? letters.join('') : null;
+}
+
+function getFlagFromCountryCode(countryCode: string): string {
+    return Array.from(countryCode.toUpperCase())
+        .map((letter) =>
+            String.fromCodePoint(REGIONAL_INDICATOR_SYMBOL_LETTER_A + letter.charCodeAt(0) - 65),
+        )
+        .join('');
+}
+
+function buildCountryManualGroupKey(
+    countryCode: string,
+    flag = getFlagFromCountryCode(countryCode),
+    label?: string,
+): CountryImportSourceManualGroupKey | null {
+    const normalizedCountryCode = countryCode.toUpperCase();
+    if (!/^[A-Z]{2}$/.test(normalizedCountryCode) || normalizedCountryCode === 'EU') {
+        return null;
+    }
+
+    const displayName = label || COUNTRY_DISPLAY_NAMES.of(normalizedCountryCode);
+    if (!displayName || displayName === normalizedCountryCode) {
+        return null;
+    }
+
+    return `country:${normalizedCountryCode.toLowerCase()}:${flag} ${displayName}`;
+}
+
+function getCountryLabelFromFlagText(text: string, flag: string): string | undefined {
+    const label = text
+        .slice(text.indexOf(flag) + flag.length)
+        .split('|', 1)[0]
+        .replace(/^[\s\-–—|⚡🔥🧶💧]+/u, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return label || undefined;
+}
+
+function getCountryManualGroupKeyFromFlagText(
+    text: string,
+): CountryImportSourceManualGroupKey | null {
+    const flagMatch = text.match(/[\u{1F1E6}-\u{1F1FF}]{2}/u);
+    if (!flagMatch) return null;
+
+    const countryCode = getCountryCodeFromFlag(flagMatch[0]);
+    if (!countryCode) return null;
+
+    return buildCountryManualGroupKey(
+        countryCode,
+        flagMatch[0],
+        getCountryLabelFromFlagText(text, flagMatch[0]),
+    );
+}
+
+function getCountryManualGroupKeyFromEndpointText(
+    endpointText: string,
+): CountryImportSourceManualGroupKey | null {
+    for (const match of endpointText.matchAll(/(?:^|[.\-_])([a-z]{2})(?=[.\-_]|$)/giu)) {
+        const groupKey = buildCountryManualGroupKey(match[1]);
+        if (groupKey) return groupKey;
+    }
+
+    return null;
+}
+
+function isCountryImportSourceConfig(config: ImportedOutboundConfig): boolean {
+    const text = getImportSourceContextText(config);
+    const endpointText = getImportSourceEndpointText(config);
+
+    return (
+        getCountryManualGroupKeyFromFlagText(text) !== null ||
+        getCountryManualGroupKeyFromEndpointText(endpointText) !== null ||
+        /(?:герман|швейцар|польш|швец|литв|молдов|нидерланд|финлян|сша|сингапур|таиланд|fr-|kz-|th-|\[fr\]|\[kz\]|\[th\])/iu.test(
+            text,
+        )
+    );
 }
 
 function isValidPort(value: unknown): value is number {
@@ -290,11 +401,7 @@ function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSour
         return 'SMART';
     }
 
-    if (
-        /(?:🇩🇪|🇨🇭|🇵🇱|🇸🇪|🇱🇹|🇲🇩|🇳🇱|🇫🇮|🇺🇸|🇫🇷|🇬🇧|🇹🇷|🇸🇬|герман|швейцар|польш|швец|литв|молдов|нидерланд|финлян|сша|сингапур|fr-|kz-|\[fr\]|\[kz\])/iu.test(
-            text,
-        )
-    ) {
+    if (isCountryImportSourceConfig(config)) {
         return 'COUNTRY';
     }
 
@@ -331,6 +438,12 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
     if (/казах|\bkz-|^\[kz\]|\bkz\b|\[kz\]|(?:^|\.)kz(?:\.|-|$)/iu.test(text)) {
         return 'kazakhstan';
     }
+    if (/🇹🇭|таиланд|\bth-|\bth\b|\[th\]|(?:^|\.)th(?:\.|-|$)|\bthai(?:land)?\b/iu.test(text)) {
+        return 'thailand';
+    }
+
+    const countryGroupKeyFromFlag = getCountryManualGroupKeyFromFlagText(config.remarks);
+    if (countryGroupKeyFromFlag) return countryGroupKeyFromFlag;
 
     if (/(?:^|\.)de(?:\.|-|$)/iu.test(endpointText)) return 'germany';
     if (/(?:^|\.)nl(?:\.|-|$)/iu.test(endpointText)) return 'netherlands';
@@ -341,11 +454,19 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
     if (/(?:^|\.)pl(?:\.|-|$)/iu.test(endpointText)) return 'poland';
     if (/(?:^|\.)sg(?:\.|-|$)/iu.test(endpointText)) return 'singapore';
     if (/(?:^|\.)kz(?:\.|-|$)/iu.test(endpointText)) return 'kazakhstan';
+    if (/(?:^|\.)th(?:\.|-|$)/iu.test(endpointText)) return 'thailand';
+
+    const countryGroupKeyFromEndpoint = getCountryManualGroupKeyFromEndpointText(endpointText);
+    if (countryGroupKeyFromEndpoint) return countryGroupKeyFromEndpoint;
 
     return 'other';
 }
 
 function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKey): string {
+    if (groupKey.startsWith('country:')) {
+        return groupKey.split(':').slice(2).join(':');
+    }
+
     switch (groupKey) {
         case 'smart':
             return '🇪🇺 Быстрые';
@@ -367,6 +488,8 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
             return '🇸🇬 Сингапур';
         case 'kazakhstan':
             return '🇰🇿 Казахстан';
+        case 'thailand':
+            return '🇹🇭 Таиланд';
         case 'russia':
             return '🇷🇺 Россия';
         case 'lte':
@@ -374,6 +497,17 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
         default:
             return '🇯🇵 Прочие';
     }
+}
+
+function getImportSourceManualGroupSortIndex(groupKey: ImportSourceManualGroupKey): number {
+    if (groupKey.startsWith('country:')) {
+        return IMPORT_SOURCE_MANUAL_GROUP_ORDER.indexOf('russia');
+    }
+
+    const index = IMPORT_SOURCE_MANUAL_GROUP_ORDER.indexOf(
+        groupKey as KnownImportSourceManualGroupKey,
+    );
+    return index === -1 ? IMPORT_SOURCE_MANUAL_GROUP_ORDER.length : index;
 }
 
 function groupImportedConfigsForManualOutput(
@@ -390,14 +524,10 @@ function groupImportedConfigsForManualOutput(
 
     return Array.from(groups.entries())
         .sort(([left], [right]) => {
-            const leftIndex = IMPORT_SOURCE_MANUAL_GROUP_ORDER.indexOf(left);
-            const rightIndex = IMPORT_SOURCE_MANUAL_GROUP_ORDER.indexOf(right);
-            const normalizedLeftIndex =
-                leftIndex === -1 ? IMPORT_SOURCE_MANUAL_GROUP_ORDER.length : leftIndex;
-            const normalizedRightIndex =
-                rightIndex === -1 ? IMPORT_SOURCE_MANUAL_GROUP_ORDER.length : rightIndex;
+            const leftIndex = getImportSourceManualGroupSortIndex(left);
+            const rightIndex = getImportSourceManualGroupSortIndex(right);
 
-            return normalizedLeftIndex - normalizedRightIndex || left.localeCompare(right);
+            return leftIndex - rightIndex || left.localeCompare(right);
         })
         .map(([groupKey, groupConfigs]) => ({
             configs: groupConfigs,
@@ -674,21 +804,12 @@ export class XrayJsonGeneratorService {
             'AUTO',
             'lb_import_sources_auto',
             universalAutoImportedConfigs,
-            buildImportSourcesDescription(groupedConfigs.flatMap((config) => config.sourceNames)),
             (config) => IMPORT_SOURCE_AUTO_CATEGORY_COST[getImportSourceAutoCategory(config)],
-        );
-        const sourceDescription = buildImportSourcesDescription(
-            groupedConfigs.flatMap((groupConfig) => groupConfig.sourceNames),
         );
         const manualGroups = groupImportedConfigsForManualOutput(allImportedConfigs);
         const manualConfigs = manualGroups
             .map((manualGroup, groupIndex) =>
-                this.buildManualImportSourceGroupConfig(
-                    template,
-                    manualGroup,
-                    groupIndex,
-                    sourceDescription,
-                ),
+                this.buildManualImportSourceGroupConfig(template, manualGroup, groupIndex),
             )
             .filter(Boolean) as XrayJsonConfig[];
 
@@ -699,14 +820,12 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         manualGroup: ImportSourceManualGroup,
         groupIndex: number,
-        sourceDescription: string,
     ): XrayJsonConfig | null {
         return this.buildAutoImportSourceConfig(
             template,
             manualGroup.remarks,
             `lb_import_sources_manual_${manualGroup.tagPart}_${groupIndex}`,
             manualGroup.configs,
-            sourceDescription,
         );
     }
 
@@ -755,7 +874,6 @@ export class XrayJsonGeneratorService {
         remarks: string,
         balancerTag: string,
         importedConfigs: ImportedOutboundConfig[],
-        sourceDescription: string,
         getCost: (config: ImportedOutboundConfig) => number = () => 0,
     ): XrayJsonConfig | null {
         if (importedConfigs.length === 0) {
@@ -788,9 +906,6 @@ export class XrayJsonGeneratorService {
         return {
             ...baseTemplate,
             remarks,
-            meta: {
-                serverDescription: sourceDescription,
-            },
             outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
             observatory: {
                 enableConcurrency: true,
@@ -1261,6 +1376,10 @@ export class XrayJsonGeneratorService {
         network: string,
         params: URLSearchParams,
     ): Partial<StreamSettings> {
+        const grpcServiceName = getNonEmptyParam(params, 'serviceName');
+        const grpcAuthority =
+            getNonEmptyParam(params, 'authority') ?? getNonEmptyParam(params, 'host');
+
         switch (network) {
             case 'ws':
                 return {
@@ -1274,8 +1393,8 @@ export class XrayJsonGeneratorService {
             case 'grpc':
                 return {
                     grpcSettings: {
-                        serviceName: params.get('serviceName'),
-                        authority: params.get('authority') ?? params.get('host'),
+                        ...(grpcServiceName ? { serviceName: grpcServiceName } : {}),
+                        ...(grpcAuthority ? { authority: grpcAuthority } : {}),
                         mode: params.get('mode') === 'multi',
                     },
                 };
