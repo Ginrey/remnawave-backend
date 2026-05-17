@@ -103,7 +103,14 @@ const IMPORT_SOURCE_COUNTRY_CODE_ALIASES: Record<string, string> = {
     uk: 'gb',
 };
 const IMPORT_SOURCE_COUNTRY_LABEL_ALIASES: Record<string, string> = {
+    ae: 'ОАЭ',
     gb: 'Великобритания',
+    hk: 'Гонконг',
+    kg: 'Кыргызстан',
+    kr: 'Южная Корея',
+    mk: 'Македония',
+    sa: 'Саудовская Аравия',
+    us: 'США',
 };
 const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
     SMART: 0,
@@ -186,7 +193,6 @@ function getFlagFromCountryCode(countryCode: string): string {
 function buildCountryManualGroupKey(
     countryCode: string,
     flag?: string,
-    label?: string,
 ): CountryImportSourceManualGroupKey | null {
     const aliasedCountryCode = IMPORT_SOURCE_COUNTRY_CODE_ALIASES[countryCode.toLowerCase()];
     const normalizedCountryCode = (aliasedCountryCode ?? countryCode).toUpperCase();
@@ -197,7 +203,6 @@ function buildCountryManualGroupKey(
     const normalizedCountryCodeLower = normalizedCountryCode.toLowerCase();
     const displayName =
         IMPORT_SOURCE_COUNTRY_LABEL_ALIASES[normalizedCountryCodeLower] ||
-        label ||
         COUNTRY_DISPLAY_NAMES.of(normalizedCountryCode);
     if (!displayName || displayName === normalizedCountryCode) {
         return null;
@@ -206,20 +211,6 @@ function buildCountryManualGroupKey(
     const normalizedFlag = flag ?? getFlagFromCountryCode(normalizedCountryCode);
 
     return `country:${normalizedCountryCodeLower}:${normalizedFlag} ${displayName}`;
-}
-
-function getCountryLabelFromFlagText(text: string, flag: string): string | undefined {
-    const label = text
-        .slice(text.indexOf(flag) + flag.length)
-        .split('|', 1)[0]
-        .replace(/^[\s\-–—|⚡🔥🧶💧]+/u, '')
-        .replace(/[\s\-–—|⚡🔥🧶💧]+$/u, '')
-        .replace(/\s*[\[(].*?[\])]\s*$/u, '')
-        .replace(/\s+(?:ads?|demo|демо|torrent)\s*$/iu, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    return label || undefined;
 }
 
 function getCountryManualGroupKeyFromFlagText(
@@ -231,11 +222,7 @@ function getCountryManualGroupKeyFromFlagText(
     const countryCode = getCountryCodeFromFlag(flagMatch[0]);
     if (!countryCode) return null;
 
-    return buildCountryManualGroupKey(
-        countryCode,
-        flagMatch[0],
-        getCountryLabelFromFlagText(text, flagMatch[0]),
-    );
+    return buildCountryManualGroupKey(countryCode, flagMatch[0]);
 }
 
 function getCountryManualGroupKeyFromEndpointText(
