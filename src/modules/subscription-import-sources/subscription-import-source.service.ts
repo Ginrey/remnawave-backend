@@ -6,18 +6,20 @@ import { RawCacheService } from '@common/raw-cache';
 import { fail, ok, TResult } from '@common/types';
 import { ERRORS, INTERNAL_CACHE_KEYS } from '@libs/contracts/constants';
 
-import { SubscriptionImportSourceEntity } from './entities';
-import { SubscriptionImportSourceRepository } from './repositories/subscription-import-source.repository';
-import {
-    CreateSubscriptionImportSourceRequestDto,
-    UpdateSubscriptionImportSourceRequestDto,
-} from './dtos';
 import {
     GetSubscriptionImportSourceResponseModel,
     GetSubscriptionImportSourcesResponseModel,
 } from './models';
+import {
+    CreateSubscriptionImportSourceRequestDto,
+    UpdateSubscriptionImportSourceRequestDto,
+} from './dtos';
+import { SubscriptionImportSourceRepository } from './repositories/subscription-import-source.repository';
 import { ISubscriptionImportSourceGroup } from './interfaces/import-source-group.interface';
 import { SubscriptionFetchService } from './services/subscription-fetch.service';
+import { SubscriptionImportSourceEntity } from './entities';
+
+const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
 
 @Injectable()
 export class SubscriptionImportSourceService {
@@ -89,7 +91,7 @@ export class SubscriptionImportSourceService {
     }
 
     public async update(
-        dto: UpdateSubscriptionImportSourceRequestDto & { uuid: string },
+        dto: { uuid: string } & UpdateSubscriptionImportSourceRequestDto,
     ): Promise<TResult<GetSubscriptionImportSourceResponseModel>> {
         try {
             const existing = await this.repository.findByUUID(dto.uuid);
@@ -191,7 +193,9 @@ export class SubscriptionImportSourceService {
     public async getRawLinesForUser(userId: bigint): Promise<string[]> {
         try {
             const selectedSources = await this.selectRoundRobinSourcesForUser(userId);
-            return selectedSources.flatMap((source) => source.rawLines);
+            return selectedSources.flatMap((source) =>
+                source.rawLines.filter((line) => !line.startsWith(XRAY_JSON_IMPORT_PROTOCOL)),
+            );
         } catch (error) {
             this.logger.error('Error in getRawLinesForUser:', error);
             return [];

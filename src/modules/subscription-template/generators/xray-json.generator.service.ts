@@ -52,14 +52,20 @@ type TransportBuilderMap = {
 type ImportedOutboundConfig = {
     outbound: Outbound;
     remarks: string;
+    supportingOutbounds?: Outbound[];
     sourceGroupName?: string;
     sourceNames?: string[];
+};
+
+type XrayJsonImportPayload = {
+    outbound: Outbound;
+    remarks: string;
+    supportingOutbounds?: Outbound[];
 };
 
 type ImportSourceAutoCategory = 'LTE' | 'SMART' | 'COUNTRY' | 'BACKUP';
 
 type KnownImportSourceManualGroupKey =
-    | 'smart'
     | 'germany'
     | 'netherlands'
     | 'sweden'
@@ -96,6 +102,7 @@ const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
 const REGIONAL_INDICATOR_SYMBOL_LETTER_A = 0x1f1e6;
 const ASCII_LOWERCASE_A = 97;
 const COUNTRY_DISPLAY_NAMES = new Intl.DisplayNames(['ru'], { type: 'region' });
@@ -119,7 +126,6 @@ const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number>
     LTE: 0,
 };
 const IMPORT_SOURCE_MANUAL_GROUP_ORDER: KnownImportSourceManualGroupKey[] = [
-    'smart',
     'lte',
     'germany',
     'netherlands',
@@ -417,7 +423,6 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
 
     if (isRussianImportSourceConfig(config)) return 'russia';
     if (isLteImportSourceText(text)) return 'lte';
-    if (/\bsmart\b|s[мm]art/u.test(text)) return 'smart';
     if (/🇩🇪|герман|\bde\b|\[de\]|(?:^|\.)de(?:\.|-|$)|\bger(?:many)?\b/iu.test(text)) {
         return 'germany';
     }
@@ -471,8 +476,6 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
     }
 
     switch (groupKey) {
-        case 'smart':
-            return '🇪🇺 Быстрые';
         case 'germany':
             return '🇩🇪 Германия';
         case 'netherlands':
@@ -684,6 +687,42 @@ function decodeBase64Url(value: string): string {
     return Buffer.from(padded, 'base64').toString('utf-8');
 }
 
+function isXrayJsonImportPayload(value: unknown): value is XrayJsonImportPayload {
+    const payload = asRecord(value);
+    const outbound = asRecord(payload?.outbound);
+
+    return Boolean(
+        payload &&
+        outbound &&
+        typeof payload.remarks === 'string' &&
+        typeof outbound.protocol === 'string' &&
+        asRecord(outbound.settings),
+    );
+}
+
+function cloneOutbound(outbound: Outbound): Outbound {
+    return JSON.parse(JSON.stringify(outbound)) as Outbound;
+}
+
+function rewriteDialerProxyTag(
+    outbound: Outbound,
+    tagByOriginalTag: Map<string, string>,
+): Outbound {
+    const cloned = cloneOutbound(outbound);
+    const streamSettings = asRecord(cloned.streamSettings);
+    const sockopt = asRecord(streamSettings?.sockopt);
+    const dialerProxy = sockopt?.dialerProxy;
+
+    if (typeof dialerProxy === 'string') {
+        const rewrittenTag = tagByOriginalTag.get(dialerProxy);
+        if (rewrittenTag) {
+            sockopt!.dialerProxy = rewrittenTag;
+        }
+    }
+
+    return cloned;
+}
+
 function normalizeTagPart(value: string): string {
     const normalized = value
         .toLowerCase()
@@ -886,6 +925,9 @@ export class XrayJsonGeneratorService {
         const baseTemplate = { ...template };
         delete baseTemplate.remnawave;
         const importedOutbounds = importedConfigs.map((config) => config.outbound);
+        const supportingOutbounds = importedConfigs.flatMap(
+            (config) => config.supportingOutbounds ?? [],
+        );
         const subjectSelector = importedOutbounds.map((outbound) => outbound.tag);
         const existingRules = Array.isArray(baseTemplate.routing?.rules)
             ? baseTemplate.routing.rules
@@ -909,7 +951,7 @@ export class XrayJsonGeneratorService {
         return {
             ...baseTemplate,
             remarks,
-            outbounds: [...importedOutbounds, ...baseTemplate.outbounds],
+            outbounds: [...importedOutbounds, ...supportingOutbounds, ...baseTemplate.outbounds],
             observatory: {
                 enableConcurrency: true,
                 probeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
@@ -1153,6 +1195,10 @@ export class XrayJsonGeneratorService {
         index: number,
         fallbackRemarks?: string,
     ): ImportedOutboundConfig | null {
+        if (line.startsWith(XRAY_JSON_IMPORT_PROTOCOL)) {
+            return this.parseXrayJsonImportLine(line, `${tagPrefix}-${index}`, fallbackRemarks);
+        }
+
         const schemeSeparatorIndex = line.indexOf('://');
         if (schemeSeparatorIndex === -1) {
             return null;
@@ -1174,6 +1220,61 @@ export class XrayJsonGeneratorService {
                 return this.parseShadowsocksImportLine(line, tag, remarks);
             default:
                 return null;
+        }
+    }
+
+    private buildSupportingOutboundsForXrayJsonImport(
+        supportingOutbounds: Outbound[] | undefined,
+        tag: string,
+    ): {
+        supportingOutbounds: Outbound[];
+        tagByOriginalTag: Map<string, string>;
+    } {
+        const tagByOriginalTag = new Map<string, string>();
+
+        for (const [supportIndex, supportingOutbound] of (supportingOutbounds ?? []).entries()) {
+            if (!supportingOutbound.tag) continue;
+
+            tagByOriginalTag.set(
+                supportingOutbound.tag,
+                `${tag}-support-${normalizeTagPart(supportingOutbound.tag)}-${supportIndex}`,
+            );
+        }
+
+        return {
+            tagByOriginalTag,
+            supportingOutbounds: (supportingOutbounds ?? []).map((supportingOutbound) => {
+                const rewritten = rewriteDialerProxyTag(supportingOutbound, tagByOriginalTag);
+                rewritten.tag = tagByOriginalTag.get(supportingOutbound.tag) ?? `${tag}-support`;
+
+                return rewritten;
+            }),
+        };
+    }
+
+    private parseXrayJsonImportLine(
+        line: string,
+        tag: string,
+        fallbackRemarks?: string,
+    ): ImportedOutboundConfig | null {
+        try {
+            const encoded = line.slice(XRAY_JSON_IMPORT_PROTOCOL.length);
+            const payload = JSON.parse(decodeBase64Url(encoded)) as unknown;
+            if (!isXrayJsonImportPayload(payload)) return null;
+
+            const { supportingOutbounds, tagByOriginalTag } =
+                this.buildSupportingOutboundsForXrayJsonImport(payload.supportingOutbounds, tag);
+
+            return {
+                remarks: payload.remarks || fallbackRemarks || tag,
+                outbound: {
+                    ...rewriteDialerProxyTag(payload.outbound, tagByOriginalTag),
+                    tag,
+                },
+                supportingOutbounds,
+            };
+        } catch {
+            return null;
         }
     }
 
