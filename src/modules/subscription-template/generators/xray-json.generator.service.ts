@@ -100,6 +100,9 @@ type ImportSourceGroupConfigs = {
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
+const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
+const DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_TIMEOUT = '5s';
+const DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_SAMPLING = 3;
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
@@ -154,6 +157,24 @@ function getBalancerStrategySettings(
     const settings = asRecord(strategy?.settings);
 
     return settings ?? {};
+}
+
+function mergeStringLists(...lists: unknown[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+
+    for (const list of lists) {
+        if (!Array.isArray(list)) continue;
+
+        for (const item of list) {
+            if (!isNonEmptyString(item) || seen.has(item)) continue;
+
+            seen.add(item);
+            result.push(item);
+        }
+    }
+
+    return result;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -944,9 +965,18 @@ export class XrayJsonGeneratorService {
             typeof existingBalancerSettings.maxRTT === 'string'
                 ? existingBalancerSettings.maxRTT
                 : DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT;
-        const existingSelector = Array.isArray(baseTemplate.observatory?.subjectSelector)
-            ? baseTemplate.observatory.subjectSelector
-            : [];
+        const existingObservatory = asRecord(baseTemplate.observatory);
+        const existingBurstObservatory = asRecord(baseTemplate.burstObservatory);
+        const existingBurstPingConfig = asRecord(existingBurstObservatory?.pingConfig);
+        const observatorySubjectSelector = mergeStringLists(
+            existingObservatory?.subjectSelector,
+            subjectSelector,
+        );
+        const burstObservatorySubjectSelector = mergeStringLists(
+            existingBurstObservatory?.subjectSelector,
+            subjectSelector,
+        );
+        const fallbackTag = importedOutbounds[0]?.tag ?? 'direct';
 
         return {
             ...baseTemplate,
@@ -955,9 +985,21 @@ export class XrayJsonGeneratorService {
             observatory: {
                 enableConcurrency: true,
                 probeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
-                probeUrl: 'http://www.gstatic.com/generate_204',
-                ...(baseTemplate.observatory ?? {}),
-                subjectSelector: [...existingSelector, ...subjectSelector],
+                probeUrl: DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL,
+                ...(existingObservatory ?? {}),
+                subjectSelector: observatorySubjectSelector,
+            },
+            burstObservatory: {
+                ...(existingBurstObservatory ?? {}),
+                subjectSelector: burstObservatorySubjectSelector,
+                pingConfig: {
+                    destination: DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL,
+                    interval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
+                    connectivity: '',
+                    timeout: DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_TIMEOUT,
+                    sampling: DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_SAMPLING,
+                    ...(existingBurstPingConfig ?? {}),
+                },
             },
             routing: {
                 ...(baseTemplate.routing ?? {}),
@@ -978,7 +1020,7 @@ export class XrayJsonGeneratorService {
                                 maxRTT,
                             },
                         },
-                        fallbackTag: 'direct',
+                        fallbackTag,
                     },
                 ],
                 rules: [
