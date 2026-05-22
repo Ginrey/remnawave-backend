@@ -85,6 +85,7 @@ type ImportSourceManualGroupKey =
 
 type ImportSourceManualGroup = {
     configs: ImportedOutboundConfig[];
+    groupKey: ImportSourceManualGroupKey;
     remarks: string;
     tagPart: string;
 };
@@ -98,7 +99,6 @@ type ImportSourceGroupConfigs = {
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
-const FULL_IMPORT_SOURCE_LIST_REMARKS = '📋 Полный список';
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
@@ -508,6 +508,7 @@ function groupImportedConfigsForManualOutput(
         })
         .map(([groupKey, groupConfigs]) => ({
             configs: groupConfigs,
+            groupKey,
             remarks: buildImportSourceManualGroupRemarks(groupKey),
             tagPart: normalizeTagPart(groupKey),
         }));
@@ -826,27 +827,12 @@ export class XrayJsonGeneratorService {
         );
 
         if (fullImportSourceList) {
-            const lteConfigs = allImportedConfigs.filter((config) =>
-                isLteImportSourceText(getImportSourceContextText(config)),
-            );
-            const lteConfig = this.buildAutoImportSourceConfig(
+            const indexedManualConfigs = this.buildIndexedFullImportSourceConfigs(
                 template,
-                buildImportSourceManualGroupRemarks('lte'),
-                'lb_import_sources_manual_lte_0',
-                lteConfigs,
-            );
-            const fullConfig = this.buildAutoImportSourceConfig(
-                template,
-                FULL_IMPORT_SOURCE_LIST_REMARKS,
-                'lb_import_sources_manual_full_1',
-                allImportedConfigs,
+                groupedConfigs,
             );
 
-            return [
-                ...(universalAutoConfig ? [universalAutoConfig] : []),
-                ...(lteConfig ? [lteConfig] : []),
-                ...(fullConfig ? [fullConfig] : []),
-            ];
+            return [...(universalAutoConfig ? [universalAutoConfig] : []), ...indexedManualConfigs];
         }
 
         const manualGroups = groupImportedConfigsForManualOutput(allImportedConfigs);
@@ -857,6 +843,37 @@ export class XrayJsonGeneratorService {
             .filter(Boolean) as XrayJsonConfig[];
 
         return [...(universalAutoConfig ? [universalAutoConfig] : []), ...manualConfigs];
+    }
+
+    private buildIndexedFullImportSourceConfigs(
+        template: XrayJsonConfig,
+        groupedConfigs: ImportSourceGroupConfigs[],
+    ): XrayJsonConfig[] {
+        const manualGroups = groupedConfigs
+            .flatMap((config) => groupImportedConfigsForManualOutput(config.importedConfigs))
+            .sort((left, right) => {
+                const leftIndex = getImportSourceManualGroupSortIndex(left.groupKey);
+                const rightIndex = getImportSourceManualGroupSortIndex(right.groupKey);
+
+                return leftIndex - rightIndex || left.groupKey.localeCompare(right.groupKey);
+            });
+        const remarksCounters = new Map<string, number>();
+
+        return manualGroups
+            .map((manualGroup, groupIndex) => {
+                const index = (remarksCounters.get(manualGroup.remarks) ?? 0) + 1;
+                remarksCounters.set(manualGroup.remarks, index);
+
+                return this.buildManualImportSourceGroupConfig(
+                    template,
+                    {
+                        ...manualGroup,
+                        remarks: `${manualGroup.remarks} #${index}`,
+                    },
+                    groupIndex,
+                );
+            })
+            .filter(Boolean) as XrayJsonConfig[];
     }
 
     private buildManualImportSourceGroupConfig(
