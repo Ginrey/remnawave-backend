@@ -190,9 +190,14 @@ export class SubscriptionImportSourceService {
      * These lines must be included verbatim in the user's subscription — credentials
      * belong to the external server and must not be modified.
      */
-    public async getRawLinesForUser(userId: bigint): Promise<string[]> {
+    public async getRawLinesForUser(
+        userId: bigint,
+        includeAllImportSources = false,
+    ): Promise<string[]> {
         try {
-            const selectedSources = await this.selectRoundRobinSourcesForUser(userId);
+            const selectedSources = includeAllImportSources
+                ? await this.selectAllSourcesForUser(userId)
+                : await this.selectRoundRobinSourcesForUser(userId);
             return selectedSources.flatMap((source) =>
                 source.rawLines.filter((line) => !line.startsWith(XRAY_JSON_IMPORT_PROTOCOL)),
             );
@@ -204,13 +209,31 @@ export class SubscriptionImportSourceService {
 
     public async getGroupedRawLinesForUser(
         userId: bigint,
+        includeAllImportSources = false,
     ): Promise<ISubscriptionImportSourceGroup[]> {
         try {
-            return await this.selectRoundRobinSourcesForUser(userId);
+            return includeAllImportSources
+                ? await this.selectAllSourcesForUser(userId)
+                : await this.selectRoundRobinSourcesForUser(userId);
         } catch (error) {
             this.logger.error('Error in getGroupedRawLinesForUser:', error);
             return [];
         }
+    }
+
+    private async selectAllSourcesForUser(
+        userId: bigint,
+    ): Promise<ISubscriptionImportSourceGroup[]> {
+        const sources = await this.repository.findSourcesForUser(userId);
+
+        return sources
+            .filter((source) => source.cachedRawLines.length > 0)
+            .map((source) => ({
+                name: source.importGroup ?? source.name,
+                importGroup: source.importGroup,
+                sourceNames: [source.name],
+                rawLines: [...source.cachedRawLines],
+            }));
     }
 
     private async selectRoundRobinSourcesForUser(

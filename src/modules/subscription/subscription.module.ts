@@ -6,15 +6,20 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { SUBSCRIPTION_CONTROLLER, SUBSCRIPTION_ROUTES } from '@libs/contracts/api';
 
 import { SubscriptionResponseRulesModule } from '@modules/subscription-response-rules/subscription-response-rules.module';
+import { SubscriptionImportSourceModule } from '@modules/subscription-import-sources/subscription-import-source.module';
 import { ResponseRulesMiddleware } from '@modules/subscription-response-rules/middleware/response-rules.middleware';
 import { SubscriptionTemplateModule } from '@modules/subscription-template/subscription-template.module';
-import { SubscriptionImportSourceModule } from '@modules/subscription-import-sources/subscription-import-source.module';
 
 import { SubscriptionController, SubscriptionsController } from './controllers';
 import { SubscriptionService } from './subscription.service';
 
 @Module({
-    imports: [CqrsModule, SubscriptionTemplateModule, SubscriptionResponseRulesModule, SubscriptionImportSourceModule],
+    imports: [
+        CqrsModule,
+        SubscriptionTemplateModule,
+        SubscriptionResponseRulesModule,
+        SubscriptionImportSourceModule,
+    ],
     controllers: [SubscriptionController, SubscriptionsController],
     providers: [SubscriptionService],
     exports: [],

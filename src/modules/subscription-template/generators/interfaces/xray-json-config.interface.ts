@@ -56,13 +56,13 @@ export interface XrayJsonConfig {
     outbounds: Outbound[];
     dns?: Record<string, unknown>;
     inbounds?: Record<string, unknown>[];
-    routing?: Record<string, unknown> & {
+    routing?: {
         rules?: Record<string, unknown>[];
         balancers?: Record<string, unknown>[];
-    };
-    observatory?: Record<string, unknown> & {
+    } & Record<string, unknown>;
+    observatory?: {
         subjectSelector?: string[];
-    };
+    } & Record<string, unknown>;
     meta?: {
         serverDescription?: string;
     };
@@ -76,4 +76,5 @@ export interface IGenerateConfigParams {
     overrideTemplateName?: string;
     ignoreHostXrayJsonTemplate?: boolean;
     extraImportSourceGroups?: ISubscriptionImportSourceGroup[];
+    fullImportSourceList?: boolean;
 }

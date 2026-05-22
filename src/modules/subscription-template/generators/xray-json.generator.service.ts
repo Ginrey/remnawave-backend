@@ -63,8 +63,6 @@ type XrayJsonImportPayload = {
     supportingOutbounds?: Outbound[];
 };
 
-type ImportSourceAutoCategory = 'LTE' | 'SMART' | 'COUNTRY' | 'BACKUP';
-
 type KnownImportSourceManualGroupKey =
     | 'germany'
     | 'netherlands'
@@ -99,10 +97,8 @@ type ImportSourceGroupConfigs = {
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
-const DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT = '5s';
 const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
-const DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_TIMEOUT = '5s';
-const DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_SAMPLING = 3;
+const FULL_IMPORT_SOURCE_LIST_REMARKS = '📋 Полный список';
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
@@ -121,12 +117,6 @@ const IMPORT_SOURCE_COUNTRY_LABEL_ALIASES: Record<string, string> = {
     mk: 'Македония',
     sa: 'Саудовская Аравия',
     us: 'США',
-};
-const IMPORT_SOURCE_AUTO_CATEGORY_COST: Record<ImportSourceAutoCategory, number> = {
-    SMART: 0,
-    COUNTRY: 0,
-    BACKUP: 0,
-    LTE: 0,
 };
 const IMPORT_SOURCE_MANUAL_GROUP_ORDER: KnownImportSourceManualGroupKey[] = [
     'lte',
@@ -148,15 +138,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     return value && typeof value === 'object' && !Array.isArray(value)
         ? (value as Record<string, unknown>)
         : null;
-}
-
-function getBalancerStrategySettings(
-    balancer: Record<string, unknown> | undefined,
-): Record<string, unknown> {
-    const strategy = asRecord(balancer?.strategy);
-    const settings = asRecord(strategy?.settings);
-
-    return settings ?? {};
 }
 
 function mergeStringLists(...lists: unknown[]): string[] {
@@ -261,19 +242,6 @@ function getCountryManualGroupKeyFromEndpointText(
     }
 
     return null;
-}
-
-function isCountryImportSourceConfig(config: ImportedOutboundConfig): boolean {
-    const text = getImportSourceContextText(config);
-    const endpointText = getImportSourceEndpointText(config);
-
-    return (
-        getCountryManualGroupKeyFromFlagText(text) !== null ||
-        getCountryManualGroupKeyFromEndpointText(endpointText) !== null ||
-        /(?:герман|швейцар|польш|швец|литв|молдов|нидерланд|финлян|сша|сингапур|таиланд|fr-|kz-|th-|\[fr\]|\[kz\]|\[th\])/iu.test(
-            text,
-        )
-    );
 }
 
 function isValidPort(value: unknown): value is number {
@@ -418,24 +386,6 @@ function dedupeImportedConfigs(configs: ImportedOutboundConfig[]): ImportedOutbo
     }
 
     return deduped;
-}
-
-function getImportSourceAutoCategory(config: ImportedOutboundConfig): ImportSourceAutoCategory {
-    const text = getImportSourceContextText(config);
-
-    if (isLteImportSourceText(text)) {
-        return 'LTE';
-    }
-
-    if (/\bsmart\b|s[мm]art/u.test(text) && !isRussianImportSourceConfig(config)) {
-        return 'SMART';
-    }
-
-    if (isCountryImportSourceConfig(config)) {
-        return 'COUNTRY';
-    }
-
-    return 'BACKUP';
 }
 
 function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSourceManualGroupKey {
@@ -767,6 +717,7 @@ export class XrayJsonGeneratorService {
             overrideTemplateName,
             ignoreHostXrayJsonTemplate = false,
             extraImportSourceGroups = [],
+            fullImportSourceList = false,
         } = params;
 
         try {
@@ -809,7 +760,11 @@ export class XrayJsonGeneratorService {
             }
 
             configs.push(
-                ...this.buildImportSourcePoolConfigs(templateContent, extraImportSourceGroups),
+                ...this.buildImportSourcePoolConfigs(
+                    templateContent,
+                    extraImportSourceGroups,
+                    fullImportSourceList,
+                ),
             );
 
             return JSON.stringify(configs, null, 0);
@@ -851,6 +806,7 @@ export class XrayJsonGeneratorService {
     private buildImportSourcePoolConfigs(
         template: XrayJsonConfig,
         groups: ISubscriptionImportSourceGroup[],
+        fullImportSourceList: boolean,
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
             .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
@@ -867,8 +823,32 @@ export class XrayJsonGeneratorService {
             'AUTO',
             'lb_import_sources_auto',
             universalAutoImportedConfigs,
-            (config) => IMPORT_SOURCE_AUTO_CATEGORY_COST[getImportSourceAutoCategory(config)],
         );
+
+        if (fullImportSourceList) {
+            const lteConfigs = allImportedConfigs.filter((config) =>
+                isLteImportSourceText(getImportSourceContextText(config)),
+            );
+            const lteConfig = this.buildAutoImportSourceConfig(
+                template,
+                buildImportSourceManualGroupRemarks('lte'),
+                'lb_import_sources_manual_lte_0',
+                lteConfigs,
+            );
+            const fullConfig = this.buildAutoImportSourceConfig(
+                template,
+                FULL_IMPORT_SOURCE_LIST_REMARKS,
+                'lb_import_sources_manual_full_1',
+                allImportedConfigs,
+            );
+
+            return [
+                ...(universalAutoConfig ? [universalAutoConfig] : []),
+                ...(lteConfig ? [lteConfig] : []),
+                ...(fullConfig ? [fullConfig] : []),
+            ];
+        }
+
         const manualGroups = groupImportedConfigsForManualOutput(allImportedConfigs);
         const manualConfigs = manualGroups
             .map((manualGroup, groupIndex) =>
@@ -937,7 +917,6 @@ export class XrayJsonGeneratorService {
         remarks: string,
         balancerTag: string,
         importedConfigs: ImportedOutboundConfig[],
-        getCost: (config: ImportedOutboundConfig) => number = () => 0,
     ): XrayJsonConfig | null {
         if (importedConfigs.length === 0) {
             return null;
@@ -956,24 +935,12 @@ export class XrayJsonGeneratorService {
         const templateBalancers = Array.isArray(baseTemplate.routing?.balancers)
             ? baseTemplate.routing.balancers
             : [];
-        const existingBalancer = templateBalancers.find((balancer) => balancer.tag === balancerTag);
         const existingBalancers = templateBalancers.filter(
             (balancer) => balancer.tag !== balancerTag,
         );
-        const existingBalancerSettings = getBalancerStrategySettings(existingBalancer);
-        const maxRTT =
-            typeof existingBalancerSettings.maxRTT === 'string'
-                ? existingBalancerSettings.maxRTT
-                : DEFAULT_IMPORT_SOURCE_AUTO_MAX_RTT;
         const existingObservatory = asRecord(baseTemplate.observatory);
-        const existingBurstObservatory = asRecord(baseTemplate.burstObservatory);
-        const existingBurstPingConfig = asRecord(existingBurstObservatory?.pingConfig);
         const observatorySubjectSelector = mergeStringLists(
             existingObservatory?.subjectSelector,
-            subjectSelector,
-        );
-        const burstObservatorySubjectSelector = mergeStringLists(
-            existingBurstObservatory?.subjectSelector,
             subjectSelector,
         );
         const fallbackTag = importedOutbounds[0]?.tag ?? 'direct';
@@ -989,18 +956,6 @@ export class XrayJsonGeneratorService {
                 ...(existingObservatory ?? {}),
                 subjectSelector: observatorySubjectSelector,
             },
-            burstObservatory: {
-                ...(existingBurstObservatory ?? {}),
-                subjectSelector: burstObservatorySubjectSelector,
-                pingConfig: {
-                    destination: DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL,
-                    interval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
-                    connectivity: '',
-                    timeout: DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_TIMEOUT,
-                    sampling: DEFAULT_IMPORT_SOURCE_BURST_OBSERVATORY_SAMPLING,
-                    ...(existingBurstPingConfig ?? {}),
-                },
-            },
             routing: {
                 ...(baseTemplate.routing ?? {}),
                 balancers: [
@@ -1009,16 +964,7 @@ export class XrayJsonGeneratorService {
                         tag: balancerTag,
                         selector: subjectSelector,
                         strategy: {
-                            type: 'leastLoad',
-                            settings: {
-                                costs: importedConfigs.map((config) => ({
-                                    match: config.outbound.tag,
-                                    regexp: false,
-                                    value: getCost(config),
-                                })),
-                                expected: 1,
-                                maxRTT,
-                            },
+                            type: 'random',
                         },
                         fallbackTag,
                     },

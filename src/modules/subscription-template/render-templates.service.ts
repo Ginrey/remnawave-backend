@@ -37,6 +37,7 @@ export class RenderTemplatesService {
             hostsOverrides,
             extraRawLines,
             extraImportSourceGroups,
+            fullImportSourceList,
             fallbackOptions,
         } = params;
         const hasImportedConfigs =
@@ -111,6 +112,7 @@ export class RenderTemplatesService {
                         overrideTemplateName: srrContext.overrideTemplateName,
                         ignoreHostXrayJsonTemplate: srrContext.ignoreHostXrayJsonTemplate,
                         extraImportSourceGroups,
+                        fullImportSourceList,
                     }),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_JSON'].CONTENT_TYPE,
                 };

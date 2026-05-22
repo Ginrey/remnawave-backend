@@ -48,10 +48,10 @@ import {
     SubscriptionRawResponse,
     SubscriptionWithConfigResponse,
 } from './models';
+import { SubscriptionImportSourceService } from '../subscription-import-sources/subscription-import-source.service';
 import { getSubscriptionRefillDate, getSubscriptionUserInfo } from './utils/get-user-info.headers';
 import { GetSubpageConfigResponseModel } from './models/get-subpage-config.response.model';
 import { GetHostsForUserQuery } from '../hosts/queries/get-hosts-for-user';
-import { SubscriptionImportSourceService } from '../subscription-import-sources/subscription-import-source.service';
 import { ISubscriptionHeaders, IGetSubscriptionInfo } from './interfaces';
 import { GetAllSubscriptionsQueryDto } from './dto';
 
@@ -253,17 +253,24 @@ export class SubscriptionService {
                 srrContext.ip,
             );
 
+            const fullImportSourceList = this.hasFullImportSourceTag(user.response);
             const shouldIncludeImportSubscriptions = this.shouldIncludeImportSubscriptions(
                 user.response,
                 srrContext.matchedResponseType,
             );
             const extraRawLines =
                 shouldIncludeImportSubscriptions && srrContext.matchedResponseType === 'XRAY_BASE64'
-                    ? await this.importSourceService.getRawLinesForUser(user.response.tId)
+                    ? await this.importSourceService.getRawLinesForUser(
+                          user.response.tId,
+                          fullImportSourceList,
+                      )
                     : [];
             const extraImportSourceGroups =
                 shouldIncludeImportSubscriptions && srrContext.matchedResponseType === 'XRAY_JSON'
-                    ? await this.importSourceService.getGroupedRawLinesForUser(user.response.tId)
+                    ? await this.importSourceService.getGroupedRawLinesForUser(
+                          user.response.tId,
+                          fullImportSourceList,
+                      )
                     : [];
 
             const subscription = await this.renderTemplatesService.generateSubscription({
@@ -273,6 +280,7 @@ export class SubscriptionService {
                 hostsOverrides,
                 extraRawLines,
                 extraImportSourceGroups,
+                fullImportSourceList,
             });
 
             return new SubscriptionWithConfigResponse({
@@ -539,9 +547,11 @@ export class SubscriptionService {
             return false;
         }
 
-        return (
-            user.status !== USERS_STATUS.EXPIRED && dayjs(user.expireAt).isAfter(dayjs())
-        );
+        return user.status !== USERS_STATUS.EXPIRED && dayjs(user.expireAt).isAfter(dayjs());
+    }
+
+    private hasFullImportSourceTag(user: UserEntity): boolean {
+        return (user.tag ?? '').split(/[,\s;]+/).some((tag) => tag.trim().toLowerCase() === 'full');
     }
 
     public async getAllSubscriptions(query: GetAllSubscriptionsQueryDto): Promise<
