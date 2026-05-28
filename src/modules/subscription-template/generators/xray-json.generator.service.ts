@@ -18,6 +18,7 @@ import {
     StreamSettings,
     XrayJsonConfig,
 } from './interfaces/xray-json-config.interface';
+import { ImportSourceGeoIpClassifierService } from '../services/import-source-geoip-classifier.service';
 import { SubscriptionTemplateService } from '../subscription-template.service';
 import { ResolvedProxyConfig } from '../resolve-proxy/interfaces';
 
@@ -52,6 +53,7 @@ type TransportBuilderMap = {
 };
 
 type ImportedOutboundConfig = {
+    geoIpCountryCode?: string;
     outbound: Outbound;
     remarks: string;
     supportingOutbounds?: Outbound[];
@@ -101,6 +103,7 @@ type ImportSourceGroupConfigs = {
 type ImportSourceBalancerStrategy = 'leastLoad' | 'leastPing' | 'random';
 type ImportSourceXrayJsonRuntimeSettings = {
     autoExcludedCountryCodes: string[];
+    autoExcludedHostPatterns: string[];
     autoFallbackPolicy: 'first' | 'stableHash';
     autoIncludeLte: boolean;
     autoProbeInterval: string;
@@ -118,6 +121,7 @@ const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
 const DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS: ImportSourceXrayJsonRuntimeSettings = {
     autoExcludedCountryCodes: ['RU'],
+    autoExcludedHostPatterns: ['rus', 'russia', '.ru', 'росси'],
     autoFallbackPolicy: 'first',
     autoIncludeLte: true,
     autoProbeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
@@ -331,11 +335,29 @@ function hasServerData(config: ImportedOutboundConfig): boolean {
 }
 
 function getImportSourceEndpointText(config: ImportedOutboundConfig): string {
+    return getImportSourceEndpointIdentifiers(config).join(' ').toLowerCase();
+}
+
+function getImportSourceEndpointAddresses(config: ImportedOutboundConfig): string[] {
     const outbound = config.outbound;
     const vnext = outbound.settings.vnext?.[0];
     const server = outbound.settings.servers?.[0];
 
-    return [vnext?.address, server?.address].filter(isNonEmptyString).join(' ').toLowerCase();
+    return [vnext?.address, server?.address].filter(isNonEmptyString);
+}
+
+function getImportSourceEndpointIdentifiers(config: ImportedOutboundConfig): string[] {
+    const outbound = config.outbound;
+    const streamSettings = asRecord(outbound.streamSettings);
+    const tlsSettings = asRecord(streamSettings?.tlsSettings);
+    const realitySettings = asRecord(streamSettings?.realitySettings);
+
+    return [
+        ...getImportSourceEndpointAddresses(config),
+        tlsSettings?.serverName,
+        realitySettings?.serverName,
+        outbound.tag,
+    ].filter(isNonEmptyString);
 }
 
 function getImportSourceClassificationText(config: ImportedOutboundConfig): string {
@@ -489,6 +511,15 @@ function getImportSourceManualGroupKey(config: ImportedOutboundConfig): ImportSo
     const countryGroupKeyFromEndpoint = getCountryManualGroupKeyFromEndpointText(endpointText);
     if (countryGroupKeyFromEndpoint) return countryGroupKeyFromEndpoint;
 
+    if (config.geoIpCountryCode) {
+        const geoIpGroupKey = buildCountryManualGroupKey(
+            config.geoIpCountryCode,
+            getFlagFromCountryCode(config.geoIpCountryCode),
+        );
+
+        if (geoIpGroupKey) return geoIpGroupKey;
+    }
+
     return 'other';
 }
 
@@ -588,6 +619,8 @@ function sortImportedConfigsForAutoOutput(
 }
 
 function getImportSourceCountryCode(config: ImportedOutboundConfig): string | null {
+    if (config.geoIpCountryCode) return config.geoIpCountryCode.toUpperCase();
+
     const groupKey = getImportSourceManualGroupKey(config);
 
     if (groupKey.startsWith('country:')) {
@@ -612,6 +645,20 @@ function getImportSourceCountryCode(config: ImportedOutboundConfig): string | nu
     return regionNames[groupKey] ?? null;
 }
 
+function matchesAutoExcludedHostPattern(text: string, pattern: string): boolean {
+    const normalizedPattern = pattern.trim().toLowerCase();
+    if (!normalizedPattern) return false;
+
+    if (normalizedPattern.startsWith('.')) {
+        return text.includes(normalizedPattern);
+    }
+
+    return text
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter(Boolean)
+        .some((token) => token.startsWith(normalizedPattern));
+}
+
 function isExcludedFromAuto(
     config: ImportedOutboundConfig,
     settings: ImportSourceXrayJsonRuntimeSettings,
@@ -620,13 +667,17 @@ function isExcludedFromAuto(
         settings.autoExcludedCountryCodes.map((countryCode) => countryCode.toUpperCase()),
     );
     const countryCode = getImportSourceCountryCode(config);
+    const classificationText = getImportSourceClassificationText(config);
 
     if (countryCode && excludedCountries.has(countryCode)) return true;
     if (
-        !settings.autoIncludeLte &&
-        isLteImportSourceText(getImportSourceClassificationText(config))
-    )
+        settings.autoExcludedHostPatterns.some((pattern) =>
+            matchesAutoExcludedHostPattern(classificationText, pattern),
+        )
+    ) {
         return true;
+    }
+    if (!settings.autoIncludeLte && isLteImportSourceText(classificationText)) return true;
 
     return false;
 }
@@ -859,7 +910,10 @@ function normalizeTagPart(value: string): string {
 export class XrayJsonGeneratorService {
     private readonly logger = new Logger(XrayJsonGeneratorService.name);
 
-    constructor(private readonly subscriptionTemplateService: SubscriptionTemplateService) {}
+    constructor(
+        private readonly subscriptionTemplateService: SubscriptionTemplateService,
+        private readonly importSourceGeoIpClassifier: ImportSourceGeoIpClassifierService,
+    ) {}
 
     public async generateConfig(params: IGenerateConfigParams): Promise<string> {
         const {
@@ -1090,6 +1144,7 @@ export class XrayJsonGeneratorService {
 
             const configWithSourceContext: ImportedOutboundConfig = {
                 ...config,
+                geoIpCountryCode: this.getImportSourceGeoIpCountryCode(config),
                 sourceGroupName: group.name,
                 sourceNames: group.sourceNames,
             };
@@ -1114,6 +1169,15 @@ export class XrayJsonGeneratorService {
             importedConfigs,
             sourceNames: group.sourceNames,
         };
+    }
+
+    private getImportSourceGeoIpCountryCode(config: ImportedOutboundConfig): string | undefined {
+        for (const address of getImportSourceEndpointAddresses(config)) {
+            const countryCode = this.importSourceGeoIpClassifier.lookupCountryCode(address);
+            if (countryCode) return countryCode;
+        }
+
+        return undefined;
     }
 
     private buildAutoImportSourceConfig(

@@ -12,6 +12,7 @@ SET "import_sources_settings" = '{
     "clientPreset": "happSafe",
     "autoIncludeLte": true,
     "autoExcludedCountryCodes": ["RU"],
+    "autoExcludedHostPatterns": ["rus", "russia", ".ru", "росси"],
     "autoFallbackPolicy": "first",
     "observatoryEnableConcurrency": true,
     "routingDomainStrategy": null,

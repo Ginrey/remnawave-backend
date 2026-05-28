@@ -69,6 +69,7 @@ export const configSchema = z
         METRICS_USER: z.string().min(1, { message: 'METRICS_USER cannot be empty' }),
         METRICS_PASS: z.string().min(1, { message: 'METRICS_PASS cannot be empty' }),
         SUB_PUBLIC_DOMAIN: z.string(),
+        IMPORT_SOURCES_GEOIP_MMDB_PATH: z.string().optional(),
         WEBHOOK_ENABLED: z
             .string()
             .default('false')

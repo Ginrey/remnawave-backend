@@ -107,6 +107,7 @@
     "ioredis": "^5.9.3",
     "jsonwebtoken": "^9.0.3",
     "kysely": "^0.28.11",
+    "maxmind": "^5.0.6",
     "morgan": "^1.10.1",
     "nanoid": "5.1.6",
     "nest-winston": "^1.10.2",
