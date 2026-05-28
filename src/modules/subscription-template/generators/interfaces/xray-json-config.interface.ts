@@ -77,4 +77,5 @@ export interface IGenerateConfigParams {
     ignoreHostXrayJsonTemplate?: boolean;
     extraImportSourceGroups?: ISubscriptionImportSourceGroup[];
     fullImportSourceList?: boolean;
+    importSourceAutoStrategy?: 'leastLoad' | 'random';
 }

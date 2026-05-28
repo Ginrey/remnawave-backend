@@ -98,6 +98,8 @@ type ImportSourceGroupConfigs = {
     sourceNames: string[];
 };
 
+type ImportSourceBalancerStrategy = 'leastLoad' | 'random';
+
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
@@ -764,6 +766,7 @@ export class XrayJsonGeneratorService {
             ignoreHostXrayJsonTemplate = false,
             extraImportSourceGroups = [],
             fullImportSourceList = false,
+            importSourceAutoStrategy = 'random',
         } = params;
 
         try {
@@ -810,6 +813,7 @@ export class XrayJsonGeneratorService {
                     templateContent,
                     extraImportSourceGroups,
                     fullImportSourceList,
+                    importSourceAutoStrategy,
                 ),
             );
 
@@ -853,6 +857,7 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         groups: ISubscriptionImportSourceGroup[],
         fullImportSourceList: boolean,
+        importSourceAutoStrategy: ImportSourceBalancerStrategy,
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
             .map((group) => this.buildImportSourceConfigsForGroup(group))
@@ -869,6 +874,7 @@ export class XrayJsonGeneratorService {
             'AUTO',
             'lb_import_sources_auto',
             sortImportedConfigsForAutoOutput(universalAutoImportedConfigs),
+            importSourceAutoStrategy,
         );
 
         if (fullImportSourceList) {
@@ -977,6 +983,7 @@ export class XrayJsonGeneratorService {
         remarks: string,
         balancerTag: string,
         importedConfigs: ImportedOutboundConfig[],
+        strategyType: ImportSourceBalancerStrategy = 'random',
     ): XrayJsonConfig | null {
         if (importedConfigs.length === 0) {
             return null;
@@ -1024,7 +1031,7 @@ export class XrayJsonGeneratorService {
                         tag: balancerTag,
                         selector: subjectSelector,
                         strategy: {
-                            type: 'random',
+                            type: strategyType,
                         },
                         fallbackTag,
                     },

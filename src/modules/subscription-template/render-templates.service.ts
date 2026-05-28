@@ -15,6 +15,25 @@ import { SUBSCRIPTION_CONFIG_TYPES } from './constants/config-types';
 import { ResolvedProxyConfig } from './resolve-proxy/interfaces';
 import { IGenerateSubscription } from './interfaces';
 
+function getUserTags(user: UserEntity): Set<string> {
+    return new Set(
+        (user.tag ?? '')
+            .split(/[,\s;]+/)
+            .map((tag) => tag.trim().toLowerCase())
+            .filter(Boolean),
+    );
+}
+
+function getImportSourceAutoStrategy(user: UserEntity): 'leastLoad' | 'random' {
+    const tags = getUserTags(user);
+
+    if (tags.has('leastload')) {
+        return 'leastLoad';
+    }
+
+    return 'random';
+}
+
 @Injectable()
 export class RenderTemplatesService {
     constructor(
@@ -113,6 +132,7 @@ export class RenderTemplatesService {
                         ignoreHostXrayJsonTemplate: srrContext.ignoreHostXrayJsonTemplate,
                         extraImportSourceGroups,
                         fullImportSourceList,
+                        importSourceAutoStrategy: getImportSourceAutoStrategy(user),
                     }),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_JSON'].CONTENT_TYPE,
                 };
