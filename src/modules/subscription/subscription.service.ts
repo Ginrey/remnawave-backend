@@ -27,8 +27,8 @@ import { XrayGeneratorService } from '@modules/subscription-template/generators/
 import { HwidUserDeviceEntity } from '@modules/hwid-user-devices/entities/hwid-user-device.entity';
 import { RenderTemplatesService } from '@modules/subscription-template/render-templates.service';
 import { CountUsersDevicesQuery } from '@modules/hwid-user-devices/queries/count-users-devices';
-import { GetUsersWithPaginationQuery } from '@modules/users/queries/get-users-with-pagination';
 import { isJsonSubscriptionFallbackSupported } from '@modules/subscription-template/constants';
+import { GetUsersWithPaginationQuery } from '@modules/users/queries/get-users-with-pagination';
 import { ExternalSquadEntity } from '@modules/external-squads/entities/external-squad.entity';
 import { ResolvedProxyConfig } from '@modules/subscription-template/resolve-proxy/interfaces';
 import { CheckHwidExistsQuery } from '@modules/hwid-user-devices/queries/check-hwid-exists';
@@ -147,6 +147,40 @@ export class SubscriptionService {
 
             const subscriptionSettings = srrContext.subscriptionSettings;
 
+            if (
+                srrContext.subscriptionSettings.serveJsonAtBaseSubscription &&
+                srrContext.matchedResponseType === 'XRAY_BASE64' &&
+                !srrContext.ignoreServeJsonAtBaseSubscription
+            ) {
+                if (isJsonSubscriptionFallbackSupported(srrContext.userAgent)) {
+                    srrContext.matchedResponseType = 'XRAY_JSON';
+                }
+            }
+
+            if (!this.isUserSubscriptionActive(user.response)) {
+                await this.updateAndReportSubscriptionRequest(
+                    user.response.uuid,
+                    userAgent,
+                    srrContext.ip,
+                );
+                const subscription = await this.renderTemplatesService.generateSubscription({
+                    srrContext,
+                    user: user.response,
+                    hosts: [],
+                    hostsOverrides,
+                });
+
+                return new SubscriptionWithConfigResponse({
+                    headers: await this.getUserProfileHeadersInfo(
+                        user.response,
+                        /^Happ\//.test(userAgent),
+                        subscriptionSettings,
+                    ),
+                    body: subscription.subscription,
+                    contentType: subscription.contentType,
+                });
+            }
+
             if (subscriptionSettings.hwidSettings.enabled) {
                 const isAllowed = await this.checkHwidDeviceLimit(
                     user.response,
@@ -218,16 +252,6 @@ export class SubscriptionService {
                 }
             } else {
                 await this.checkAndUpsertHwidUserDevice(user.response, hwidHeaders);
-            }
-
-            if (
-                srrContext.subscriptionSettings.serveJsonAtBaseSubscription &&
-                srrContext.matchedResponseType === 'XRAY_BASE64' &&
-                !srrContext.ignoreServeJsonAtBaseSubscription
-            ) {
-                if (isJsonSubscriptionFallbackSupported(srrContext.userAgent)) {
-                    srrContext.matchedResponseType = 'XRAY_JSON';
-                }
             }
 
             const hosts = await this.queryBus.execute(
@@ -378,6 +402,27 @@ export class SubscriptionService {
                 isHwidLimited = false;
             }
 
+            if (!this.isUserSubscriptionActive(user)) {
+                await this.updateAndReportSubscriptionRequest(user.uuid, userAgent, requestIp);
+
+                return ok(
+                    new RawSubscriptionWithHostsResponse({
+                        user: new GetFullUserResponseModel(user, this.subPublicDomain),
+                        convertedUserInfo: {
+                            daysLeft: dayjs(user.expireAt).diff(dayjs(), 'day'),
+                            trafficUsed: prettyBytesUtil(user.userTraffic.usedTrafficBytes),
+                            trafficLimit: prettyBytesUtil(user.trafficLimitBytes),
+                            lifetimeTrafficUsed: prettyBytesUtil(
+                                user.userTraffic.lifetimeUsedTrafficBytes,
+                            ),
+                            isHwidLimited: isHwidLimited ?? false,
+                        },
+                        headers,
+                        resolvedProxyConfigs: [],
+                    }),
+                );
+            }
+
             const hosts = await this.queryBus.execute(
                 new GetHostsForUserQuery(user.tId, withDisabledHosts, true),
             );
@@ -489,7 +534,10 @@ export class SubscriptionService {
             let xrayLinks: string[] = [];
             const ssConfLinks: Record<string, string> = {};
 
-            if (!settings.hwidSettings.enabled || authenticated) {
+            if (
+                (authenticated || this.isUserSubscriptionActive(userEntity)) &&
+                (!settings.hwidSettings.enabled || authenticated)
+            ) {
                 const hostsResponse = await this.queryBus.execute(
                     new GetHostsForUserQuery(userEntity.tId, false, false),
                 );
@@ -547,11 +595,15 @@ export class SubscriptionService {
             return false;
         }
 
-        return user.status !== USERS_STATUS.EXPIRED && dayjs(user.expireAt).isAfter(dayjs());
+        return this.isUserSubscriptionActive(user);
+    }
+
+    private isUserSubscriptionActive(user: UserEntity): boolean {
+        return user.status === USERS_STATUS.ACTIVE && dayjs(user.expireAt).isAfter(dayjs());
     }
 
     private hasFullImportSourceTag(user: UserEntity): boolean {
-        return (user.tag ?? '').split(/[,\s;]+/).some((tag) => tag.trim().toLowerCase() === 'full');
+        return (user.tag ?? '').trim().toLowerCase().includes('full');
     }
 
     public async getAllSubscriptions(query: GetAllSubscriptionsQueryDto): Promise<

@@ -78,4 +78,5 @@ export interface IGenerateConfigParams {
     extraImportSourceGroups?: ISubscriptionImportSourceGroup[];
     fullImportSourceList?: boolean;
     importSourceAutoStrategy?: 'leastLoad' | 'random';
+    importSourceManualStrategy?: 'leastLoad' | 'random';
 }

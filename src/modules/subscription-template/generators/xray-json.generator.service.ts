@@ -767,6 +767,7 @@ export class XrayJsonGeneratorService {
             extraImportSourceGroups = [],
             fullImportSourceList = false,
             importSourceAutoStrategy = 'random',
+            importSourceManualStrategy = 'random',
         } = params;
 
         try {
@@ -814,6 +815,7 @@ export class XrayJsonGeneratorService {
                     extraImportSourceGroups,
                     fullImportSourceList,
                     importSourceAutoStrategy,
+                    importSourceManualStrategy,
                 ),
             );
 
@@ -858,6 +860,7 @@ export class XrayJsonGeneratorService {
         groups: ISubscriptionImportSourceGroup[],
         fullImportSourceList: boolean,
         importSourceAutoStrategy: ImportSourceBalancerStrategy,
+        importSourceManualStrategy: ImportSourceBalancerStrategy,
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
             .map((group) => this.buildImportSourceConfigsForGroup(group))
@@ -881,6 +884,7 @@ export class XrayJsonGeneratorService {
             const indexedManualConfigs = this.buildIndexedFullImportSourceConfigs(
                 template,
                 groupedConfigs,
+                importSourceManualStrategy,
             );
 
             return [...(universalAutoConfig ? [universalAutoConfig] : []), ...indexedManualConfigs];
@@ -889,7 +893,12 @@ export class XrayJsonGeneratorService {
         const manualGroups = groupImportedConfigsForManualOutput(allImportedConfigs);
         const manualConfigs = manualGroups
             .map((manualGroup, groupIndex) =>
-                this.buildManualImportSourceGroupConfig(template, manualGroup, groupIndex),
+                this.buildManualImportSourceGroupConfig(
+                    template,
+                    manualGroup,
+                    groupIndex,
+                    importSourceManualStrategy,
+                ),
             )
             .filter(Boolean) as XrayJsonConfig[];
 
@@ -899,6 +908,7 @@ export class XrayJsonGeneratorService {
     private buildIndexedFullImportSourceConfigs(
         template: XrayJsonConfig,
         groupedConfigs: ImportSourceGroupConfigs[],
+        importSourceManualStrategy: ImportSourceBalancerStrategy,
     ): XrayJsonConfig[] {
         const manualGroups = groupedConfigs
             .flatMap((config) => groupImportedConfigsForManualOutput(config.importedConfigs))
@@ -922,6 +932,7 @@ export class XrayJsonGeneratorService {
                         remarks: `${manualGroup.remarks} #${index}`,
                     },
                     groupIndex,
+                    importSourceManualStrategy,
                 );
             })
             .filter(Boolean) as XrayJsonConfig[];
@@ -931,12 +942,14 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         manualGroup: ImportSourceManualGroup,
         groupIndex: number,
+        strategyType: ImportSourceBalancerStrategy = 'random',
     ): XrayJsonConfig | null {
         return this.buildAutoImportSourceConfig(
             template,
             manualGroup.remarks,
             `lb_import_sources_manual_${manualGroup.tagPart}_${groupIndex}`,
             manualGroup.configs,
+            strategyType,
         );
     }
 
