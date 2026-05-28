@@ -1,10 +1,11 @@
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { createHash } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import { RawCacheService } from '@common/raw-cache';
 import { fail, ok, TResult } from '@common/types';
-import { ERRORS, INTERNAL_CACHE_KEYS } from '@libs/contracts/constants';
+import { IMPORT_FETCH_STATUS } from '@libs/contracts/models';
+import { ERRORS } from '@libs/contracts/constants';
 
 import {
     GetSubscriptionImportSourceResponseModel,
@@ -20,6 +21,15 @@ import { SubscriptionFetchService } from './services/subscription-fetch.service'
 import { SubscriptionImportSourceEntity } from './entities';
 
 const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
+const IMPORT_SOURCE_STALE_INTERVAL_MULTIPLIER = 3;
+const IMPORT_SOURCE_MIN_FRESH_WINDOW_MS = 15 * 60_000;
+const IMPORT_SOURCE_MIN_HOST_COUNT_RATIO = 0.6;
+
+type SelectableImportSource = Awaited<
+    ReturnType<SubscriptionImportSourceRepository['findSourcesForUser']>
+>[number];
+
+type ImportSourceHealthTier = 'fresh-success' | 'success-cache' | 'non-error-cache' | 'any-cache';
 
 @Injectable()
 export class SubscriptionImportSourceService {
@@ -28,7 +38,6 @@ export class SubscriptionImportSourceService {
     constructor(
         private readonly repository: SubscriptionImportSourceRepository,
         private readonly fetchService: SubscriptionFetchService,
-        private readonly rawCacheService: RawCacheService,
     ) {}
 
     public async getAll(): Promise<TResult<GetSubscriptionImportSourcesResponseModel>> {
@@ -197,7 +206,7 @@ export class SubscriptionImportSourceService {
         try {
             const selectedSources = includeAllImportSources
                 ? await this.selectAllSourcesForUser(userId)
-                : await this.selectRoundRobinSourcesForUser(userId);
+                : await this.selectStableSourcesForUser(userId);
             return selectedSources.flatMap((source) =>
                 source.rawLines.filter((line) => !line.startsWith(XRAY_JSON_IMPORT_PROTOCOL)),
             );
@@ -214,7 +223,7 @@ export class SubscriptionImportSourceService {
         try {
             return includeAllImportSources
                 ? await this.selectAllSourcesForUser(userId)
-                : await this.selectRoundRobinSourcesForUser(userId);
+                : await this.selectStableSourcesForUser(userId);
         } catch (error) {
             this.logger.error('Error in getGroupedRawLinesForUser:', error);
             return [];
@@ -228,6 +237,7 @@ export class SubscriptionImportSourceService {
 
         return sources
             .filter((source) => source.cachedRawLines.length > 0)
+            .sort((left, right) => this.compareSourcesForStableOutput(left, right))
             .map((source) => ({
                 name: source.importGroup ?? source.name,
                 importGroup: source.importGroup,
@@ -236,7 +246,7 @@ export class SubscriptionImportSourceService {
             }));
     }
 
-    private async selectRoundRobinSourcesForUser(
+    private async selectStableSourcesForUser(
         userId: bigint,
     ): Promise<ISubscriptionImportSourceGroup[]> {
         const sources = await this.repository.findSourcesForUser(userId);
@@ -262,17 +272,9 @@ export class SubscriptionImportSourceService {
         }
 
         for (const [groupKey, bucket] of groupedSources.entries()) {
-            if (bucket.length === 0) {
-                continue;
-            }
+            const selected = this.selectSourceForImportGroup(userId, groupKey, bucket);
 
-            const counter = await this.rawCacheService.increment(
-                INTERNAL_CACHE_KEYS.SUBSCRIPTION_IMPORT_SOURCE_ROUND_ROBIN(groupKey),
-            );
-            const index = (counter - 1) % bucket.length;
-            const selected = bucket[index];
-
-            if (selected.cachedRawLines.length === 0) {
+            if (!selected) {
                 continue;
             }
 
@@ -285,5 +287,178 @@ export class SubscriptionImportSourceService {
         }
 
         return selectedSources;
+    }
+
+    private selectSourceForImportGroup(
+        userId: bigint,
+        groupKey: string,
+        bucket: SelectableImportSource[],
+    ): SelectableImportSource | null {
+        const sourcesWithCache = bucket.filter((source) => source.cachedRawLines.length > 0);
+        if (sourcesWithCache.length === 0) return null;
+
+        const stickyPrimary = this.pickStableSource(userId, groupKey, sourcesWithCache);
+
+        if (stickyPrimary && this.canUseStickyPrimary(stickyPrimary, sourcesWithCache)) {
+            return stickyPrimary;
+        }
+
+        for (const tier of [
+            'fresh-success',
+            'success-cache',
+            'non-error-cache',
+            'any-cache',
+        ] satisfies ImportSourceHealthTier[]) {
+            const candidates = this.getTierCandidates(sourcesWithCache, tier);
+            const selected = this.pickStableSource(userId, `${groupKey}:${tier}`, candidates);
+
+            if (selected) return selected;
+        }
+
+        return null;
+    }
+
+    private pickStableSource(
+        userId: bigint,
+        groupKey: string,
+        sources: SelectableImportSource[],
+    ): SelectableImportSource | null {
+        if (sources.length === 0) return null;
+
+        return sources.reduce(
+            (selected, source) => {
+                if (!selected) return source;
+
+                const selectedScore = this.getRendezvousScore(userId, groupKey, selected);
+                const sourceScore = this.getRendezvousScore(userId, groupKey, source);
+
+                if (sourceScore > selectedScore) return source;
+                if (sourceScore < selectedScore) return selected;
+
+                return source.name.localeCompare(selected.name) < 0 ? source : selected;
+            },
+            null as SelectableImportSource | null,
+        );
+    }
+
+    private getRendezvousScore(
+        userId: bigint,
+        groupKey: string,
+        source: SelectableImportSource,
+    ): bigint {
+        const hash = createHash('sha256')
+            .update(`${userId.toString()}:${groupKey}:${source.uuid}`)
+            .digest('hex')
+            .slice(0, 16);
+
+        return BigInt(`0x${hash}`);
+    }
+
+    private canUseStickyPrimary(
+        source: SelectableImportSource,
+        alternatives: SelectableImportSource[],
+    ): boolean {
+        return (
+            source.cachedRawLines.length > 0 &&
+            source.lastFetchStatus !== IMPORT_FETCH_STATUS.ERROR &&
+            !this.isSourceSeverelyDepleted(source, alternatives)
+        );
+    }
+
+    private getTierCandidates(
+        sources: SelectableImportSource[],
+        tier: ImportSourceHealthTier,
+    ): SelectableImportSource[] {
+        const candidates = sources.filter((source) => this.isSourceInHealthTier(source, tier));
+        const stableCandidates = candidates.filter(
+            (source) => !this.isSourceSeverelyDepleted(source, candidates),
+        );
+
+        return stableCandidates.length > 0 ? stableCandidates : candidates;
+    }
+
+    private isSourceInHealthTier(
+        source: SelectableImportSource,
+        tier: ImportSourceHealthTier,
+    ): boolean {
+        if (source.cachedRawLines.length === 0) return false;
+
+        switch (tier) {
+            case 'fresh-success':
+                return (
+                    source.lastFetchStatus === IMPORT_FETCH_STATUS.SUCCESS &&
+                    this.isSourceFresh(source)
+                );
+            case 'success-cache':
+                return source.lastFetchStatus === IMPORT_FETCH_STATUS.SUCCESS;
+            case 'non-error-cache':
+                return source.lastFetchStatus !== IMPORT_FETCH_STATUS.ERROR;
+            case 'any-cache':
+                return true;
+        }
+    }
+
+    private isSourceFresh(source: SelectableImportSource): boolean {
+        if (!source.lastFetchedAt) return false;
+
+        const freshWindowMs = Math.max(
+            source.fetchIntervalMinutes * IMPORT_SOURCE_STALE_INTERVAL_MULTIPLIER * 60_000,
+            IMPORT_SOURCE_MIN_FRESH_WINDOW_MS,
+        );
+
+        return Date.now() - source.lastFetchedAt.getTime() <= freshWindowMs;
+    }
+
+    private isSourceSeverelyDepleted(
+        source: SelectableImportSource,
+        alternatives: SelectableImportSource[],
+    ): boolean {
+        const bestHostCount = Math.max(
+            ...alternatives.map((item) => this.getSourceHostCount(item)),
+        );
+        if (bestHostCount < 10) return false;
+
+        return this.getSourceHostCount(source) < bestHostCount * IMPORT_SOURCE_MIN_HOST_COUNT_RATIO;
+    }
+
+    private getSourceHostCount(source: SelectableImportSource): number {
+        return source.lastHostsCount ?? source.cachedRawLines.length;
+    }
+
+    private compareSourcesForStableOutput(
+        left: SelectableImportSource,
+        right: SelectableImportSource,
+    ): number {
+        return (
+            this.getSourceHealthSortIndex(left) - this.getSourceHealthSortIndex(right) ||
+            (left.importGroup ?? left.name).localeCompare(right.importGroup ?? right.name) ||
+            left.name.localeCompare(right.name)
+        );
+    }
+
+    private getSourceHealthSortIndex(source: SelectableImportSource): number {
+        if (
+            source.cachedRawLines.length > 0 &&
+            source.lastFetchStatus === IMPORT_FETCH_STATUS.SUCCESS &&
+            this.isSourceFresh(source)
+        ) {
+            return 0;
+        }
+
+        if (
+            source.cachedRawLines.length > 0 &&
+            source.lastFetchStatus === IMPORT_FETCH_STATUS.SUCCESS
+        ) {
+            return 1;
+        }
+
+        if (
+            source.cachedRawLines.length > 0 &&
+            source.lastFetchStatus !== IMPORT_FETCH_STATUS.ERROR
+        ) {
+            return 2;
+        }
+
+        return 3;
     }
 }

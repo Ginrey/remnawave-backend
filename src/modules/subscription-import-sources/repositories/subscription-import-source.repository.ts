@@ -1,7 +1,8 @@
+import { Prisma } from '@prisma/client';
+
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 
 import { ICrud } from '@common/types/crud-port';
 
@@ -9,9 +10,7 @@ import { SubscriptionImportSourceConverter } from '../subscription-import-source
 import { SubscriptionImportSourceEntity } from '../entities';
 
 @Injectable()
-export class SubscriptionImportSourceRepository
-    implements ICrud<SubscriptionImportSourceEntity>
-{
+export class SubscriptionImportSourceRepository implements ICrud<SubscriptionImportSourceEntity> {
     constructor(
         private readonly prisma: TransactionHost<TransactionalAdapterPrisma>,
         private readonly converter: SubscriptionImportSourceConverter,
@@ -85,12 +84,15 @@ export class SubscriptionImportSourceRepository
         return !!result;
     }
 
-    public async findSourcesForUser(
-        userId: bigint,
-    ): Promise<
+    public async findSourcesForUser(userId: bigint): Promise<
         Array<{
+            uuid: string;
             name: string;
             importGroup: string | null;
+            fetchIntervalMinutes: number;
+            lastFetchedAt: Date | null;
+            lastFetchStatus: string | null;
+            lastHostsCount: number | null;
             cachedRawLines: string[];
         }>
     > {
@@ -109,10 +111,15 @@ export class SubscriptionImportSourceRepository
                     },
                 },
             },
-            orderBy: { createdAt: 'asc' },
+            orderBy: [{ importGroup: 'asc' }, { name: 'asc' }, { createdAt: 'asc' }],
             select: {
+                uuid: true,
                 name: true,
                 importGroup: true,
+                fetchIntervalMinutes: true,
+                lastFetchedAt: true,
+                lastFetchStatus: true,
+                lastHostsCount: true,
                 cachedRawLines: true,
             },
         });

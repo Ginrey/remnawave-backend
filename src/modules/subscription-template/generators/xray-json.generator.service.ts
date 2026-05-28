@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type {
     TRemnawaveInjectorSelectFrom,
     TRemnawaveInjectorSelector,
@@ -373,6 +375,27 @@ function getImportSourceFingerprint(config: ImportedOutboundConfig): string {
     });
 }
 
+function getStableHashPart(value: string): string {
+    return createHash('sha256').update(value).digest('hex').slice(0, 12);
+}
+
+function getStableImportSourceTag(tagPrefix: string, config: ImportedOutboundConfig): string {
+    return `${normalizeTagPart(tagPrefix)}-${getStableHashPart(getImportSourceFingerprint(config))}-proxy`;
+}
+
+function getStableSupportingOutboundTag(
+    primaryTag: string,
+    supportingOutbound: Outbound,
+    supportIndex: number,
+): string {
+    const fingerprintOutbound = cloneOutbound(supportingOutbound) as Partial<Outbound>;
+    delete fingerprintOutbound.tag;
+
+    return `support-${primaryTag}-${getStableHashPart(
+        JSON.stringify(fingerprintOutbound),
+    )}-${supportIndex}`;
+}
+
 function dedupeImportedConfigs(configs: ImportedOutboundConfig[]): ImportedOutboundConfig[] {
     const seen = new Set<string>();
     const deduped: ImportedOutboundConfig[] = [];
@@ -512,6 +535,28 @@ function groupImportedConfigsForManualOutput(
             remarks: buildImportSourceManualGroupRemarks(groupKey),
             tagPart: normalizeTagPart(groupKey),
         }));
+}
+
+function getImportSourceAutoSortIndex(config: ImportedOutboundConfig): number {
+    const classificationText = getImportSourceClassificationText(config);
+    const groupKey = getImportSourceManualGroupKey(config);
+
+    if (!isLteImportSourceText(classificationText) && groupKey !== 'other') return 0;
+    if (groupKey !== 'other') return 1;
+    if (!isLteImportSourceText(classificationText)) return 2;
+
+    return 3;
+}
+
+function sortImportedConfigsForAutoOutput(
+    configs: ImportedOutboundConfig[],
+): ImportedOutboundConfig[] {
+    return [...configs].sort((left, right) => {
+        return (
+            getImportSourceAutoSortIndex(left) - getImportSourceAutoSortIndex(right) ||
+            left.outbound.tag.localeCompare(right.outbound.tag)
+        );
+    });
 }
 
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
@@ -810,7 +855,7 @@ export class XrayJsonGeneratorService {
         fullImportSourceList: boolean,
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
-            .map((group, index) => this.buildImportSourceConfigsForGroup(template, group, index))
+            .map((group) => this.buildImportSourceConfigsForGroup(group))
             .filter(Boolean) as ImportSourceGroupConfigs[];
 
         const allImportedConfigs = dedupeImportedConfigs(
@@ -823,7 +868,7 @@ export class XrayJsonGeneratorService {
             template,
             'AUTO',
             'lb_import_sources_auto',
-            universalAutoImportedConfigs,
+            sortImportedConfigsForAutoOutput(universalAutoImportedConfigs),
         );
 
         if (fullImportSourceList) {
@@ -890,11 +935,9 @@ export class XrayJsonGeneratorService {
     }
 
     private buildImportSourceConfigsForGroup(
-        template: XrayJsonConfig,
         group: ISubscriptionImportSourceGroup,
-        groupIndex: number,
     ): ImportSourceGroupConfigs | null {
-        const tagPrefix = `${normalizeTagPart(group.name)}-${groupIndex}`;
+        const tagPrefix = normalizeTagPart(group.name);
         const parsedConfigs: ImportedOutboundConfig[] = [];
 
         for (const [index, line] of group.rawLines.entries()) {
@@ -1200,8 +1243,14 @@ export class XrayJsonGeneratorService {
         index: number,
         fallbackRemarks?: string,
     ): ImportedOutboundConfig | null {
+        const positionalTag = `${tagPrefix}-${index}`;
+        const positionalRemarks = fallbackRemarks ?? `${tagPrefix}-${index + 1}`;
+        let config: ImportedOutboundConfig | null = null;
+
         if (line.startsWith(XRAY_JSON_IMPORT_PROTOCOL)) {
-            return this.parseXrayJsonImportLine(line, `${tagPrefix}-${index}`, fallbackRemarks);
+            config = this.parseXrayJsonImportLine(line, positionalTag, positionalRemarks);
+
+            return config ? this.withStableImportSourceTags(tagPrefix, config) : null;
         }
 
         const schemeSeparatorIndex = line.indexOf('://');
@@ -1210,22 +1259,79 @@ export class XrayJsonGeneratorService {
         }
 
         const scheme = line.slice(0, schemeSeparatorIndex).toLowerCase();
-        const tag = `${tagPrefix}-${index}`;
-        const remarks = fallbackRemarks ?? `${tagPrefix}-${index + 1}`;
 
         switch (scheme) {
             case 'vless':
-                return this.parseVlessOrTrojanImportLine(line, 'vless', tag, remarks);
+                config = this.parseVlessOrTrojanImportLine(
+                    line,
+                    'vless',
+                    positionalTag,
+                    positionalRemarks,
+                );
+                break;
             case 'vmess':
-                return this.parseVmessImportLine(line, tag, remarks);
+                config = this.parseVmessImportLine(line, positionalTag, positionalRemarks);
+                break;
             case 'trojan':
-                return this.parseVlessOrTrojanImportLine(line, 'trojan', tag, remarks);
+                config = this.parseVlessOrTrojanImportLine(
+                    line,
+                    'trojan',
+                    positionalTag,
+                    positionalRemarks,
+                );
+                break;
             case 'ss':
             case 'shadowsocks':
-                return this.parseShadowsocksImportLine(line, tag, remarks);
+                config = this.parseShadowsocksImportLine(line, positionalTag, positionalRemarks);
+                break;
             default:
                 return null;
         }
+
+        return config ? this.withStableImportSourceTags(tagPrefix, config) : null;
+    }
+
+    private withStableImportSourceTags(
+        tagPrefix: string,
+        config: ImportedOutboundConfig,
+    ): ImportedOutboundConfig {
+        const tag = getStableImportSourceTag(tagPrefix, config);
+
+        if (!config.supportingOutbounds?.length) {
+            return {
+                ...config,
+                outbound: {
+                    ...config.outbound,
+                    tag,
+                },
+            };
+        }
+
+        const tagByOriginalTag = new Map<string, string>();
+        for (const [supportIndex, supportingOutbound] of config.supportingOutbounds.entries()) {
+            if (!supportingOutbound.tag) continue;
+
+            tagByOriginalTag.set(
+                supportingOutbound.tag,
+                getStableSupportingOutboundTag(tag, supportingOutbound, supportIndex),
+            );
+        }
+
+        return {
+            ...config,
+            outbound: {
+                ...rewriteDialerProxyTag(config.outbound, tagByOriginalTag),
+                tag,
+            },
+            supportingOutbounds: config.supportingOutbounds.map((supportingOutbound) => {
+                const rewritten = rewriteDialerProxyTag(supportingOutbound, tagByOriginalTag);
+                rewritten.tag =
+                    tagByOriginalTag.get(supportingOutbound.tag) ??
+                    getStableSupportingOutboundTag(tag, supportingOutbound, 0);
+
+                return rewritten;
+            }),
+        };
     }
 
     private buildSupportingOutboundsForXrayJsonImport(
