@@ -79,8 +79,6 @@ export interface IGenerateConfigParams {
     fullImportSourceList?: boolean;
     importSourceAutoStrategy?: 'leastLoad' | 'leastPing' | 'random';
     importSourceManualStrategy?: 'leastLoad' | 'leastPing' | 'random';
-    importSourceXrayJsonSettings?: Pick<
-        TImportSourcesXrayJsonSettings,
-        'autoProbeInterval' | 'autoProbeUrl' | 'autoSortEnabled'
-    >;
+    importSourceXrayJsonSettings?: TImportSourcesXrayJsonSettings;
+    importSourceFallbackSeed?: string;
 }

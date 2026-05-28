@@ -100,18 +100,34 @@ type ImportSourceGroupConfigs = {
 
 type ImportSourceBalancerStrategy = 'leastLoad' | 'leastPing' | 'random';
 type ImportSourceXrayJsonRuntimeSettings = {
+    autoExcludedCountryCodes: string[];
+    autoFallbackPolicy: 'first' | 'stableHash';
+    autoIncludeLte: boolean;
     autoProbeInterval: string;
     autoProbeUrl: string;
     autoSortEnabled: boolean;
+    blockBitTorrent: boolean;
+    clientPreset: 'advanced' | 'happSafe';
+    directPrivateNetworks: boolean;
+    observatoryEnableConcurrency: boolean;
+    routingDomainStrategy: 'AsIs' | 'IPIfNonMatch' | 'IPOnDemand' | null;
 };
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
 const DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS: ImportSourceXrayJsonRuntimeSettings = {
+    autoExcludedCountryCodes: ['RU'],
+    autoFallbackPolicy: 'first',
+    autoIncludeLte: true,
     autoProbeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
     autoProbeUrl: DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL,
     autoSortEnabled: true,
+    blockBitTorrent: false,
+    clientPreset: 'happSafe',
+    directPrivateNetworks: false,
+    observatoryEnableConcurrency: true,
+    routingDomainStrategy: null,
 };
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
@@ -571,6 +587,83 @@ function sortImportedConfigsForAutoOutput(
     });
 }
 
+function getImportSourceCountryCode(config: ImportedOutboundConfig): string | null {
+    const groupKey = getImportSourceManualGroupKey(config);
+
+    if (groupKey.startsWith('country:')) {
+        return groupKey.split(':')[1]?.toUpperCase() ?? null;
+    }
+
+    if (groupKey === 'usa') return 'US';
+    if (groupKey === 'russia') return 'RU';
+
+    const regionNames: Record<string, string> = {
+        france: 'FR',
+        germany: 'DE',
+        kazakhstan: 'KZ',
+        netherlands: 'NL',
+        poland: 'PL',
+        singapore: 'SG',
+        sweden: 'SE',
+        switzerland: 'CH',
+        thailand: 'TH',
+    };
+
+    return regionNames[groupKey] ?? null;
+}
+
+function isExcludedFromAuto(
+    config: ImportedOutboundConfig,
+    settings: ImportSourceXrayJsonRuntimeSettings,
+): boolean {
+    const excludedCountries = new Set(
+        settings.autoExcludedCountryCodes.map((countryCode) => countryCode.toUpperCase()),
+    );
+    const countryCode = getImportSourceCountryCode(config);
+
+    if (countryCode && excludedCountries.has(countryCode)) return true;
+    if (
+        !settings.autoIncludeLte &&
+        isLteImportSourceText(getImportSourceClassificationText(config))
+    )
+        return true;
+
+    return false;
+}
+
+function getStableFallbackTag(outbounds: Outbound[], seed: string): string | null {
+    if (outbounds.length === 0) return null;
+
+    return (
+        outbounds.reduce(
+            (selected, outbound) => {
+                if (!selected) return outbound;
+
+                const selectedScore = createHash('sha256')
+                    .update(`${seed}:${selected.tag}`)
+                    .digest('hex')
+                    .slice(0, 16);
+                const outboundScore = createHash('sha256')
+                    .update(`${seed}:${outbound.tag}`)
+                    .digest('hex')
+                    .slice(0, 16);
+
+                if (outboundScore > selectedScore) return outbound;
+                if (outboundScore < selectedScore) return selected;
+
+                return outbound.tag.localeCompare(selected.tag) < 0 ? outbound : selected;
+            },
+            null as Outbound | null,
+        )?.tag ?? null
+    );
+}
+
+function ensureOutbound(outbounds: Outbound[], outbound: Outbound): Outbound[] {
+    if (outbounds.some((existing) => existing.tag === outbound.tag)) return outbounds;
+
+    return [...outbounds, outbound];
+}
+
 const PROTOCOL_BUILDERS: ProtocolBuilderMap = {
     vless: (host) => ({
         vnext: [
@@ -779,6 +872,7 @@ export class XrayJsonGeneratorService {
             importSourceAutoStrategy = 'random',
             importSourceManualStrategy = 'random',
             importSourceXrayJsonSettings,
+            importSourceFallbackSeed = '',
         } = params;
         const runtimeImportSourceSettings: ImportSourceXrayJsonRuntimeSettings = {
             ...DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS,
@@ -832,6 +926,7 @@ export class XrayJsonGeneratorService {
                     importSourceAutoStrategy,
                     importSourceManualStrategy,
                     runtimeImportSourceSettings,
+                    importSourceFallbackSeed,
                 ),
             );
 
@@ -878,6 +973,7 @@ export class XrayJsonGeneratorService {
         importSourceAutoStrategy: ImportSourceBalancerStrategy,
         importSourceManualStrategy: ImportSourceBalancerStrategy,
         importSourceSettings: ImportSourceXrayJsonRuntimeSettings,
+        importSourceFallbackSeed: string,
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
             .map((group) => this.buildImportSourceConfigsForGroup(group))
@@ -887,7 +983,9 @@ export class XrayJsonGeneratorService {
             groupedConfigs.flatMap((config) => config.importedConfigs),
         );
         const universalAutoImportedConfigs = dedupeImportedConfigs(
-            groupedConfigs.flatMap((config) => config.autoImportedConfigs),
+            groupedConfigs
+                .flatMap((config) => config.autoImportedConfigs)
+                .filter((config) => !isExcludedFromAuto(config, importSourceSettings)),
         );
         const universalAutoConfig = this.buildAutoImportSourceConfig(
             template,
@@ -898,6 +996,7 @@ export class XrayJsonGeneratorService {
                 : universalAutoImportedConfigs,
             importSourceAutoStrategy,
             importSourceSettings,
+            importSourceFallbackSeed,
         );
 
         if (fullImportSourceList) {
@@ -1024,6 +1123,7 @@ export class XrayJsonGeneratorService {
         importedConfigs: ImportedOutboundConfig[],
         strategyType: ImportSourceBalancerStrategy = 'random',
         importSourceSettings: ImportSourceXrayJsonRuntimeSettings = DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS,
+        fallbackSeed = '',
     ): XrayJsonConfig | null {
         if (importedConfigs.length === 0) {
             return null;
@@ -1050,14 +1150,48 @@ export class XrayJsonGeneratorService {
             existingObservatory?.subjectSelector,
             subjectSelector,
         );
-        const fallbackTag = importedOutbounds[0]?.tag ?? 'direct';
+        const isAdvancedPreset = importSourceSettings.clientPreset === 'advanced';
+        const fallbackTag =
+            importSourceSettings.autoFallbackPolicy === 'stableHash' && fallbackSeed
+                ? (getStableFallbackTag(importedOutbounds, `${fallbackSeed}:${balancerTag}`) ??
+                  importedOutbounds[0]?.tag ??
+                  'direct')
+                : (importedOutbounds[0]?.tag ?? 'direct');
+        const advancedRoutingRules: Record<string, unknown>[] = [];
+        let baseOutbounds = baseTemplate.outbounds;
+
+        if (isAdvancedPreset && importSourceSettings.directPrivateNetworks) {
+            baseOutbounds = ensureOutbound(baseOutbounds, {
+                tag: 'direct',
+                protocol: 'freedom',
+                settings: {},
+            });
+            advancedRoutingRules.push({
+                type: 'field',
+                ip: ['geoip:private'],
+                outboundTag: 'direct',
+            });
+        }
+
+        if (isAdvancedPreset && importSourceSettings.blockBitTorrent) {
+            baseOutbounds = ensureOutbound(baseOutbounds, {
+                tag: 'block',
+                protocol: 'blackhole',
+                settings: {},
+            });
+            advancedRoutingRules.push({
+                type: 'field',
+                outboundTag: 'block',
+                protocol: ['bittorrent'],
+            });
+        }
 
         return {
             ...baseTemplate,
             remarks,
-            outbounds: [...importedOutbounds, ...supportingOutbounds, ...baseTemplate.outbounds],
+            outbounds: [...importedOutbounds, ...supportingOutbounds, ...baseOutbounds],
             observatory: {
-                enableConcurrency: true,
+                enableConcurrency: importSourceSettings.observatoryEnableConcurrency,
                 probeInterval: importSourceSettings.autoProbeInterval,
                 probeUrl: importSourceSettings.autoProbeUrl,
                 ...(existingObservatory ?? {}),
@@ -1065,6 +1199,10 @@ export class XrayJsonGeneratorService {
             },
             routing: {
                 ...(baseTemplate.routing ?? {}),
+                ...(isAdvancedPreset &&
+                    importSourceSettings.routingDomainStrategy && {
+                        domainStrategy: importSourceSettings.routingDomainStrategy,
+                    }),
                 balancers: [
                     ...existingBalancers,
                     {
@@ -1078,6 +1216,7 @@ export class XrayJsonGeneratorService {
                 ],
                 rules: [
                     ...existingRules,
+                    ...advancedRoutingRules,
                     {
                         type: 'field',
                         balancerTag,

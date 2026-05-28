@@ -162,6 +162,7 @@ export class RenderTemplatesService {
                         ),
                         importSourceXrayJsonSettings:
                             srrContext.subscriptionSettings.importSourcesSettings.xrayJson,
+                        importSourceFallbackSeed: user.uuid,
                     }),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_JSON'].CONTENT_TYPE,
                 };

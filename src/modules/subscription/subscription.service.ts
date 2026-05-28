@@ -292,7 +292,10 @@ export class SubscriptionService {
                 srrContext.ip,
             );
 
-            const fullImportSourceList = this.hasFullImportSourceTag(user.response);
+            const fullImportSourceList =
+                this.hasFullImportSourceTag(user.response) ||
+                subscriptionSettings.importSourcesSettings.xrayJson.importGroupSelectionMode ===
+                    'all';
             const shouldIncludeImportSubscriptions = this.shouldIncludeImportSubscriptions(
                 user.response,
                 srrContext.matchedResponseType,
