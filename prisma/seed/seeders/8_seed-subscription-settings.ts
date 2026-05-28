@@ -1,7 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import consola from 'consola';
 
-import { CustomRemarksSchema, TCustomRemarks } from '@libs/contracts/models';
+import {
+    CustomRemarksSchema,
+    DEFAULT_IMPORT_SOURCES_SETTINGS,
+    TCustomRemarks,
+} from '@libs/contracts/models';
 
 import { DEFAULT_HWID_SETTINGS } from '../default';
 
@@ -32,6 +36,15 @@ export async function seedSubscriptionSettings(prisma: PrismaClient) {
             });
 
             consola.success('Default HWID Settings have been seeded');
+        }
+
+        if (existingConfig.importSourcesSettings === null) {
+            await prisma.subscriptionSettings.update({
+                where: { uuid: existingConfig.uuid },
+                data: { importSourcesSettings: DEFAULT_IMPORT_SOURCES_SETTINGS },
+            });
+
+            consola.success('Default Import Sources Settings have been seeded');
         }
 
         if (existingConfig.customRemarks) {
@@ -82,6 +95,7 @@ export async function seedSubscriptionSettings(prisma: PrismaClient) {
             isProfileWebpageUrlEnabled: true,
             serveJsonAtBaseSubscription: false,
             randomizeHosts: false,
+            importSourcesSettings: DEFAULT_IMPORT_SOURCES_SETTINGS,
             hwidSettings: DEFAULT_HWID_SETTINGS,
             isShowCustomRemarks: true,
             customRemarks,

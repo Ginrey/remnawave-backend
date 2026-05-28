@@ -1,6 +1,11 @@
 import { SubscriptionSettings } from '@prisma/client';
 
-import { TCustomRemarks, THwidSettings } from '@libs/contracts/models';
+import {
+    resolveImportSourcesSettings,
+    TCustomRemarks,
+    THwidSettings,
+    TImportSourcesSettings,
+} from '@libs/contracts/models';
 
 import { TResponseRulesConfig } from '@modules/subscription-response-rules/types/response-rules.types';
 
@@ -21,6 +26,7 @@ export class SubscriptionSettingsEntity implements SubscriptionSettings {
     customResponseHeaders: Record<string, string> | null;
 
     randomizeHosts: boolean;
+    importSourcesSettings: TImportSourcesSettings;
 
     responseRules: TResponseRulesConfig | null;
     hwidSettings: THwidSettings;
@@ -29,6 +35,7 @@ export class SubscriptionSettingsEntity implements SubscriptionSettings {
     updatedAt: Date;
     constructor(config: Partial<SubscriptionSettings>) {
         Object.assign(this, config);
+        this.importSourcesSettings = resolveImportSourcesSettings(config.importSourcesSettings);
         return this;
     }
 }

@@ -1,4 +1,4 @@
-import type { TRemnawaveInjector } from '@libs/contracts/models';
+import type { TImportSourcesXrayJsonSettings, TRemnawaveInjector } from '@libs/contracts/models';
 
 import { ISubscriptionImportSourceGroup } from '@modules/subscription-import-sources/interfaces/import-source-group.interface';
 import { ResolvedProxyConfig } from '@modules/subscription-template/resolve-proxy/interfaces';
@@ -77,6 +77,10 @@ export interface IGenerateConfigParams {
     ignoreHostXrayJsonTemplate?: boolean;
     extraImportSourceGroups?: ISubscriptionImportSourceGroup[];
     fullImportSourceList?: boolean;
-    importSourceAutoStrategy?: 'leastLoad' | 'random';
-    importSourceManualStrategy?: 'leastLoad' | 'random';
+    importSourceAutoStrategy?: 'leastLoad' | 'leastPing' | 'random';
+    importSourceManualStrategy?: 'leastLoad' | 'leastPing' | 'random';
+    importSourceXrayJsonSettings?: Pick<
+        TImportSourcesXrayJsonSettings,
+        'autoProbeInterval' | 'autoProbeUrl' | 'autoSortEnabled'
+    >;
 }

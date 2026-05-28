@@ -1,4 +1,4 @@
-import { TCustomRemarks, THwidSettings } from '@libs/contracts/models';
+import { TCustomRemarks, THwidSettings, TImportSourcesSettings } from '@libs/contracts/models';
 
 import { TResponseRulesConfig } from '@modules/subscription-response-rules/types/response-rules.types';
 
@@ -20,6 +20,7 @@ export class SubscriptionSettingsResponseModel {
     public customResponseHeaders: Record<string, string> | null;
 
     public randomizeHosts: boolean;
+    public importSourcesSettings: TImportSourcesSettings;
 
     public responseRules: TResponseRulesConfig | null;
     public hwidSettings: THwidSettings | null;
@@ -40,6 +41,7 @@ export class SubscriptionSettingsResponseModel {
         this.customRemarks = entity.customRemarks;
         this.customResponseHeaders = entity.customResponseHeaders;
         this.randomizeHosts = entity.randomizeHosts;
+        this.importSourcesSettings = entity.importSourcesSettings;
         this.responseRules = entity.responseRules;
         this.hwidSettings = entity.hwidSettings;
         this.createdAt = entity.createdAt;

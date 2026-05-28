@@ -23,6 +23,7 @@ export class SubscriptionSettingsRepository implements ICrud<SubscriptionSetting
                 ...model,
                 customRemarks: model.customRemarks as Prisma.InputJsonValue,
                 customResponseHeaders: model.customResponseHeaders as Prisma.InputJsonValue,
+                importSourcesSettings: model.importSourcesSettings as Prisma.InputJsonValue,
                 responseRules: model.responseRules as Prisma.InputJsonValue,
             },
         });
@@ -54,6 +55,7 @@ export class SubscriptionSettingsRepository implements ICrud<SubscriptionSetting
                 ...model,
                 customRemarks: model.customRemarks as Prisma.InputJsonValue,
                 customResponseHeaders: model.customResponseHeaders as Prisma.InputJsonValue,
+                importSourcesSettings: model.importSourcesSettings as Prisma.InputJsonValue,
                 responseRules: model.responseRules as Prisma.InputJsonValue,
             },
         });
@@ -73,6 +75,8 @@ export class SubscriptionSettingsRepository implements ICrud<SubscriptionSetting
             customRemarks: __customRemarks,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             customResponseHeaders: __customResponseHeaders,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            importSourcesSettings: __importSourcesSettings,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             hwidSettings: __hwidSettings,
             ...rest

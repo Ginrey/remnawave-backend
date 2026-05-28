@@ -98,11 +98,21 @@ type ImportSourceGroupConfigs = {
     sourceNames: string[];
 };
 
-type ImportSourceBalancerStrategy = 'leastLoad' | 'random';
+type ImportSourceBalancerStrategy = 'leastLoad' | 'leastPing' | 'random';
+type ImportSourceXrayJsonRuntimeSettings = {
+    autoProbeInterval: string;
+    autoProbeUrl: string;
+    autoSortEnabled: boolean;
+};
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
 const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
+const DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS: ImportSourceXrayJsonRuntimeSettings = {
+    autoProbeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
+    autoProbeUrl: DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL,
+    autoSortEnabled: true,
+};
 const PLACEHOLDER_IMPORT_SOURCE_ADDRESSES = new Set(['::', '::0', '0.0.0.0']);
 const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 const XRAY_JSON_IMPORT_PROTOCOL = 'xray-json://';
@@ -768,7 +778,12 @@ export class XrayJsonGeneratorService {
             fullImportSourceList = false,
             importSourceAutoStrategy = 'random',
             importSourceManualStrategy = 'random',
+            importSourceXrayJsonSettings,
         } = params;
+        const runtimeImportSourceSettings: ImportSourceXrayJsonRuntimeSettings = {
+            ...DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS,
+            ...importSourceXrayJsonSettings,
+        };
 
         try {
             const templateContent = (await this.subscriptionTemplateService.getCachedTemplateByType(
@@ -816,6 +831,7 @@ export class XrayJsonGeneratorService {
                     fullImportSourceList,
                     importSourceAutoStrategy,
                     importSourceManualStrategy,
+                    runtimeImportSourceSettings,
                 ),
             );
 
@@ -861,6 +877,7 @@ export class XrayJsonGeneratorService {
         fullImportSourceList: boolean,
         importSourceAutoStrategy: ImportSourceBalancerStrategy,
         importSourceManualStrategy: ImportSourceBalancerStrategy,
+        importSourceSettings: ImportSourceXrayJsonRuntimeSettings,
     ): XrayJsonConfig[] {
         const groupedConfigs = groups
             .map((group) => this.buildImportSourceConfigsForGroup(group))
@@ -876,8 +893,11 @@ export class XrayJsonGeneratorService {
             template,
             'AUTO',
             'lb_import_sources_auto',
-            sortImportedConfigsForAutoOutput(universalAutoImportedConfigs),
+            importSourceSettings.autoSortEnabled
+                ? sortImportedConfigsForAutoOutput(universalAutoImportedConfigs)
+                : universalAutoImportedConfigs,
             importSourceAutoStrategy,
+            importSourceSettings,
         );
 
         if (fullImportSourceList) {
@@ -885,6 +905,7 @@ export class XrayJsonGeneratorService {
                 template,
                 groupedConfigs,
                 importSourceManualStrategy,
+                importSourceSettings,
             );
 
             return [...(universalAutoConfig ? [universalAutoConfig] : []), ...indexedManualConfigs];
@@ -898,6 +919,7 @@ export class XrayJsonGeneratorService {
                     manualGroup,
                     groupIndex,
                     importSourceManualStrategy,
+                    importSourceSettings,
                 ),
             )
             .filter(Boolean) as XrayJsonConfig[];
@@ -909,6 +931,7 @@ export class XrayJsonGeneratorService {
         template: XrayJsonConfig,
         groupedConfigs: ImportSourceGroupConfigs[],
         importSourceManualStrategy: ImportSourceBalancerStrategy,
+        importSourceSettings: ImportSourceXrayJsonRuntimeSettings,
     ): XrayJsonConfig[] {
         const manualGroups = groupedConfigs
             .flatMap((config) => groupImportedConfigsForManualOutput(config.importedConfigs))
@@ -933,6 +956,7 @@ export class XrayJsonGeneratorService {
                     },
                     groupIndex,
                     importSourceManualStrategy,
+                    importSourceSettings,
                 );
             })
             .filter(Boolean) as XrayJsonConfig[];
@@ -943,6 +967,7 @@ export class XrayJsonGeneratorService {
         manualGroup: ImportSourceManualGroup,
         groupIndex: number,
         strategyType: ImportSourceBalancerStrategy = 'random',
+        importSourceSettings: ImportSourceXrayJsonRuntimeSettings = DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS,
     ): XrayJsonConfig | null {
         return this.buildAutoImportSourceConfig(
             template,
@@ -950,6 +975,7 @@ export class XrayJsonGeneratorService {
             `lb_import_sources_manual_${manualGroup.tagPart}_${groupIndex}`,
             manualGroup.configs,
             strategyType,
+            importSourceSettings,
         );
     }
 
@@ -997,6 +1023,7 @@ export class XrayJsonGeneratorService {
         balancerTag: string,
         importedConfigs: ImportedOutboundConfig[],
         strategyType: ImportSourceBalancerStrategy = 'random',
+        importSourceSettings: ImportSourceXrayJsonRuntimeSettings = DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS,
     ): XrayJsonConfig | null {
         if (importedConfigs.length === 0) {
             return null;
@@ -1031,8 +1058,8 @@ export class XrayJsonGeneratorService {
             outbounds: [...importedOutbounds, ...supportingOutbounds, ...baseTemplate.outbounds],
             observatory: {
                 enableConcurrency: true,
-                probeInterval: DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL,
-                probeUrl: DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL,
+                probeInterval: importSourceSettings.autoProbeInterval,
+                probeUrl: importSourceSettings.autoProbeUrl,
                 ...(existingObservatory ?? {}),
                 subjectSelector: observatorySubjectSelector,
             },

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
     CustomRemarksSchema,
     HwidSettingsSchema,
+    ImportSourcesSettingsSchema,
     ResponseRulesConfigSchema,
     SubscriptionSettingsSchema,
 } from '../../models';
@@ -52,6 +53,7 @@ export namespace UpdateSubscriptionSettingsCommand {
         ),
 
         randomizeHosts: z.optional(z.boolean()),
+        importSourcesSettings: z.optional(ImportSourcesSettingsSchema),
 
         responseRules: z.optional(ResponseRulesConfigSchema),
         hwidSettings: z.optional(HwidSettingsSchema),

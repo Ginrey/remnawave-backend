@@ -28,6 +28,7 @@ const entityToModel = (entity: SubscriptionSettingsEntity): SubscriptionSettings
         customResponseHeaders: entity.customResponseHeaders,
 
         randomizeHosts: entity.randomizeHosts,
+        importSourcesSettings: entity.importSourcesSettings,
 
         responseRules: entity.responseRules,
         hwidSettings: entity.hwidSettings,

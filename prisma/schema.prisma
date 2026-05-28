@@ -342,6 +342,7 @@ model SubscriptionSettings {
   customRemarks               Json    @map("custom_remarks")
   customResponseHeaders       Json?   @map("custom_response_headers")
   randomizeHosts              Boolean @default(false) @map("randomize_hosts")
+  importSourcesSettings       Json?   @map("import_sources_settings")
   responseRules               Json?   @map("response_rules")
   hwidSettings                Json?   @map("hwid_settings")
 

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { TImportSourceBalancerStrategy } from '@libs/contracts/models';
+
 import { SubscriptionSettingsEntity } from '@modules/subscription-settings/entities/subscription-settings.entity';
 import { HostWithRawInbound } from '@modules/hosts/entities/host-with-inbound-tag.entity';
 import { ExternalSquadEntity } from '@modules/external-squads/entities';
@@ -19,18 +21,37 @@ function getUserTag(user: UserEntity): string {
     return (user.tag ?? '').trim().toLowerCase();
 }
 
-function getImportSourceAutoStrategy(user: UserEntity): 'leastLoad' | 'random' {
-    return getUserTag(user).includes('leastload') ? 'leastLoad' : 'random';
+function resolveImportSourceTagStrategy(tag: string): TImportSourceBalancerStrategy | null {
+    if (tag.includes('leastping')) return 'leastPing';
+    if (tag.includes('leastload')) return 'leastLoad';
+
+    return null;
 }
 
-function getImportSourceManualStrategy(user: UserEntity): 'leastLoad' | 'random' {
+function getImportSourceAutoStrategy(
+    user: UserEntity,
+    settings: SubscriptionSettingsEntity,
+): TImportSourceBalancerStrategy {
+    return (
+        resolveImportSourceTagStrategy(getUserTag(user)) ??
+        settings.importSourcesSettings.xrayJson.autoStrategy
+    );
+}
+
+function getImportSourceManualStrategy(
+    user: UserEntity,
+    settings: SubscriptionSettingsEntity,
+): TImportSourceBalancerStrategy {
     const tag = getUserTag(user);
 
-    if (tag.includes('import') && tag.includes('leastload')) {
-        return 'leastLoad';
+    if (tag.includes('import')) {
+        return (
+            resolveImportSourceTagStrategy(tag) ??
+            settings.importSourcesSettings.xrayJson.manualStrategy
+        );
     }
 
-    return 'random';
+    return settings.importSourcesSettings.xrayJson.manualStrategy;
 }
 
 @Injectable()
@@ -131,8 +152,16 @@ export class RenderTemplatesService {
                         ignoreHostXrayJsonTemplate: srrContext.ignoreHostXrayJsonTemplate,
                         extraImportSourceGroups,
                         fullImportSourceList,
-                        importSourceAutoStrategy: getImportSourceAutoStrategy(user),
-                        importSourceManualStrategy: getImportSourceManualStrategy(user),
+                        importSourceAutoStrategy: getImportSourceAutoStrategy(
+                            user,
+                            srrContext.subscriptionSettings,
+                        ),
+                        importSourceManualStrategy: getImportSourceManualStrategy(
+                            user,
+                            srrContext.subscriptionSettings,
+                        ),
+                        importSourceXrayJsonSettings:
+                            srrContext.subscriptionSettings.importSourcesSettings.xrayJson,
                     }),
                     contentType: SUBSCRIPTION_CONFIG_TYPES['XRAY_JSON'].CONTENT_TYPE,
                 };

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { ImportSourcesSettingsSchema } from './subscription-settings/import-sources-settings.schema';
 import { CustomRemarksSchema } from './subscription-settings/custom-remarks.schema';
 import { HwidSettingsSchema } from './subscription-settings/hwid-settings.schema';
 import { ResponseRulesConfigSchema } from './response-rules';
@@ -26,6 +27,8 @@ export const SubscriptionSettingsSchema = z.object({
     customResponseHeaders: z.nullable(z.record(z.string(), z.string())),
 
     randomizeHosts: z.boolean(),
+
+    importSourcesSettings: ImportSourcesSettingsSchema,
 
     responseRules: z.nullable(ResponseRulesConfigSchema),
 

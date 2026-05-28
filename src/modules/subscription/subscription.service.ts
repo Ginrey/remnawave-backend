@@ -163,6 +163,21 @@ export class SubscriptionService {
                     userAgent,
                     srrContext.ip,
                 );
+                if (
+                    subscriptionSettings.importSourcesSettings.xrayJson.inactiveUserFallbackMode ===
+                    'empty'
+                ) {
+                    return new SubscriptionWithConfigResponse({
+                        headers: await this.getUserProfileHeadersInfo(
+                            user.response,
+                            /^Happ\//.test(userAgent),
+                            subscriptionSettings,
+                        ),
+                        body: '',
+                        contentType: 'text/plain',
+                    });
+                }
+
                 const subscription = await this.renderTemplatesService.generateSubscription({
                     srrContext,
                     user: user.response,
