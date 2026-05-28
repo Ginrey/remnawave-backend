@@ -1150,7 +1150,6 @@ export class XrayJsonGeneratorService {
             existingObservatory?.subjectSelector,
             subjectSelector,
         );
-        const isAdvancedPreset = importSourceSettings.clientPreset === 'advanced';
         const fallbackTag =
             importSourceSettings.autoFallbackPolicy === 'stableHash' && fallbackSeed
                 ? (getStableFallbackTag(importedOutbounds, `${fallbackSeed}:${balancerTag}`) ??
@@ -1160,7 +1159,7 @@ export class XrayJsonGeneratorService {
         const advancedRoutingRules: Record<string, unknown>[] = [];
         let baseOutbounds = baseTemplate.outbounds;
 
-        if (isAdvancedPreset && importSourceSettings.directPrivateNetworks) {
+        if (importSourceSettings.directPrivateNetworks) {
             baseOutbounds = ensureOutbound(baseOutbounds, {
                 tag: 'direct',
                 protocol: 'freedom',
@@ -1173,7 +1172,7 @@ export class XrayJsonGeneratorService {
             });
         }
 
-        if (isAdvancedPreset && importSourceSettings.blockBitTorrent) {
+        if (importSourceSettings.blockBitTorrent) {
             baseOutbounds = ensureOutbound(baseOutbounds, {
                 tag: 'block',
                 protocol: 'blackhole',
@@ -1199,10 +1198,9 @@ export class XrayJsonGeneratorService {
             },
             routing: {
                 ...(baseTemplate.routing ?? {}),
-                ...(isAdvancedPreset &&
-                    importSourceSettings.routingDomainStrategy && {
-                        domainStrategy: importSourceSettings.routingDomainStrategy,
-                    }),
+                ...(importSourceSettings.routingDomainStrategy && {
+                    domainStrategy: importSourceSettings.routingDomainStrategy,
+                }),
                 balancers: [
                     ...existingBalancers,
                     {
