@@ -1,5 +1,3 @@
-import { createHappCryptoLink } from '@kastov/cryptohapp';
-
 import { Injectable, Logger } from '@nestjs/common';
 
 interface HappCryptoApiResponse {
@@ -8,7 +6,7 @@ interface HappCryptoApiResponse {
 
 export interface HappCryptoLinkResult {
     encryptedLink: string;
-    version: 'crypt5' | 'crypt4';
+    version: 'crypt5';
 }
 
 @Injectable()
@@ -21,25 +19,7 @@ export class HappCryptoLinkService {
     private readonly crypt5InFlight = new Map<string, Promise<string | null>>();
 
     public async encrypt(linkToEncrypt: string): Promise<HappCryptoLinkResult | null> {
-        const crypt5Link = await this.tryCreateCrypt5Link(linkToEncrypt);
-
-        if (crypt5Link) {
-            return {
-                encryptedLink: crypt5Link,
-                version: 'crypt5',
-            };
-        }
-
-        const crypt4Link = createHappCryptoLink(linkToEncrypt, 'v4', true);
-
-        if (!crypt4Link) {
-            return null;
-        }
-
-        return {
-            encryptedLink: crypt4Link,
-            version: 'crypt4',
-        };
+        return this.encryptCrypt5(linkToEncrypt);
     }
 
     public async encryptCrypt5(linkToEncrypt: string): Promise<HappCryptoLinkResult | null> {

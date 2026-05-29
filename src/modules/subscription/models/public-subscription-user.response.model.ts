@@ -22,7 +22,7 @@ export class PublicSubscriptionUserResponseModel {
     public readonly updatedAt: Date;
     public readonly subscriptionPageUrl: string;
     public readonly happCryptoLink: string | null;
-    public readonly happCryptoLinkVersion: 'crypt5' | 'crypt4' | null;
+    public readonly happCryptoLinkVersion: 'crypt5' | null;
     public readonly userTraffic: {
         usedTrafficBytes: number;
         lifetimeUsedTrafficBytes: number;
@@ -35,7 +35,7 @@ export class PublicSubscriptionUserResponseModel {
         entity: UserEntity,
         subPublicDomain: string,
         happCryptoLink: string | null,
-        happCryptoLinkVersion: 'crypt5' | 'crypt4' | null,
+        happCryptoLinkVersion: 'crypt5' | null,
     ) {
         this.shortUuid = entity.shortUuid;
         this.username = entity.username;

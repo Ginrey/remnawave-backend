@@ -32,6 +32,6 @@ export const PublicSubscriptionUserSchema = UsersSchema.pick({
 }).extend({
     subscriptionPageUrl: z.string(),
     happCryptoLink: z.string().nullable(),
-    happCryptoLinkVersion: z.enum(['crypt5', 'crypt4']).nullable(),
+    happCryptoLinkVersion: z.enum(['crypt5']).nullable(),
     userTraffic: UserTrafficSchema,
 });
