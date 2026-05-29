@@ -3,6 +3,7 @@ import cors from 'cors';
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 
+import { HappCryptoLinkService } from '@common/services/happ-crypto-link.service';
 import { SUBSCRIPTION_CONTROLLER, SUBSCRIPTION_ROUTES } from '@libs/contracts/api';
 
 import { SubscriptionResponseRulesModule } from '@modules/subscription-response-rules/subscription-response-rules.module';
@@ -21,7 +22,7 @@ import { SubscriptionService } from './subscription.service';
         SubscriptionImportSourceModule,
     ],
     controllers: [SubscriptionController, SubscriptionsController],
-    providers: [SubscriptionService],
+    providers: [SubscriptionService, HappCryptoLinkService],
     exports: [],
 })
 export class SubscriptionModule implements NestModule {

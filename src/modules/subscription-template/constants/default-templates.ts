@@ -302,7 +302,7 @@ export const DEFAULT_TEMPLATE_SINGBOX = {
 export const DEFAULT_TEMPLATE_XRAY_JSON = {
     dns: {
         servers: ['1.1.1.1', '1.0.0.1'],
-        queryStrategy: 'UseIP',
+        queryStrategy: 'UseIPv4',
     },
     routing: {
         rules: [

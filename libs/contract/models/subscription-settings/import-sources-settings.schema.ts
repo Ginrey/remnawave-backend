@@ -38,7 +38,7 @@ export const DEFAULT_IMPORT_SOURCES_SETTINGS: TImportSourcesSettings = {
     xrayJson: {
         autoStrategy: 'random',
         manualStrategy: 'random',
-        autoProbeUrl: 'http://www.gstatic.com/generate_204',
+        autoProbeUrl: 'https://connectivitycheck.gstatic.com/generate_204',
         autoProbeInterval: '2m',
         autoSortEnabled: true,
         inactiveUserFallbackMode: 'customRemarks',

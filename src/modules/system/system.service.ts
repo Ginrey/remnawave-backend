@@ -1,5 +1,4 @@
 import parsePrometheusTextFormat from 'parse-prometheus-text-format';
-import { createHappCryptoLink } from '@kastov/cryptohapp';
 import { generateKeyPair } from '@stablelib/x25519';
 import { encodeURLSafe } from '@stablelib/base64';
 import { Request, Response } from 'express';
@@ -22,6 +21,7 @@ import {
     getLast30DaysRanges,
     getLastTwoWeeksRanges,
 } from '@common/utils/get-date-ranges.uti';
+import { HappCryptoLinkService } from '@common/services/happ-crypto-link.service';
 import { resolveCountryEmoji } from '@common/utils/resolve-country-emoji';
 import { RuntimeMetric } from '@common/runtime-metrics/interfaces';
 import { calcDiff } from '@common/utils/calc-percent-diff.util';
@@ -29,9 +29,9 @@ import { prettyBytesUtil } from '@common/utils/bytes';
 import { RawCacheService } from '@common/raw-cache';
 import { fail, ok, TResult } from '@common/types';
 
+import { UserSubscriptionRequestHistoryRepository } from '@modules/user-subscription-request-history/repositories/user-subscription-request-history.repository';
 import { ResponseRulesMatcherService } from '@modules/subscription-response-rules/services/response-rules-matcher.service';
 import { ResponseRulesParserService } from '@modules/subscription-response-rules/services/response-rules-parser.service';
-import { UserSubscriptionRequestHistoryRepository } from '@modules/user-subscription-request-history/repositories/user-subscription-request-history.repository';
 import { GetSumLifetimeQuery } from '@modules/nodes-usage-history/queries/get-sum-lifetime';
 import { Get7DaysStatsQuery } from '@modules/nodes-usage-history/queries/get-7days-stats';
 import { GetInitDateQuery } from '@modules/remnawave-settings/queries/get-init-date';
@@ -77,6 +77,7 @@ export class SystemService implements OnApplicationBootstrap {
         private readonly srrMatcher: ResponseRulesMatcherService,
         private readonly rawCacheService: RawCacheService,
         private readonly userSubscriptionRequestHistoryRepository: UserSubscriptionRequestHistoryRepository,
+        private readonly happCryptoLinkService: HappCryptoLinkService,
     ) {}
 
     public async onApplicationBootstrap(): Promise<void> {
@@ -286,13 +287,13 @@ export class SystemService implements OnApplicationBootstrap {
     }
 
     public async encryptHappCryptoLink(linkToEncrypt: string): Promise<TResult<string>> {
-        const encryptedLink = createHappCryptoLink(linkToEncrypt, 'v4', true);
+        const encryptedLink = await this.happCryptoLinkService.encrypt(linkToEncrypt);
 
         if (!encryptedLink) {
             return fail(ERRORS.INTERNAL_SERVER_ERROR);
         }
 
-        return ok(encryptedLink);
+        return ok(encryptedLink.encryptedLink);
     }
 
     public async debugSrrMatcher(

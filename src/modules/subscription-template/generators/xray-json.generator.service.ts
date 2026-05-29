@@ -118,7 +118,7 @@ type ImportSourceXrayJsonRuntimeSettings = {
 
 const RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN = /(?:🇷🇺|росси[яи])/iu;
 const DEFAULT_IMPORT_SOURCE_AUTO_PROBE_INTERVAL = '2m';
-const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'http://www.gstatic.com/generate_204';
+const DEFAULT_IMPORT_SOURCE_OBSERVATORY_URL = 'https://connectivitycheck.gstatic.com/generate_204';
 const DEFAULT_IMPORT_SOURCE_XRAY_JSON_RUNTIME_SETTINGS: ImportSourceXrayJsonRuntimeSettings = {
     autoExcludedCountryCodes: ['RU'],
     autoExcludedHostPatterns: ['rus', 'russia', '.ru', 'росси'],
@@ -940,6 +940,7 @@ export class XrayJsonGeneratorService {
             )) as unknown as XrayJsonConfig;
 
             const configs: XrayJsonConfig[] = [];
+            const panelHostImportConfigs: ImportedOutboundConfig[] = [];
 
             for (const host of hosts) {
                 if (host.metadata.isHidden) continue;
@@ -958,6 +959,12 @@ export class XrayJsonGeneratorService {
                         isExtendedClient,
                     );
                     if (injected) configs.push(injected);
+                    continue;
+                }
+
+                if (!host.clientOverrides.xrayJsonTemplate || ignoreHostXrayJsonTemplate) {
+                    const panelHostImportConfig = this.buildPanelHostImportSourceConfig(host);
+                    if (panelHostImportConfig) panelHostImportConfigs.push(panelHostImportConfig);
                     continue;
                 }
 
@@ -981,6 +988,7 @@ export class XrayJsonGeneratorService {
                     importSourceManualStrategy,
                     runtimeImportSourceSettings,
                     importSourceFallbackSeed,
+                    panelHostImportConfigs,
                 ),
             );
 
@@ -1020,6 +1028,36 @@ export class XrayJsonGeneratorService {
         }
     }
 
+    private buildPanelHostImportSourceConfig(
+        host: ResolvedProxyConfig,
+    ): ImportedOutboundConfig | null {
+        try {
+            const initialConfig: ImportedOutboundConfig = {
+                remarks: host.finalRemark,
+                outbound: this.buildOutbound(host, 'panel-host-proxy'),
+                sourceGroupName: 'panel',
+                sourceNames: ['Panel Hosts'],
+            };
+            const stableTag = getStableImportSourceTag('panel', initialConfig);
+            const outbound = {
+                ...initialConfig.outbound,
+                tag: stableTag,
+            };
+            const config: ImportedOutboundConfig = {
+                ...initialConfig,
+                outbound,
+            };
+
+            return {
+                ...config,
+                geoIpCountryCode: this.getImportSourceGeoIpCountryCode(config),
+            };
+        } catch (error) {
+            this.logger.error(`Error creating import-source config for panel host: ${error}`);
+            return null;
+        }
+    }
+
     private buildImportSourcePoolConfigs(
         template: XrayJsonConfig,
         groups: ISubscriptionImportSourceGroup[],
@@ -1028,10 +1066,22 @@ export class XrayJsonGeneratorService {
         importSourceManualStrategy: ImportSourceBalancerStrategy,
         importSourceSettings: ImportSourceXrayJsonRuntimeSettings,
         importSourceFallbackSeed: string,
+        panelHostImportConfigs: ImportedOutboundConfig[] = [],
     ): XrayJsonConfig[] {
-        const groupedConfigs = groups
+        const importSourceGroupedConfigs = groups
             .map((group) => this.buildImportSourceConfigsForGroup(group))
             .filter(Boolean) as ImportSourceGroupConfigs[];
+        const panelGroupedConfigs: ImportSourceGroupConfigs[] =
+            panelHostImportConfigs.length > 0
+                ? [
+                      {
+                          autoImportedConfigs: panelHostImportConfigs,
+                          importedConfigs: panelHostImportConfigs,
+                          sourceNames: ['Panel Hosts'],
+                      },
+                  ]
+                : [];
+        const groupedConfigs = [...panelGroupedConfigs, ...importSourceGroupedConfigs];
 
         const allImportedConfigs = dedupeImportedConfigs(
             groupedConfigs.flatMap((config) => config.importedConfigs),
@@ -1087,12 +1137,27 @@ export class XrayJsonGeneratorService {
         importSourceSettings: ImportSourceXrayJsonRuntimeSettings,
     ): XrayJsonConfig[] {
         const manualGroups = groupedConfigs
-            .flatMap((config) => groupImportedConfigsForManualOutput(config.importedConfigs))
+            .flatMap((groupConfig) =>
+                groupConfig.importedConfigs.map((config) => {
+                    const groupKey = getImportSourceManualGroupKey(config);
+
+                    return {
+                        configs: [config],
+                        groupKey,
+                        remarks: buildImportSourceManualGroupRemarks(groupKey),
+                        tagPart: normalizeTagPart(groupKey),
+                    };
+                }),
+            )
             .sort((left, right) => {
                 const leftIndex = getImportSourceManualGroupSortIndex(left.groupKey);
                 const rightIndex = getImportSourceManualGroupSortIndex(right.groupKey);
 
-                return leftIndex - rightIndex || left.groupKey.localeCompare(right.groupKey);
+                return (
+                    leftIndex - rightIndex ||
+                    left.groupKey.localeCompare(right.groupKey) ||
+                    left.configs[0].outbound.tag.localeCompare(right.configs[0].outbound.tag)
+                );
             });
         const remarksCounters = new Map<string, number>();
 
@@ -1247,6 +1312,35 @@ export class XrayJsonGeneratorService {
                 outboundTag: 'block',
                 protocol: ['bittorrent'],
             });
+        }
+
+        if (importedOutbounds.length === 1) {
+            const singleServerTemplate = { ...baseTemplate };
+            const singleServerRouting = { ...(baseTemplate.routing ?? {}) };
+            delete singleServerTemplate.observatory;
+            delete singleServerRouting.balancers;
+
+            return {
+                ...singleServerTemplate,
+                remarks,
+                outbounds: [...importedOutbounds, ...supportingOutbounds, ...baseOutbounds],
+                routing: {
+                    ...singleServerRouting,
+                    ...(importSourceSettings.routingDomainStrategy && {
+                        domainStrategy: importSourceSettings.routingDomainStrategy,
+                    }),
+                    rules: [
+                        ...existingRules,
+                        ...advancedRoutingRules,
+                        {
+                            type: 'field',
+                            outboundTag: importedOutbounds[0].tag,
+                            inboundTag: ['socks', 'http'],
+                            network: 'tcp,udp',
+                        },
+                    ],
+                },
+            };
         }
 
         return {

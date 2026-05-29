@@ -8,6 +8,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 
 import { TemplateEngine } from '@common/utils/templates/replace-templates-values';
+import { HappCryptoLinkService } from '@common/services/happ-crypto-link.service';
 import { prettyBytesUtil } from '@common/utils/bytes/pretty-bytes.util';
 import { HwidHeaders } from '@common/utils/extract-hwid-headers';
 import { hasContent } from '@common/utils/convert-type';
@@ -37,7 +38,6 @@ import { GetUserSubpageConfigQuery } from '@modules/users/queries/get-user-subpa
 import { GetTemplateNameQuery } from '@modules/external-squads/queries/get-template-name';
 import { ISRRContext } from '@modules/subscription-response-rules/interfaces';
 import { UserEntity } from '@modules/users/entities/user.entity';
-import { GetFullUserResponseModel } from '@modules/users/models';
 
 import { UsersQueuesService } from '@queue/_users/users-queues.service';
 
@@ -49,6 +49,7 @@ import {
     SubscriptionWithConfigResponse,
 } from './models';
 import { SubscriptionImportSourceService } from '../subscription-import-sources/subscription-import-source.service';
+import { PublicSubscriptionUserResponseModel } from './models/public-subscription-user.response.model';
 import { getSubscriptionRefillDate, getSubscriptionUserInfo } from './utils/get-user-info.headers';
 import { GetSubpageConfigResponseModel } from './models/get-subpage-config.response.model';
 import { GetHostsForUserQuery } from '../hosts/queries/get-hosts-for-user';
@@ -71,6 +72,7 @@ export class SubscriptionService {
         private readonly usersQueuesService: UsersQueuesService,
         private readonly srrMatcher: ResponseRulesMatcherService,
         private readonly importSourceService: SubscriptionImportSourceService,
+        private readonly happCryptoLinkService: HappCryptoLinkService,
     ) {
         this.subPublicDomain = this.configService.getOrThrow<string>('SUB_PUBLIC_DOMAIN');
     }
@@ -87,7 +89,7 @@ export class SubscriptionService {
             if (matchedResponseType === 'BROWSER') {
                 const subscriptionInfo = await this.getSubscriptionInfo({
                     searchBy: {
-                        uniqueFieldKey: 'shortUuid',
+                        uniqueFieldKey: 'uuid',
                         uniqueField: shortUuid,
                     },
                     authenticated: false,
@@ -103,7 +105,7 @@ export class SubscriptionService {
             const user = await this.queryBus.execute(
                 new GetUserByUniqueFieldQuery(
                     {
-                        shortUuid,
+                        uuid: shortUuid,
                     },
                     {
                         activeInternalSquads: false,
@@ -343,7 +345,7 @@ export class SubscriptionService {
     public async getRawSubscriptionByShortUuid(
         shortUuid: string,
         userAgent: string,
-        withDisabledHosts: boolean,
+        _withDisabledHosts: boolean,
         hwidHeaders: HwidHeaders | null,
         requestIp?: string,
     ): Promise<TResult<RawSubscriptionWithHostsResponse>> {
@@ -371,10 +373,8 @@ export class SubscriptionService {
                 return fail(ERRORS.SUBSCRIPTION_SETTINGS_NOT_FOUND);
             }
 
-            const {
-                subscriptionSettings: patchedSettingEntity,
-                hostsOverrides: patchedHostsOverrides,
-            } = await this.applyMaybeExternalSquadOverrides(settingEntity, user.externalSquadUuid);
+            const { subscriptionSettings: patchedSettingEntity } =
+                await this.applyMaybeExternalSquadOverrides(settingEntity, user.externalSquadUuid);
 
             let isHwidLimited: boolean | undefined;
 
@@ -420,12 +420,14 @@ export class SubscriptionService {
                 isHwidLimited = false;
             }
 
+            const publicUser = await this.buildPublicSubscriptionUser(user);
+
             if (!this.isUserSubscriptionActive(user)) {
                 await this.updateAndReportSubscriptionRequest(user.uuid, userAgent, requestIp);
 
                 return ok(
                     new RawSubscriptionWithHostsResponse({
-                        user: new GetFullUserResponseModel(user, this.subPublicDomain),
+                        user: publicUser,
                         convertedUserInfo: {
                             daysLeft: dayjs(user.expireAt).diff(dayjs(), 'day'),
                             trafficUsed: prettyBytesUtil(user.userTraffic.usedTrafficBytes),
@@ -436,39 +438,17 @@ export class SubscriptionService {
                             isHwidLimited: isHwidLimited ?? false,
                         },
                         headers,
+                        templateValues: this.buildPublicSubscriptionTemplateValues(publicUser),
                         resolvedProxyConfigs: [],
                     }),
                 );
             }
 
-            const hosts = await this.queryBus.execute(
-                new GetHostsForUserQuery(user.tId, withDisabledHosts, true),
-            );
-
-            if (!hosts.isOk) {
-                return fail(ERRORS.GET_ALL_HOSTS_ERROR);
-            }
-
-            if (patchedSettingEntity.randomizeHosts) {
-                hosts.response = _.shuffle(hosts.response);
-            }
-
             await this.updateAndReportSubscriptionRequest(user.uuid, userAgent, requestIp);
-
-            let subscription: ResolvedProxyConfig[] | undefined;
-
-            if (!isHwidLimited) {
-                subscription = await this.renderTemplatesService.generateRawSubscription({
-                    subscriptionSettings: patchedSettingEntity,
-                    user: user,
-                    hosts: hosts.response,
-                    hostsOverrides: patchedHostsOverrides,
-                });
-            }
 
             return ok(
                 new RawSubscriptionWithHostsResponse({
-                    user: new GetFullUserResponseModel(user, this.subPublicDomain),
+                    user: publicUser,
                     convertedUserInfo: {
                         daysLeft: dayjs(user.expireAt).diff(dayjs(), 'day'),
                         trafficUsed: prettyBytesUtil(user.userTraffic.usedTrafficBytes),
@@ -479,7 +459,8 @@ export class SubscriptionService {
                         isHwidLimited: isHwidLimited ?? false,
                     },
                     headers,
-                    resolvedProxyConfigs: subscription ?? [],
+                    templateValues: this.buildPublicSubscriptionTemplateValues(publicUser),
+                    resolvedProxyConfigs: [],
                 }),
             );
         } catch (error) {
@@ -601,8 +582,36 @@ export class SubscriptionService {
             },
             links,
             ssConfLinks,
-            subscriptionUrl: this.resolveSubscriptionUrl(user.shortUuid),
+            subscriptionUrl: this.resolveSubscriptionUrl(user.uuid),
         });
+    }
+
+    private async buildPublicSubscriptionUser(
+        user: UserEntity,
+    ): Promise<PublicSubscriptionUserResponseModel> {
+        const privateSubscriptionUrl = this.resolveSubscriptionUrl(user.uuid);
+        const happCryptoLink = await this.happCryptoLinkService.encrypt(privateSubscriptionUrl);
+
+        return new PublicSubscriptionUserResponseModel(
+            user,
+            this.subPublicDomain,
+            happCryptoLink?.encryptedLink ?? null,
+            happCryptoLink?.version ?? null,
+        );
+    }
+
+    private buildPublicSubscriptionTemplateValues(
+        user: PublicSubscriptionUserResponseModel,
+    ): Record<string, string> {
+        const encryptedLink = user.happCryptoLink ?? '';
+
+        return {
+            USERNAME: user.username,
+            SUBSCRIPTION_LINK: user.subscriptionPageUrl,
+            HAPP_CRYPT3_LINK: '',
+            HAPP_CRYPT4_LINK: user.happCryptoLinkVersion === 'crypt4' ? encryptedLink : '',
+            HAPP_CRYPT5_LINK: encryptedLink,
+        };
     }
 
     private shouldIncludeImportSubscriptions(
@@ -713,7 +722,7 @@ export class SubscriptionService {
         }
 
         if (settings.isProfileWebpageUrlEnabled) {
-            headers['profile-web-page-url'] = this.resolveSubscriptionUrl(user.shortUuid);
+            headers['profile-web-page-url'] = this.resolveSubscriptionPageUrl(user.shortUuid);
         }
 
         const refillDate = getSubscriptionRefillDate(user.trafficLimitStrategy);
@@ -974,7 +983,11 @@ export class SubscriptionService {
         }
     }
 
-    private resolveSubscriptionUrl(shortUuid: string): string {
+    private resolveSubscriptionUrl(subscriptionToken: string): string {
+        return `https://${this.subPublicDomain}/${subscriptionToken}`;
+    }
+
+    private resolveSubscriptionPageUrl(shortUuid: string): string {
         return `https://${this.subPublicDomain}/${shortUuid}`;
     }
 

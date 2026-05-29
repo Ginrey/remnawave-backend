@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ExtendedUsersSchema, ResolvedProxyConfigSchema } from '../../../models';
+import { PublicSubscriptionUserSchema, ResolvedProxyConfigSchema } from '../../../models';
 import { REST_API, SUBSCRIPTIONS_ROUTES } from '../../../api';
 import { getEndpointDetails } from '../../../constants';
 
@@ -32,7 +32,7 @@ export namespace GetRawSubscriptionByShortUuidCommand {
 
     export const ResponseSchema = z.object({
         response: z.object({
-            user: ExtendedUsersSchema,
+            user: PublicSubscriptionUserSchema,
             convertedUserInfo: z.object({
                 daysLeft: z.number(),
                 trafficLimit: z.string(),
@@ -41,6 +41,7 @@ export namespace GetRawSubscriptionByShortUuidCommand {
                 isHwidLimited: z.boolean(),
             }),
             headers: z.record(z.string(), z.string().optional()),
+            templateValues: z.record(z.string(), z.string()),
             resolvedProxyConfigs: z.array(ResolvedProxyConfigSchema),
         }),
     });

@@ -289,7 +289,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: 'happ://add/{{SUBSCRIPTION_LINK}}',
+                                    link: '{{HAPP_CRYPT5_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -1150,7 +1150,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: 'happ://add/{{SUBSCRIPTION_LINK}}',
+                                    link: '{{HAPP_CRYPT5_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -1678,7 +1678,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: 'happ://add/{{SUBSCRIPTION_LINK}}',
+                                    link: '{{HAPP_CRYPT5_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -2144,7 +2144,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: 'happ://add/{{SUBSCRIPTION_LINK}}',
+                                    link: '{{HAPP_CRYPT5_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -2815,7 +2815,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: 'happ://add/{{SUBSCRIPTION_LINK}}',
+                                    link: '{{HAPP_CRYPT5_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -2973,7 +2973,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: 'happ://add/{{SUBSCRIPTION_LINK}}',
+                                    link: '{{HAPP_CRYPT5_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
