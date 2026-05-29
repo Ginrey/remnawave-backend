@@ -289,7 +289,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: '{{HAPP_CRYPT5_LINK}}',
+                                    link: '{{HAPP_CRYPT4_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -297,7 +297,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                                         ru: 'Добавить подписку',
                                         zh: '添加订阅',
                                     },
-                                    type: 'external',
+                                    type: 'subscriptionLink',
                                     svgIconKey: 'Plus',
                                 },
                             ],
@@ -1150,7 +1150,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: '{{HAPP_CRYPT5_LINK}}',
+                                    link: '{{HAPP_CRYPT4_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -1158,7 +1158,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                                         ru: 'Добавить подписку',
                                         zh: '添加订阅',
                                     },
-                                    type: 'external',
+                                    type: 'subscriptionLink',
                                     svgIconKey: 'Plus',
                                 },
                             ],
@@ -1678,7 +1678,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: '{{HAPP_CRYPT5_LINK}}',
+                                    link: '{{HAPP_CRYPT4_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -1686,7 +1686,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                                         ru: 'Добавить подписку',
                                         zh: '添加订阅',
                                     },
-                                    type: 'external',
+                                    type: 'subscriptionLink',
                                     svgIconKey: 'Plus',
                                 },
                             ],
@@ -2144,7 +2144,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: '{{HAPP_CRYPT5_LINK}}',
+                                    link: '{{HAPP_CRYPT4_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -2152,7 +2152,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                                         ru: 'Добавить подписку',
                                         zh: '添加订阅',
                                     },
-                                    type: 'external',
+                                    type: 'subscriptionLink',
                                     svgIconKey: 'Plus',
                                 },
                             ],
@@ -2815,7 +2815,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: '{{HAPP_CRYPT5_LINK}}',
+                                    link: '{{HAPP_CRYPT4_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -2823,7 +2823,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                                         ru: 'Добавить подписку',
                                         zh: '添加订阅',
                                     },
-                                    type: 'external',
+                                    type: 'subscriptionLink',
                                     svgIconKey: 'Plus',
                                 },
                             ],
@@ -2973,7 +2973,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                             },
                             buttons: [
                                 {
-                                    link: '{{HAPP_CRYPT5_LINK}}',
+                                    link: '{{HAPP_CRYPT4_LINK}}',
                                     text: {
                                         en: 'Add Subscription',
                                         fa: 'اضافه کردن اشتراک',
@@ -2981,7 +2981,7 @@ export const DEFAULT_SUBPAGE_CONFIG = {
                                         ru: 'Добавить подписку',
                                         zh: '添加订阅',
                                     },
-                                    type: 'external',
+                                    type: 'subscriptionLink',
                                     svgIconKey: 'Plus',
                                 },
                             ],

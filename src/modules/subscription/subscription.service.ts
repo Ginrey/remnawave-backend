@@ -590,7 +590,8 @@ export class SubscriptionService {
         user: UserEntity,
     ): Promise<PublicSubscriptionUserResponseModel> {
         const privateSubscriptionUrl = this.resolveSubscriptionUrl(user.uuid);
-        const happCryptoLink = await this.happCryptoLinkService.encrypt(privateSubscriptionUrl);
+        const happCryptoLink =
+            await this.happCryptoLinkService.encryptCrypt5(privateSubscriptionUrl);
 
         return new PublicSubscriptionUserResponseModel(
             user,
