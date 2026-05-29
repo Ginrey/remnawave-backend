@@ -604,14 +604,18 @@ export class SubscriptionService {
     private buildPublicSubscriptionTemplateValues(
         user: PublicSubscriptionUserResponseModel,
     ): Record<string, string> {
-        const encryptedLink = user.happCryptoLink ?? '';
+        const crypt5Link =
+            user.happCryptoLinkVersion === 'crypt5' &&
+            user.happCryptoLink?.startsWith('happ://crypt5/')
+                ? user.happCryptoLink
+                : '';
 
         return {
             USERNAME: user.username,
             SUBSCRIPTION_LINK: user.subscriptionPageUrl,
             HAPP_CRYPT3_LINK: '',
-            HAPP_CRYPT4_LINK: encryptedLink,
-            HAPP_CRYPT5_LINK: encryptedLink,
+            HAPP_CRYPT4_LINK: crypt5Link,
+            HAPP_CRYPT5_LINK: crypt5Link,
         };
     }
 

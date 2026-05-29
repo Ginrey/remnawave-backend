@@ -3,7 +3,7 @@ import { createHappCryptoLink } from '@kastov/cryptohapp';
 import { Injectable, Logger } from '@nestjs/common';
 
 interface HappCryptoApiResponse {
-    encrypted_link?: unknown;
+    encrypted_link?: string;
 }
 
 export interface HappCryptoLinkResult {
