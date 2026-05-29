@@ -609,7 +609,7 @@ export class SubscriptionService {
             USERNAME: user.username,
             SUBSCRIPTION_LINK: user.subscriptionPageUrl,
             HAPP_CRYPT3_LINK: '',
-            HAPP_CRYPT4_LINK: user.happCryptoLinkVersion === 'crypt4' ? encryptedLink : '',
+            HAPP_CRYPT4_LINK: encryptedLink,
             HAPP_CRYPT5_LINK: encryptedLink,
         };
     }
