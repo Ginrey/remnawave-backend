@@ -20,6 +20,8 @@ export class SubscriptionRawResponse {
     public links: string[];
     public ssConfLinks: Record<string, string>;
     public subscriptionUrl: string;
+    public happCryptoLink: string | null;
+    public happCryptoLinkVersion: 'crypt5' | null;
 
     constructor(data: SubscriptionRawResponse) {
         this.isFound = data.isFound;
@@ -27,5 +29,7 @@ export class SubscriptionRawResponse {
         this.links = data.links || [];
         this.ssConfLinks = data.ssConfLinks || {};
         this.subscriptionUrl = data.subscriptionUrl;
+        this.happCryptoLink = data.happCryptoLink;
+        this.happCryptoLinkVersion = data.happCryptoLinkVersion;
     }
 }

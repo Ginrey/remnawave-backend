@@ -563,6 +563,10 @@ export class SubscriptionService {
         links: string[],
         ssConfLinks: Record<string, string>,
     ): Promise<SubscriptionRawResponse> {
+        const privateSubscriptionUrl = this.resolveSubscriptionUrl(user.uuid);
+        const happCryptoLink =
+            await this.happCryptoLinkService.encryptCrypt5(privateSubscriptionUrl);
+
         return new SubscriptionRawResponse({
             isFound: true,
             user: {
@@ -582,7 +586,9 @@ export class SubscriptionService {
             },
             links,
             ssConfLinks,
-            subscriptionUrl: this.resolveSubscriptionUrl(user.uuid),
+            subscriptionUrl: privateSubscriptionUrl,
+            happCryptoLink: happCryptoLink?.encryptedLink ?? null,
+            happCryptoLinkVersion: happCryptoLink?.version ?? null,
         });
     }
 

@@ -25,4 +25,6 @@ export const SubscriptionInfoSchema = z.object({
     links: z.array(z.string()),
     ssConfLinks: z.record(z.string(), z.string()),
     subscriptionUrl: z.string(),
+    happCryptoLink: z.string().nullable(),
+    happCryptoLinkVersion: z.enum(['crypt5']).nullable(),
 });
