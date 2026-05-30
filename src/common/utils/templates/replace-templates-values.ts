@@ -7,6 +7,7 @@ import { USER_STATUSES_TEMPLATE } from '@libs/contracts/constants';
 import { SubscriptionSettingsEntity } from '@modules/subscription-settings/entities';
 import { UserEntity } from '@modules/users/entities';
 
+import { buildSubscriptionUrl } from '../subscription-url';
 import { prettyBytesUtil } from '../bytes';
 
 type TemplateValueGetter = () => string | number;
@@ -53,7 +54,7 @@ export class TemplateEngine {
             USERNAME: () => user.username,
             EMAIL: () => user.email || '',
             TELEGRAM_ID: () => user.telegramId?.toString() || '',
-            SUBSCRIPTION_URL: () => `https://${subPublicDomain}/${user.shortUuid}`,
+            SUBSCRIPTION_URL: () => buildSubscriptionUrl(subPublicDomain, user.shortUuid),
             TAG: () => user.tag || '',
             EXPIRE_UNIX: () => dayjs(user.expireAt).unix(),
             SHORT_UUID: () => user.shortUuid,

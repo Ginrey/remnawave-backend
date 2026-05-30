@@ -27,4 +27,8 @@ export const SubscriptionInfoSchema = z.object({
     subscriptionUrl: z.string(),
     happCryptoLink: z.string().nullable(),
     happCryptoLinkVersion: z.enum(['crypt5']).nullable(),
+    happCryptoLinks: z.object({
+        crypt4: z.string().nullable(),
+        crypt5: z.string().nullable(),
+    }),
 });

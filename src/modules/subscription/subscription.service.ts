@@ -11,6 +11,7 @@ import { TemplateEngine } from '@common/utils/templates/replace-templates-values
 import { HappCryptoLinkService } from '@common/services/happ-crypto-link.service';
 import { prettyBytesUtil } from '@common/utils/bytes/pretty-bytes.util';
 import { HwidHeaders } from '@common/utils/extract-hwid-headers';
+import { buildSubscriptionUrl } from '@common/utils/subscription-url';
 import { hasContent } from '@common/utils/convert-type';
 import { fail, ok, TResult } from '@common/types';
 import { ERRORS, EVENTS, TSubscriptionTemplateType, USERS_STATUS } from '@libs/contracts/constants';
@@ -564,8 +565,7 @@ export class SubscriptionService {
         ssConfLinks: Record<string, string>,
     ): Promise<SubscriptionRawResponse> {
         const privateSubscriptionUrl = this.resolveSubscriptionUrl(user.uuid);
-        const happCryptoLink =
-            await this.happCryptoLinkService.encryptCrypt5(privateSubscriptionUrl);
+        const happCryptoLinks = await this.happCryptoLinkService.encryptAll(privateSubscriptionUrl);
 
         return new SubscriptionRawResponse({
             isFound: true,
@@ -587,8 +587,9 @@ export class SubscriptionService {
             links,
             ssConfLinks,
             subscriptionUrl: privateSubscriptionUrl,
-            happCryptoLink: happCryptoLink?.encryptedLink ?? null,
-            happCryptoLinkVersion: happCryptoLink?.version ?? null,
+            happCryptoLink: happCryptoLinks.crypt5,
+            happCryptoLinkVersion: happCryptoLinks.crypt5 ? 'crypt5' : null,
+            happCryptoLinks,
         });
     }
 
@@ -596,31 +597,26 @@ export class SubscriptionService {
         user: UserEntity,
     ): Promise<PublicSubscriptionUserResponseModel> {
         const privateSubscriptionUrl = this.resolveSubscriptionUrl(user.uuid);
-        const happCryptoLink =
-            await this.happCryptoLinkService.encryptCrypt5(privateSubscriptionUrl);
+        const happCryptoLinks = await this.happCryptoLinkService.encryptAll(privateSubscriptionUrl);
 
-        return new PublicSubscriptionUserResponseModel(
-            user,
-            this.subPublicDomain,
-            happCryptoLink?.encryptedLink ?? null,
-            happCryptoLink?.version ?? null,
-        );
+        return new PublicSubscriptionUserResponseModel(user, this.subPublicDomain, happCryptoLinks);
     }
 
     private buildPublicSubscriptionTemplateValues(
         user: PublicSubscriptionUserResponseModel,
     ): Record<string, string> {
-        const crypt5Link =
-            user.happCryptoLinkVersion === 'crypt5' &&
-            user.happCryptoLink?.startsWith('happ://crypt5/')
-                ? user.happCryptoLink
-                : '';
+        const crypt4Link = user.happCryptoLinks.crypt4?.startsWith('happ://crypt4/')
+            ? user.happCryptoLinks.crypt4
+            : '';
+        const crypt5Link = user.happCryptoLinks.crypt5?.startsWith('happ://crypt5/')
+            ? user.happCryptoLinks.crypt5
+            : '';
 
         return {
             USERNAME: user.username,
             SUBSCRIPTION_LINK: user.subscriptionPageUrl,
             HAPP_CRYPT3_LINK: '',
-            HAPP_CRYPT4_LINK: crypt5Link,
+            HAPP_CRYPT4_LINK: crypt4Link,
             HAPP_CRYPT5_LINK: crypt5Link,
         };
     }
@@ -995,11 +991,11 @@ export class SubscriptionService {
     }
 
     private resolveSubscriptionUrl(subscriptionToken: string): string {
-        return `https://${this.subPublicDomain}/${subscriptionToken}`;
+        return buildSubscriptionUrl(this.subPublicDomain, subscriptionToken);
     }
 
     private resolveSubscriptionPageUrl(shortUuid: string): string {
-        return `https://${this.subPublicDomain}/${shortUuid}`;
+        return buildSubscriptionUrl(this.subPublicDomain, shortUuid);
     }
 
     private async updateAndReportSubscriptionRequest(

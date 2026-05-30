@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { createHappCryptoLink } from '@kastov/cryptohapp';
 
 interface HappCryptoApiResponse {
     encrypted_link?: string;
@@ -7,6 +8,11 @@ interface HappCryptoApiResponse {
 export interface HappCryptoLinkResult {
     encryptedLink: string;
     version: 'crypt5';
+}
+
+export interface HappCryptoLinksResult {
+    crypt4: string | null;
+    crypt5: string | null;
 }
 
 @Injectable()
@@ -20,6 +26,35 @@ export class HappCryptoLinkService {
 
     public async encrypt(linkToEncrypt: string): Promise<HappCryptoLinkResult | null> {
         return this.encryptCrypt5(linkToEncrypt);
+    }
+
+    public async encryptAll(linkToEncrypt: string): Promise<HappCryptoLinksResult> {
+        const [crypt4, crypt5] = await Promise.all([
+            this.encryptCrypt4(linkToEncrypt),
+            this.encryptCrypt5(linkToEncrypt),
+        ]);
+
+        return {
+            crypt4: crypt4?.encryptedLink ?? null,
+            crypt5: crypt5?.encryptedLink ?? null,
+        };
+    }
+
+    public async encryptCrypt4(linkToEncrypt: string): Promise<{
+        encryptedLink: string;
+        version: 'crypt4';
+    } | null> {
+        const encryptedLink = createHappCryptoLink(linkToEncrypt, 'v4', true);
+
+        if (!encryptedLink || !encryptedLink.startsWith('happ://crypt4/')) {
+            this.logger.warn('Local Happ crypt4 generator returned an invalid encrypted link');
+            return null;
+        }
+
+        return {
+            encryptedLink,
+            version: 'crypt4',
+        };
     }
 
     public async encryptCrypt5(linkToEncrypt: string): Promise<HappCryptoLinkResult | null> {

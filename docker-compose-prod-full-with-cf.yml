@@ -76,12 +76,17 @@ services:
       start_period: 30s
 
   remnawave-subscription-page:
-    image: remnawave/subscription-page:latest
+    build:
+      context: ../subscription-page
+      dockerfile: Dockerfile
+    image: remnawave/subscription-page:local
     container_name: remnawave-subscription-page
     hostname: remnawave-subscription-page
     <<: [*common, *logging]
     environment:
+      - APP_PORT=3010
       - REMNAWAVE_PANEL_URL=http://remnawave:3000
+      - REMNAWAVE_API_TOKEN=${REMNAWAVE_API_TOKEN}
       - META_TITLE=Subscription page
       - META_DESCRIPTION=Subscription page description
     ports:

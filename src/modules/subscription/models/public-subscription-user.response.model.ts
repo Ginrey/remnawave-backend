@@ -1,5 +1,7 @@
 import { TResetPeriods, TUsersStatus } from '@libs/contracts/constants';
 
+import { buildSubscriptionUrl } from '@common/utils/subscription-url';
+
 import { UserEntity } from '@modules/users/entities/user.entity';
 
 export class PublicSubscriptionUserResponseModel {
@@ -23,6 +25,10 @@ export class PublicSubscriptionUserResponseModel {
     public readonly subscriptionPageUrl: string;
     public readonly happCryptoLink: string | null;
     public readonly happCryptoLinkVersion: 'crypt5' | null;
+    public readonly happCryptoLinks: {
+        crypt4: string | null;
+        crypt5: string | null;
+    };
     public readonly userTraffic: {
         usedTrafficBytes: number;
         lifetimeUsedTrafficBytes: number;
@@ -34,8 +40,10 @@ export class PublicSubscriptionUserResponseModel {
     constructor(
         entity: UserEntity,
         subPublicDomain: string,
-        happCryptoLink: string | null,
-        happCryptoLinkVersion: 'crypt5' | null,
+        happCryptoLinks: {
+            crypt4: string | null;
+            crypt5: string | null;
+        },
     ) {
         this.shortUuid = entity.shortUuid;
         this.username = entity.username;
@@ -54,9 +62,10 @@ export class PublicSubscriptionUserResponseModel {
         this.lastTrafficResetAt = entity.lastTrafficResetAt;
         this.createdAt = entity.createdAt;
         this.updatedAt = entity.updatedAt;
-        this.subscriptionPageUrl = `https://${subPublicDomain}/${entity.shortUuid}`;
-        this.happCryptoLink = happCryptoLink;
-        this.happCryptoLinkVersion = happCryptoLinkVersion;
+        this.subscriptionPageUrl = buildSubscriptionUrl(subPublicDomain, entity.shortUuid);
+        this.happCryptoLinks = happCryptoLinks;
+        this.happCryptoLink = happCryptoLinks.crypt5;
+        this.happCryptoLinkVersion = happCryptoLinks.crypt5 ? 'crypt5' : null;
         this.userTraffic = {
             usedTrafficBytes: Number(entity.userTraffic.usedTrafficBytes),
             lifetimeUsedTrafficBytes: Number(entity.userTraffic.lifetimeUsedTrafficBytes),
