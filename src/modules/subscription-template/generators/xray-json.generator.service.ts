@@ -554,7 +554,7 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
         case 'lte':
             return '🇪🇺 LTE (Белые списки)';
         default:
-            return '🌍 Прочие';
+            return '🇯🇵 Прочие';
     }
 }
 

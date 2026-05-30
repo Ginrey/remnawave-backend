@@ -3,7 +3,7 @@ export const EXTENDED_CLIENTS_REGEXES = [
     /^Flowvy\//,
     /^prizrak-box\//,
     /^koala-clash\//,
-    /^Happ\//,
+    /^Happ(?:-Android)?\//,
     /^INCY\//,
 ] as const;
 
@@ -15,7 +15,7 @@ export const JSON_SUBSCRIPTION_FALLBACK_CLIENTS = [
     /^[Ss]treisand/,
     // Only Happ >= 2.0 supports the xray JSON array subscription format.
     // Happ 1.x has a JSON subscription parsing bug (fixed in 1.11.0 as "fix ordering json subscription").
-    /^Happ\/([2-9]|\d{2,})\./,
+    /^Happ(?:-Android)?\/([2-9]|\d{2,})\./,
     /^INCY\//,
     /^ktor-client/,
     /^V2Box/,

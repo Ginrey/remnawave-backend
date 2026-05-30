@@ -160,6 +160,17 @@ export class SubscriptionService {
                 }
             }
 
+            // Force-downgrade XRAY_JSON → XRAY_BASE64 for Happ 1.x clients.
+            // SRR rules may have matched the UA directly as XRAY_JSON, bypassing
+            // the version check above. Happ 1.x cannot parse the JSON array format.
+            if (
+                srrContext.matchedResponseType === 'XRAY_JSON' &&
+                /^Happ(?:-Android)?\//i.test(srrContext.userAgent) &&
+                !isJsonSubscriptionFallbackSupported(srrContext.userAgent)
+            ) {
+                srrContext.matchedResponseType = 'XRAY_BASE64';
+            }
+
             if (!this.isUserSubscriptionActive(user.response)) {
                 await this.updateAndReportSubscriptionRequest(
                     user.response.uuid,
