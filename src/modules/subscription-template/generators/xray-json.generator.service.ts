@@ -1141,63 +1141,55 @@ export class XrayJsonGeneratorService {
             groupedConfigs.flatMap((groupConfig) => groupConfig.importedConfigs),
         );
 
-        const manualGroups = allConfigs
-            .map((config) => {
-                const groupKey = getImportSourceManualGroupKey(config);
-                // Use the server's own remark as the display name (falls back to country group
-                // name when the import source didn't provide one).
-                const baseRemarks =
-                    isNonEmptyString(config.remarks)
-                        ? config.remarks
-                        : buildImportSourceManualGroupRemarks(groupKey);
-
-                return {
-                    configs: [config],
-                    groupKey,
-                    remarks: baseRemarks,
-                    tagPart: normalizeTagPart(groupKey),
-                };
-            })
-            .sort((left, right) => {
-                const leftIndex = getImportSourceManualGroupSortIndex(left.groupKey);
-                const rightIndex = getImportSourceManualGroupSortIndex(right.groupKey);
-
-                return (
-                    leftIndex - rightIndex ||
-                    left.groupKey.localeCompare(right.groupKey) ||
-                    left.configs[0].outbound.tag.localeCompare(right.configs[0].outbound.tag)
-                );
-            });
-
-        // Pre-count remarks to only append " #N" when a name actually has duplicates.
-        const remarksTotalCount = new Map<string, number>();
-        for (const group of manualGroups) {
-            remarksTotalCount.set(group.remarks, (remarksTotalCount.get(group.remarks) ?? 0) + 1);
+        // Group servers by country key so each country block is numbered independently.
+        const byGroupKey = new Map<ImportSourceManualGroupKey, ImportedOutboundConfig[]>();
+        for (const config of allConfigs) {
+            const key = getImportSourceManualGroupKey(config);
+            if (!byGroupKey.has(key)) {
+                byGroupKey.set(key, []);
+            }
+            byGroupKey.get(key)!.push(config);
         }
 
-        const remarksCounters = new Map<string, number>();
+        // Sort country groups by their display order.
+        const sortedGroupKeys = [...byGroupKey.keys()].sort((a, b) => {
+            return (
+                getImportSourceManualGroupSortIndex(a) -
+                    getImportSourceManualGroupSortIndex(b) || a.localeCompare(b)
+            );
+        });
 
-        return manualGroups
-            .map((manualGroup, groupIndex) => {
-                const total = remarksTotalCount.get(manualGroup.remarks) ?? 1;
-                const index = (remarksCounters.get(manualGroup.remarks) ?? 0) + 1;
-                remarksCounters.set(manualGroup.remarks, index);
+        const result: XrayJsonConfig[] = [];
+        let globalIndex = 0;
 
-                const finalRemarks =
-                    total > 1 ? `${manualGroup.remarks} #${index}` : manualGroup.remarks;
+        for (const groupKey of sortedGroupKeys) {
+            const configs = byGroupKey.get(groupKey)!;
+            const countryName = buildImportSourceManualGroupRemarks(groupKey);
+            const tagPart = normalizeTagPart(groupKey);
 
-                return this.buildManualImportSourceGroupConfig(
+            // Sort servers within a group stably by outbound tag.
+            configs.sort((a, b) => a.outbound.tag.localeCompare(b.outbound.tag));
+
+            for (let i = 0; i < configs.length; i++) {
+                // Always append #N so the user can distinguish servers within the same country.
+                const remarks = `${countryName} #${i + 1}`;
+
+                const built = this.buildManualImportSourceGroupConfig(
                     template,
-                    {
-                        ...manualGroup,
-                        remarks: finalRemarks,
-                    },
-                    groupIndex,
+                    { configs: [configs[i]], groupKey, remarks, tagPart },
+                    globalIndex,
                     importSourceManualStrategy,
                     importSourceSettings,
                 );
-            })
-            .filter(Boolean) as XrayJsonConfig[];
+
+                if (built) {
+                    result.push(built);
+                    globalIndex++;
+                }
+            }
+        }
+
+        return result;
     }
 
     private buildManualImportSourceGroupConfig(
