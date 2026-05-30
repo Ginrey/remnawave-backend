@@ -963,8 +963,16 @@ export class XrayJsonGeneratorService {
                 }
 
                 if (!host.clientOverrides.xrayJsonTemplate || ignoreHostXrayJsonTemplate) {
-                    const panelHostImportConfig = this.buildPanelHostImportSourceConfig(host);
-                    if (panelHostImportConfig) panelHostImportConfigs.push(panelHostImportConfig);
+                    if (PLACEHOLDER_IMPORT_SOURCE_ADDRESSES.has(host.address)) {
+                        // Fallback/error host (e.g. expired subscription) — build as standalone
+                        // config so the error remarks are preserved as the config name.
+                        const errorConfig = this.buildOutboundConfig(host, isExtendedClient);
+                        if (errorConfig) configs.push({ ...baseTemplate, ...errorConfig });
+                    } else {
+                        const panelHostImportConfig =
+                            this.buildPanelHostImportSourceConfig(host);
+                        if (panelHostImportConfig) panelHostImportConfigs.push(panelHostImportConfig);
+                    }
                     continue;
                 }
 
@@ -1038,6 +1046,11 @@ export class XrayJsonGeneratorService {
                 sourceGroupName: 'panel',
                 sourceNames: ['Panel Hosts'],
             };
+
+            if (!hasServerData(initialConfig)) {
+                return null;
+            }
+
             const stableTag = getStableImportSourceTag('panel', initialConfig);
             const outbound = {
                 ...initialConfig.outbound,
