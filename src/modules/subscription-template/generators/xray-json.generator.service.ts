@@ -386,11 +386,11 @@ function isLteImportSourceText(text: string): boolean {
 }
 
 function isRussianImportSourceConfig(config: ImportedOutboundConfig): boolean {
-    const text = getImportSourceContextText(config);
+    const classificationText = getImportSourceClassificationText(config);
     const endpointText = getImportSourceEndpointText(config);
 
     return (
-        RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(text) ||
+        RUSSIAN_IMPORT_SOURCE_REMARK_PATTERN.test(classificationText) ||
         /(?:^|\s|\.)ru(?:\s|$|\.|-)|\[ru\]|\bru-\d|\byandex\b|\bvk(?:proxy)?\b|userapi\.com|max\.ru|x5\.ru|cdp\.x5\.ru/iu.test(
             endpointText,
         )
@@ -554,7 +554,7 @@ function buildImportSourceManualGroupRemarks(groupKey: ImportSourceManualGroupKe
         case 'lte':
             return '🇪🇺 LTE (Белые списки)';
         default:
-            return '🇯🇵 Прочие';
+            return '🌍 Прочие';
     }
 }
 
@@ -1136,19 +1136,28 @@ export class XrayJsonGeneratorService {
         importSourceManualStrategy: ImportSourceBalancerStrategy,
         importSourceSettings: ImportSourceXrayJsonRuntimeSettings,
     ): XrayJsonConfig[] {
-        const manualGroups = groupedConfigs
-            .flatMap((groupConfig) =>
-                groupConfig.importedConfigs.map((config) => {
-                    const groupKey = getImportSourceManualGroupKey(config);
+        // Dedupe across all groups first — the same server may appear in multiple import source groups.
+        const allConfigs = dedupeImportedConfigs(
+            groupedConfigs.flatMap((groupConfig) => groupConfig.importedConfigs),
+        );
 
-                    return {
-                        configs: [config],
-                        groupKey,
-                        remarks: buildImportSourceManualGroupRemarks(groupKey),
-                        tagPart: normalizeTagPart(groupKey),
-                    };
-                }),
-            )
+        const manualGroups = allConfigs
+            .map((config) => {
+                const groupKey = getImportSourceManualGroupKey(config);
+                // Use the server's own remark as the display name (falls back to country group
+                // name when the import source didn't provide one).
+                const baseRemarks =
+                    isNonEmptyString(config.remarks)
+                        ? config.remarks
+                        : buildImportSourceManualGroupRemarks(groupKey);
+
+                return {
+                    configs: [config],
+                    groupKey,
+                    remarks: baseRemarks,
+                    tagPart: normalizeTagPart(groupKey),
+                };
+            })
             .sort((left, right) => {
                 const leftIndex = getImportSourceManualGroupSortIndex(left.groupKey);
                 const rightIndex = getImportSourceManualGroupSortIndex(right.groupKey);
@@ -1159,18 +1168,29 @@ export class XrayJsonGeneratorService {
                     left.configs[0].outbound.tag.localeCompare(right.configs[0].outbound.tag)
                 );
             });
+
+        // Pre-count remarks to only append " #N" when a name actually has duplicates.
+        const remarksTotalCount = new Map<string, number>();
+        for (const group of manualGroups) {
+            remarksTotalCount.set(group.remarks, (remarksTotalCount.get(group.remarks) ?? 0) + 1);
+        }
+
         const remarksCounters = new Map<string, number>();
 
         return manualGroups
             .map((manualGroup, groupIndex) => {
+                const total = remarksTotalCount.get(manualGroup.remarks) ?? 1;
                 const index = (remarksCounters.get(manualGroup.remarks) ?? 0) + 1;
                 remarksCounters.set(manualGroup.remarks, index);
+
+                const finalRemarks =
+                    total > 1 ? `${manualGroup.remarks} #${index}` : manualGroup.remarks;
 
                 return this.buildManualImportSourceGroupConfig(
                     template,
                     {
                         ...manualGroup,
-                        remarks: `${manualGroup.remarks} #${index}`,
+                        remarks: finalRemarks,
                     },
                     groupIndex,
                     importSourceManualStrategy,

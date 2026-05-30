@@ -13,7 +13,9 @@ export function isExtendedClient(userAgent: string): boolean {
 
 export const JSON_SUBSCRIPTION_FALLBACK_CLIENTS = [
     /^[Ss]treisand/,
-    /^Happ\//,
+    // Only Happ >= 2.0 supports the xray JSON array subscription format.
+    // Happ 1.x has a JSON subscription parsing bug (fixed in 1.11.0 as "fix ordering json subscription").
+    /^Happ\/([2-9]|\d{2,})\./,
     /^INCY\//,
     /^ktor-client/,
     /^V2Box/,
