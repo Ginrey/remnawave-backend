@@ -307,14 +307,14 @@ export class SubscriptionService {
                 shouldIncludeImportSubscriptions && srrContext.matchedResponseType === 'XRAY_BASE64'
                     ? await this.importSourceService.getRawLinesForUser(
                           user.response.tId,
-                          fullImportSourceList,
+                          false, // always pick one source per group; fullImportSourceList only controls display mode
                       )
                     : [];
             const extraImportSourceGroups =
                 shouldIncludeImportSubscriptions && srrContext.matchedResponseType === 'XRAY_JSON'
                     ? await this.importSourceService.getGroupedRawLinesForUser(
                           user.response.tId,
-                          fullImportSourceList,
+                          false, // always pick one source per group; fullImportSourceList only controls display mode
                       )
                     : [];
 
